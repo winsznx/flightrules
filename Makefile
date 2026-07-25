@@ -1,8 +1,9 @@
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 .PHONY: help verify-env install lint lint-fix format format-check typecheck test test-integration \
-        test-e2e build up down db-migrate db-rollback db-status scan-secrets scan-licences \
-        scan-deps verify clean
+        test-integration-db test-integration-signoz test-e2e build up down db-migrate db-rollback db-status scan-secrets scan-licences \
+        scan-deps verify clean signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
+        signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -32,8 +33,14 @@ typecheck: ## Strict TypeScript build of every package
 test: ## Run unit and property tests (no external services required)
 	pnpm run test
 
-test-integration: ## Run integration tests (requires make up and a running SigNoz stack)
+test-integration: ## Run all integration tests (requires make up and a running SigNoz stack)
 	pnpm run test:integration
+
+test-integration-db: ## Run database integration tests (requires make up)
+	pnpm run test:integration:db
+
+test-integration-signoz: ## Run SigNoz integration tests (requires a deployed, bootstrapped stack)
+	pnpm run test:integration:signoz
 
 test-e2e: ## Run end-to-end browser tests
 	pnpm run test:e2e
@@ -64,6 +71,33 @@ scan-licences: ## Check every installed dependency licence
 
 scan-deps: ## Audit dependencies for known vulnerabilities
 	pnpm run scan:deps
+
+signoz-gauge: ## Check the tools Foundry needs are available
+	foundryctl gauge -f casting.yaml --format text --no-ledger --no-updater
+
+signoz-forge: ## Regenerate casting.yaml.lock and pours/
+	foundryctl forge -f casting.yaml --format text --no-ledger --no-updater
+
+signoz-up: ## Deploy the pinned SigNoz stack
+	foundryctl cast -f casting.yaml --format text --no-ledger --no-updater
+
+signoz-down: ## Stop the SigNoz stack, keeping all telemetry
+	docker compose -f pours/deployment/compose.yaml -p signoz stop
+
+signoz-destroy: ## Stop the SigNoz stack and delete all telemetry volumes
+	docker compose -f pours/deployment/compose.yaml -p signoz down -v
+
+signoz-bootstrap: ## Create the first SigNoz user and mint a FlightRules API key
+	@bash scripts/bootstrap-signoz.sh
+
+signoz-verify: ## Verify every SigNoz surface against the running deployment
+	@bash scripts/verify-signoz.sh
+
+signoz-capabilities: ## Refresh docs/research/mcp-capabilities.json from the live MCP server
+	@set -a; [ -f .env ] && . ./.env; set +a; node scripts/snapshot-mcp-capabilities.mjs
+
+signoz-reproducibility: ## Prove the casting reproduces and every image is pinned
+	@bash scripts/verify-reproducibility.sh
 
 verify: ## Complete validation suite
 	@$(MAKE) verify-env

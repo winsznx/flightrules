@@ -84,3 +84,41 @@ All notable changes to FlightRules are recorded here, one section per phase.
 
 - The secret scanner and the licence checker each failed the build on a real finding before
   passing, which is what makes them controls rather than decoration.
+
+## Phase 02 — SigNoz deployment through Foundry (2026-07-25)
+
+### Added
+
+- `casting.yaml` pinning SigNoz v0.134.0, the OTel Collector v0.144.6 and the MCP Server v0.9.0
+  by explicit image tag as well as version, with the MCP molding enabled and no secrets.
+- Committed `casting.yaml.lock` and the generated `pours/` tree, so a reviewer can see which image
+  tags will actually run without installing Foundry first.
+- `scripts/bootstrap-signoz.sh` — idempotent first-user setup, `flightrules-mcp` service account,
+  `signoz-admin` role assignment, 90-day API key written to a mode-600 `.env`, and a wait for real
+  OTLP ingestion rather than a port check.
+- `scripts/verify-signoz.sh` — 14 checks across deployment images, API health and version, setup
+  completion, MCP probes, authenticated initialize, invalid-key rejection, real OTLP ingestion and
+  collector listener state.
+- `scripts/verify-reproducibility.sh` — re-forges into a clean directory, diffs against what is
+  committed, and asserts every image tag is pinned.
+- `scripts/snapshot-mcp-capabilities.mjs` — live tool discovery that fails with `MCP_TOOL_MISSING`
+  when any of the 22 required tools is absent.
+- `@flightrules/test-fixtures` with casting and generated-deployment tests, plus a SigNoz
+  integration suite exercising the MCP server through the official SDK.
+- Nine `signoz-*` Makefile targets and a CI job that deploys, bootstraps, verifies, runs the SigNoz
+  integration tests and tears down.
+- `docs/RUNBOOK.md` covering deployment, bootstrap, endpoints, the operational traps, teardown,
+  data reset, key rotation and production notes.
+
+### Changed
+
+- Vitest integration tests split into `integration-db` and `integration-signoz` projects by the
+  external service each requires, so CI runs exactly the project whose dependency it provides
+  instead of skipping tests.
+
+### Verified
+
+- 110 tests pass (70 unit, 8 database integration, 32 SigNoz integration); nothing skipped.
+- Re-forging reproduces `casting.yaml.lock` and `pours/` byte for byte.
+- Every running container matches an image tag the casting pins; no `:latest` anywhere.
+- An invalid SigNoz API key is rejected, verified as explicitly as the success path.
