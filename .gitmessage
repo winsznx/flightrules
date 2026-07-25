@@ -1,0 +1,14 @@
+# <type>(<scope>): <specific completed change>
+#
+# type:  feat | fix | chore | docs | test | refactor | perf | build | ci
+# scope: repo | telemetry | graph | contract | signoz | gate | demo | ui | db | api | worker | cli
+#
+# Good:
+#   feat(graph): canonicalise trace trees deterministically
+#   feat(signoz): compile violation dashboard through MCP
+#   feat(gate): fail canary release on trajectory violations
+#
+# Rejected:
+#   update | fix stuff | final | changes
+#
+# No co-author trailers.

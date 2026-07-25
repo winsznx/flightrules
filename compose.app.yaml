@@ -1,0 +1,41 @@
+# FlightRules application services.
+#
+# SigNoz is deployed separately by Foundry from casting.yaml (see docs/RUNBOOK.md); this file
+# owns only what FlightRules itself runs. Keeping them apart is deliberate: PRD section 12.5
+# forbids inventing custom Foundry moldings to smuggle application services into the SigNoz
+# deployment.
+#
+# The PostgreSQL port is 5433 on the host so it cannot collide with the SigNoz metastore or a
+# developer's own local PostgreSQL.
+
+name: flightrules
+
+networks:
+  flightrules-network:
+    name: flightrules-network
+
+volumes:
+  flightrules-postgres-data:
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: flightrules-postgres
+    environment:
+      POSTGRES_USER: flightrules
+      POSTGRES_PASSWORD: flightrules
+      POSTGRES_DB: flightrules
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    ports:
+      - "5433:5432"
+    volumes:
+      - flightrules-postgres-data:/var/lib/postgresql/data
+    networks:
+      - flightrules-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flightrules -d flightrules"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
