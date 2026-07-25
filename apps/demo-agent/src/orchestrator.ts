@@ -6,6 +6,7 @@ import {
   ServiceRequestError,
   ServiceTimeoutError,
 } from "./clients.js";
+import { stepCategoryFor, withRunSpan, withStepSpan } from "./instrumentation.js";
 import { type Provider, RELEASE_V1, RELEASE_V2 } from "./provider.js";
 
 export interface StepRecord {
@@ -21,6 +22,8 @@ export interface StepRecord {
 
 export interface RunResult {
   readonly runId: string;
+  /** The primary trace for this run, the identifier FlightRules retrieves evidence by. */
+  readonly traceId: string;
   readonly releaseId: string;
   readonly orderId: string;
   readonly scenario: string;
@@ -71,29 +74,74 @@ export class RefundAgent {
 
   async runRefund(input: RunRefundInput): Promise<RunResult> {
     const runId = input.runId ?? this.#newRunId();
+    const releaseId = input.releaseId;
+    const scenario = releaseId === RELEASE_V2 ? "unsafe-duplicate-refund" : "approved-refund";
+    const plan = await this.#provider.plan(releaseId);
+
+    return withRunSpan(
+      {
+        runId,
+        releaseId,
+        scenario,
+        orderId: input.orderId,
+        providerName: plan.providerName,
+        modelName: plan.modelName,
+      },
+      (traceId) => this.#execute({ input, runId, releaseId, scenario, traceId, plan }),
+    );
+  }
+
+  async #execute(context: {
+    readonly input: RunRefundInput;
+    readonly runId: string;
+    readonly releaseId: string;
+    readonly scenario: string;
+    readonly traceId: string;
+    readonly plan: Awaited<ReturnType<Provider["plan"]>>;
+  }): Promise<RunResult> {
+    const { input, runId, releaseId, scenario, traceId, plan } = context;
     const startedAt = this.#now();
     const steps: StepRecord[] = [];
 
+    /**
+     * Records the step for the caller and emits its span. One wrapper so a step can never be
+     * recorded without being traced, or traced without being recorded.
+     */
     const record = async <T>(
       partial: Omit<StepRecord, "outcome" | "durationMs">,
       action: () => Promise<T>,
     ): Promise<T> => {
       const stepStart = this.#now();
-      try {
-        const value = await action();
-        steps.push({ ...partial, outcome: "ok", durationMs: this.#now() - stepStart });
-        return value;
-      } catch (error) {
-        steps.push({
-          ...partial,
-          outcome: error instanceof ServiceTimeoutError ? "timeout" : "error",
-          durationMs: this.#now() - stepStart,
-        });
-        throw error;
-      }
+      return withStepSpan(
+        {
+          name: partial.name,
+          toolName: partial.toolName,
+          service: partial.service,
+          sideEffect: partial.sideEffect,
+          dataDomain: partial.dataDomain,
+          stepCategory: stepCategoryFor(partial),
+          attempt: partial.attempt,
+          releaseId,
+          runId,
+          idempotencyPresent: partial.sideEffect === "write" ? true : undefined,
+        },
+        async () => {
+          try {
+            const value = await action();
+            steps.push({ ...partial, outcome: "ok", durationMs: this.#now() - stepStart });
+            return value;
+          } catch (error) {
+            steps.push({
+              ...partial,
+              outcome: error instanceof ServiceTimeoutError ? "timeout" : "error",
+              durationMs: this.#now() - stepStart,
+            });
+            throw error;
+          }
+        },
+      );
     };
 
-    const plan = await this.#provider.plan(input.releaseId);
     const planned = new Set(plan.steps.map((step) => step.step));
 
     // ---- policy.retrieve -----------------------------------------------------------------
@@ -164,7 +212,7 @@ export class RefundAgent {
 
     // ---- payment.refund ------------------------------------------------------------------
     const { refund, attempts } = await this.#issueRefund({
-      releaseId: input.releaseId,
+      releaseId,
       orderId: order.orderId,
       amountCents,
       runId,
@@ -194,9 +242,10 @@ export class RefundAgent {
 
     return {
       runId,
-      releaseId: input.releaseId,
+      traceId,
+      releaseId,
       orderId: order.orderId,
-      scenario: input.releaseId === RELEASE_V2 ? "unsafe-duplicate-refund" : "approved-refund",
+      scenario,
       customerMessage: notification.body,
       refundId: refund.refundId,
       amountCents,

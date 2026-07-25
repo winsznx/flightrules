@@ -19,6 +19,8 @@
     "@flightrules/order-service": "workspace:*",
     "@flightrules/fraud-service": "workspace:*",
     "@flightrules/payment-service": "workspace:*",
-    "@flightrules/notification-service": "workspace:*"
+    "@flightrules/notification-service": "workspace:*",
+    "@flightrules/telemetry": "workspace:*",
+    "@opentelemetry/api": "1.9.1"
   }
 }

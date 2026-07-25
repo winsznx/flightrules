@@ -1,3 +1,4 @@
+import { registerServiceSpans } from "@flightrules/telemetry";
 import Fastify, { type FastifyInstance } from "fastify";
 import { z } from "zod";
 
@@ -45,6 +46,20 @@ export function policyFor(orderTotalCents: number): PolicyDecision {
 
 export function buildPolicyService(options: PolicyServiceOptions = {}): FastifyInstance {
   const server = Fastify({ logger: options.logger ?? false });
+
+  registerServiceSpans(server, {
+    serviceName: "flightrules-policy-service",
+    tracerName: "flightrules.demo.policy-service",
+    describe: (request) =>
+      request.url.startsWith("/policy/retrieve")
+        ? {
+            name: "policy.retrieve.handler",
+            sideEffect: "read",
+            dataDomain: "policy",
+            stepCategory: "policy",
+          }
+        : null,
+  });
 
   server.get("/health", async () => ({ status: "ok", service: "policy-service" }));
 

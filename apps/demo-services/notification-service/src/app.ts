@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { registerServiceSpans } from "@flightrules/telemetry";
 import Fastify, { type FastifyInstance } from "fastify";
 import { z } from "zod";
 
@@ -47,6 +48,20 @@ export function buildNotificationService(
   const maxRetained = options.maxRetained ?? 200;
   let messages: SentMessage[] = [];
   const server = Fastify({ logger: options.logger ?? false });
+
+  registerServiceSpans(server, {
+    serviceName: "flightrules-notification-service",
+    tracerName: "flightrules.demo.notification-service",
+    describe: (request) =>
+      request.url.startsWith("/notifications/send")
+        ? {
+            name: "customer.notify.handler",
+            sideEffect: "external",
+            dataDomain: "messaging",
+            stepCategory: "customer",
+          }
+        : null,
+  });
 
   server.get("/health", async () => ({ status: "ok", service: "notification-service" }));
 

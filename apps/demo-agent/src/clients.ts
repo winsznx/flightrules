@@ -1,3 +1,4 @@
+import { context as otelContext, propagation } from "@opentelemetry/api";
 import { z } from "zod";
 
 /**
@@ -42,10 +43,15 @@ async function postJson<T>(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs);
 
+  // Propagate trace context so every service call joins the run's single trace. Without this the
+  // graph engine sees five disconnected traces and cannot reconstruct a trajectory at all.
+  const traceHeaders: Record<string, string> = {};
+  propagation.inject(otelContext.active(), traceHeaders);
+
   try {
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...options.headers },
+      headers: { "Content-Type": "application/json", ...traceHeaders, ...options.headers },
       body: JSON.stringify(body),
       signal: controller.signal,
     });

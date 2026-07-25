@@ -1,3 +1,4 @@
+import { AGENT, activeServiceSpan, registerServiceSpans } from "@flightrules/telemetry";
 import Fastify, { type FastifyInstance } from "fastify";
 import { z } from "zod";
 import { type LedgerEntry, RefundLedger } from "./ledger.js";
@@ -46,6 +47,20 @@ export function buildPaymentService(options: PaymentServiceOptions): PaymentServ
   const slowResponseMs = options.slowResponseMs ?? 2_500;
   const server = Fastify({ logger: options.logger ?? false });
 
+  registerServiceSpans(server, {
+    serviceName: "flightrules-payment-service",
+    tracerName: "flightrules.demo.payment-service",
+    describe: (request) =>
+      request.url.startsWith("/payments/refund")
+        ? {
+            name: "payment.refund.handler",
+            sideEffect: "write",
+            dataDomain: "payments",
+            stepCategory: "payment",
+          }
+        : null,
+  });
+
   server.get("/health", async () => ({ status: "ok", service: "payment-service" }));
 
   server.post("/payments/refund", async (request, reply) => {
@@ -66,6 +81,16 @@ export function buildPaymentService(options: PaymentServiceOptions): PaymentServ
       idempotencyKey: body.idempotencyKey,
       attempt: body.attempt,
     });
+
+    const span = activeServiceSpan(request);
+    if (span) {
+      span.setAttribute(AGENT.idempotencyPresent, body.idempotencyKey !== undefined);
+      span.setAttribute(AGENT.retryNumber, body.attempt - 1);
+      if (outcome.entry.idempotencyKeyHash !== null) {
+        // The salted hash only. The raw key never leaves this service.
+        span.setAttribute(AGENT.idempotencyKeyHash, outcome.entry.idempotencyKeyHash);
+      }
+    }
 
     if (body.fault === "slow_first_attempt" && body.attempt === 1) {
       await new Promise((resolve) => setTimeout(resolve, slowResponseMs));

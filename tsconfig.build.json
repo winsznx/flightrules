@@ -8,6 +8,9 @@
       "path": "./packages/domain"
     },
     {
+      "path": "./packages/telemetry"
+    },
+    {
       "path": "./packages/db"
     },
     {

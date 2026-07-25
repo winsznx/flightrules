@@ -1,3 +1,8 @@
+// Telemetry must start before anything issues HTTP, so the instrumentation can patch it.
+import { bootstrapFromEnv } from "@flightrules/telemetry";
+
+bootstrapFromEnv("flightrules-fraud-service");
+
 import process from "node:process";
 import { buildFraudService } from "./app.js";
 
