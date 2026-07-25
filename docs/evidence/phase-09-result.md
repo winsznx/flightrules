@@ -161,13 +161,13 @@ DEMO_RUNS=25 make demo-v1, make demo-v2   exit 0
 ## Test result
 
 ```text
-make test              894 passed, 0 failed, 0 skipped   (42 files)
+make test              895 passed, 0 failed, 0 skipped   (42 files)
 make test-integration  191 passed, 0 failed, 0 skipped   (12 files)
                        ---
-                       1,085 tests passed
+                       1,086 tests passed
 ```
 
-Integration breakdown: 102 database, 89 SigNoz. Phase 09 added **132** tests: 32 unit, 100
+Integration breakdown: 102 database, 89 SigNoz. Phase 09 added **133** tests: 33 unit, 100
 integration (94 database, 6 live SigNoz).
 
 Contract documents validated by `make contract-validate`: 20, unchanged.
@@ -292,7 +292,7 @@ IMPLEMENTED: migration 0003 with the thirteen remaining P0 tables; ten repositor
   atomic result commit, retry classification, cancellation, lease recovery and graceful shutdown;
   four job handlers calling the existing deterministic packages; metric emission
 TESTS RUN: make verify; make test-integration; the live SigNoz gate
-TEST RESULT: 894 unit passed, 191 integration passed, 0 failed, 0 skipped (1,085 total)
+TEST RESULT: 895 unit passed, 191 integration passed, 0 failed, 0 skipped (1,086 total)
 RUNTIME VALIDATION: against the live stack — SigNoz verified through MCP; 76 known-good runs mined
   into one route family at 43070aa4…; baseline, families, 80 trace runs and 80 canonical graphs
   persisted transactionally; a human approval recorded; a 28-rule draft contract proposed, accepted
