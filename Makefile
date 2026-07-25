@@ -4,7 +4,7 @@ SHELL := /usr/bin/env bash
         test-integration-db test-integration-signoz test-e2e build up down db-migrate db-rollback db-status scan-secrets scan-licences \
         scan-deps verify clean contract-validate demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
         signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility mine-demo-baseline \
-        signoz-sync signoz-purge api worker
+        signoz-sync signoz-purge api worker cli demo-seed demo-full gate gate-json evidence
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -75,6 +75,38 @@ api: ## Run the FlightRules API (requires make up and make db-migrate)
 
 worker: ## Run the FlightRules job worker (requires make up and make db-migrate)
 	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/worker run dev
+
+cli: ## Run the FlightRules CLI. Pass arguments with ARGS="gate check --json"
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+		node apps/cli/dist/index.js $(ARGS)
+
+demo-seed: ## Seed project, agent, baseline, contract and SigNoz artefacts through the API
+	@bash scripts/seed-demo.sh $(ARGS)
+
+demo-full: ## The complete demo: telemetry, baseline, contract, artefacts, passing gate, failing gate
+	@bash scripts/demo-full.sh
+
+gate: ## Read the release gate and exit with its code (PROJECT, AGENT, RELEASE)
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+		node apps/cli/dist/index.js gate check \
+			--project "$${PROJECT:-demo-commerce}" \
+			--agent "$${AGENT:-refund-agent}" \
+			--release "$${RELEASE:-refund-agent-v1}"
+
+gate-json: ## The same decision as one machine-readable document
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+		node apps/cli/dist/index.js gate check --json --quiet \
+			--project "$${PROJECT:-demo-commerce}" \
+			--agent "$${AGENT:-refund-agent}" \
+			--release "$${RELEASE:-refund-agent-v1}"
+
+evidence: ## Export the release evidence bundle to OUT (default docs/evidence/release-gate.json)
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+		node apps/cli/dist/index.js evidence export --include-violations \
+			--project "$${PROJECT:-demo-commerce}" \
+			--agent "$${AGENT:-refund-agent}" \
+			--release "$${RELEASE:-refund-agent-v1}" \
+			--out "$${OUT:-docs/evidence/release-gate.json}"
 
 db-migrate: ## Apply database migrations
 	pnpm --filter @flightrules/db run migrate

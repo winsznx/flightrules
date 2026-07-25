@@ -1,0 +1,137 @@
+{
+  "schemaVersion": "flightrules.dev/release-gate/v1",
+  "exportedAt": "2026-07-25T22:06:36.091Z",
+  "decision": "pass",
+  "decisionHash": "6d91e3869aa93ff4d20f21fe0c50720d8083f835d9dee0fb88fb3c02bcfef420",
+  "release": {
+    "id": "019f9b46-5d42-7026-a3db-7973d48c52bf",
+    "key": "refund-agent-v1",
+    "environment": "local"
+  },
+  "contract": {
+    "id": "019f9b46-8158-70c8-a618-12db57d733e0",
+    "key": "refund-agent-local",
+    "version": "0.1.0",
+    "contentHash": "42c4e1a39b36010398345c33f6a8f0bb1238c85a6c8498fb162a4b16d6e76514",
+    "state": "active"
+  },
+  "evaluation": {
+    "id": "019f9b48-d754-70ab-9cf8-dbe8abd2b4f7",
+    "status": "pass"
+  },
+  "counts": {
+    "evaluatedRuns": 106,
+    "passedRuns": 106,
+    "failedRuns": 0,
+    "erroredRuns": 0,
+    "insufficientRuns": 0,
+    "violations": 0,
+    "criticalViolations": 0,
+    "zeroToleranceViolations": 0,
+    "unknownRouteRuns": 0,
+    "duplicateSideEffectRuns": 0,
+    "missingPrerequisiteRuns": 0,
+    "degradedTraceRuns": 0,
+    "severities": {
+      "low": 0,
+      "medium": 0,
+      "high": 0,
+      "critical": 0
+    },
+    "observedRouteFamilies": 1,
+    "approvedRouteFamiliesCovered": 1,
+    "approvedRouteFamiliesDeclared": 1
+  },
+  "rates": {
+    "violation": {
+      "numerator": 0,
+      "denominator": 106,
+      "decimal": "0.000000",
+      "percent": "0.000000"
+    },
+    "unknownRoute": {
+      "numerator": 0,
+      "denominator": 106,
+      "decimal": "0.000000",
+      "percent": "0.000000"
+    },
+    "duplicateSideEffect": {
+      "numerator": 0,
+      "denominator": 106,
+      "decimal": "0.000000",
+      "percent": "0.000000"
+    },
+    "missingPrerequisite": {
+      "numerator": 0,
+      "denominator": 106,
+      "decimal": "0.000000",
+      "percent": "0.000000"
+    }
+  },
+  "changes": {
+    "latency": {
+      "metric": "run.duration_ms",
+      "baseline": 32,
+      "candidate": 32,
+      "changePercent": "0.000000",
+      "measured": true
+    },
+    "tokens": {
+      "metric": "gen_ai.usage.total_tokens",
+      "baseline": null,
+      "candidate": null,
+      "changePercent": null,
+      "measured": false
+    },
+    "retries": {
+      "metric": "agent.retry.count",
+      "baseline": 0,
+      "candidate": 0,
+      "changePercent": null,
+      "measured": false
+    }
+  },
+  "releaseRules": [
+    {
+      "ruleId": "budget-release-duration-ms-90268c56",
+      "ruleType": "numeric_budget",
+      "severity": "medium",
+      "outcome": "pass",
+      "aggregation": "p95",
+      "metric": "run.duration_ms",
+      "observed": 32,
+      "limit": 39,
+      "runsReporting": 106,
+      "summary": "p95 of run.duration_ms was 32, within 39."
+    }
+  ],
+  "findings": [],
+  "disclosures": [
+    {
+      "code": "RETRY_CHANGE_NOT_MEASURED",
+      "summary": "No usable baseline value for agent.retry.count, so its change could not be measured.",
+      "ruleId": null
+    },
+    {
+      "code": "TOKEN_REGRESSION_NOT_MEASURED",
+      "summary": "No usable baseline value for gen_ai.usage.total_tokens, so its change could not be measured.",
+      "ruleId": null
+    }
+  ],
+  "evidence": {
+    "representativeFailingTraceIds": [],
+    "representativePassingTraceIds": [
+      "01e19a07062b702515ecd224b324a741",
+      "026c0203dfbcab52ac660ce3fc22891f",
+      "080ef70d2ed64beff9b907bee6b47263",
+      "0a818ff7ae184a789ef45274d7b6bbce",
+      "0b126556842a2a2012c7b53b9d6cce17"
+    ],
+    "zeroToleranceRuleIds": [],
+    "violatedRuleIds": [],
+    "observedRouteFingerprints": [
+      "43070aa4af4f6c2c912a8d7bcc724f1d199e0425dc8ad7256b528eec195cb037"
+    ]
+  },
+  "violations": []
+}

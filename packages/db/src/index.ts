@@ -46,6 +46,7 @@ export * from "./repositories/audit.js";
 export * from "./repositories/baselines.js";
 export * from "./repositories/contracts.js";
 export * from "./repositories/evaluations.js";
+export * from "./repositories/gate.js";
 export * from "./repositories/jobs.js";
 export * from "./repositories/projects.js";
 export * from "./repositories/traces.js";

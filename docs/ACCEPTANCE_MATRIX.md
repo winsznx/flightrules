@@ -6,7 +6,7 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 10, 2026-07-25.
+Last updated: Phase 11, 2026-07-25.
 
 ## Critical final assertions (PRD section 23)
 
@@ -24,7 +24,7 @@ Last updated: Phase 10, 2026-07-25.
 | A10 | FlightRules creates and verifies a real SigNoz dashboard | `packages/artifact-compiler`, `apps/worker/src/artifact-sync.ts` | `compile.test.ts` dashboard suite, `phase-10.signoz.integration.test.ts` create + read-back | `docs/evidence/phase-10-result.md` — `Contract Health` created through MCP, read back, its ten PRD panel titles field-compared | DONE |
 | A11 | FlightRules creates and verifies real SigNoz views | `packages/artifact-compiler` | `compile.test.ts` view suite, `phase-10.signoz.integration.test.ts` | `docs/evidence/phase-10-result.md` — FR-013's four views created, read back, field-compared, and returning real evaluated canary runs | DONE |
 | A12 | FlightRules creates an alert that fires from the v2 violation | `packages/artifact-compiler`, `apps/worker` | `compile.test.ts` alert suite, `phase-10.signoz.integration.test.ts` | `docs/evidence/phase-10-result.md` — a 140-violation canary evaluation drove `Violation Rate Alert` and `Duplicate Side Effect Alert` to `firing`; alert history records the transition at value 80 | DONE |
-| A13 | The CLI gate returns exit code 2 for v2 | `apps/cli` | gate exit-code tests | `docs/evidence/phase-11-result.md` | PENDING |
+| A13 | The CLI gate returns exit code 2 for v2 | `apps/cli`, `packages/contract-engine/src/release.ts` | `exit-codes.test.ts` (every decision and every error code), `cli.test.ts` (every exit code end to end), `gate.integration.test.ts`, `phase-11.signoz.integration.test.ts` | `docs/evidence/phase-11-result.md` — the live canary: 8 runs, 80 violations, 24 zero-tolerance, `flightrules gate check` exit `2`; the approved release exit `0` over 106 runs | DONE |
 | A14 | No raw prompts or chain-of-thought are required | `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` forbidden-attribute redactor tests | `docs/evidence/phase-04-result.md` — both traces evaluated end to end with no prompt or reasoning attribute present | DONE |
 | A15 | A clean clone can reproduce the system | `scripts/*`, `README.md` | `scripts/verify-reproducibility.sh` | `docs/evidence/phase-17-result.md` | PENDING |
 
@@ -52,7 +52,7 @@ Last updated: Phase 10, 2026-07-25.
 | 18 | At least one SigNoz alert created through MCP and proven to fire | `packages/artifact-compiler` | `phase-10.signoz.integration.test.ts`, alert-history capture | phase-10 — four alerts created and verified; three firing on real canary data. Recovery is not yet evidenced (phase-10 limitation 2) | DONE |
 | 19 | Release comparison shows baseline versus canary topology diff | `packages/trace-graph`, `apps/web` | diff tests | phase-14 | PENDING |
 | 20 | Violation inspector links to the original SigNoz trace | `apps/web` | inspector route tests | phase-15 | PENDING |
-| 21 | CLI or GitHub Action gate exits non-zero when thresholds fail | `apps/cli`, `.github/workflows/release-gate.yml` | exit-code tests | phase-11 | PENDING |
+| 21 | CLI or GitHub Action gate exits non-zero when thresholds fail | `apps/cli`, `.github/workflows/release-gate.yml`, `packages/contract-engine/src/release.ts`, `apps/api/src/routes/gate.ts` | `exit-codes.test.ts`, `release.test.ts` (35), `cli.test.ts` (49), `gate.integration.test.ts` (17), `release-gate-workflow.test.ts` (14), `phase-11.signoz.integration.test.ts` (8) | phase-11 — live: `refund-agent-v1` exit `0` over 106 evaluated runs; `refund-agent-v2` exit `2` with 80 violations and 24 zero-tolerance; the same decision served after an API restart | DONE |
 | 22 | Seeded v1 passes and seeded v2 fails | end to end | e2e scenario | phase-17 | PENDING |
 | 23 | UI uses `design.md` without changing product copy or route purposes | `apps/web`, `packages/ui` | route and copy tests | phase-12 | PENDING |
 | 24 | Unit, property, integration, e2e, security and reproducibility tests pass | whole repository | `make verify` | phase-16, phase-17 | PENDING |
@@ -72,8 +72,8 @@ Last updated: Phase 10, 2026-07-25.
 | FR-008 | Contract proposal | `packages/baseline-miner` | `propose.test.ts`, `aggregate.test.ts`, `emit.test.ts`, `mining.signoz.integration.test.ts` | phase-08 — nine rule types proposed from nine evidence bases, every rule carrying its basis and confidence; nothing activated | DONE |
 | FR-009 | Contract schema validation | `packages/contract-schema` | `validate.test.ts`, `yaml.test.ts` — every rejection reason asserted with its exact path and code | phase-07 | DONE |
 | FR-010 | Run evaluation | `packages/contract-engine` | `rules.test.ts`, `evaluate.test.ts`, `evaluate.signoz.integration.test.ts` | phase-07 — both live traces evaluated end to end | DONE |
-| FR-011 | Release evaluation | `packages/contract-engine` | aggregation tests | phase-11 | PENDING |
-| FR-012 | Release gate | `apps/cli` | exit-code tests | phase-11 | PENDING |
+| FR-011 | Release evaluation | `packages/contract-engine/src/release.ts`, `packages/db/src/repositories/gate.ts` | `release.test.ts` — every count and rate against hand-computed rationals, deferred release rules resolved, regression measured with and without a baseline, order independence, repeated aggregation byte-identical | phase-11 — 106 live runs aggregated into one decision; the canary's 2 593.75 % latency regression measured against the mined baseline's own family statistics | DONE |
+| FR-012 | Release gate | `apps/cli`, `apps/api/src/routes/gate.ts`, `packages/contract-engine/src/exit-codes.ts` | `exit-codes.test.ts`, `cli.test.ts`, `gate.integration.test.ts`, `phase-11.signoz.integration.test.ts` | phase-11 — all five exit codes exercised; minimum runs, violation and unknown-route percentages, zero-tolerance rules, latency and token regression, telemetry timeout and the explicit `insufficient_data` code all proven | DONE |
 | FR-013 | SigNoz saved-view compiler | `packages/artifact-compiler` | `compile.test.ts`, `phase-10.signoz.integration.test.ts` | phase-10 — all four PRD views, created and verified. `signoz_update_view` is unusable in the pinned version (SL-057), so replacement is delete-then-create | DONE |
 | FR-014 | SigNoz dashboard compiler | `packages/artifact-compiler` | `compile.test.ts` dashboard suite | phase-10 — one managed dashboard, ten panels with the PRD's exact titles and order | DONE |
 | FR-015 | SigNoz alert compiler | `packages/artifact-compiler` | `compile.test.ts` alert suite, live firing | phase-10 — four alerts; the notification channel is created and its name verified by list before every alert write | DONE |

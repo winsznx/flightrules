@@ -552,3 +552,77 @@ All notable changes to FlightRules are recorded here, one section per phase.
 - Panel 8, "Token usage baseline versus canary", is an honest empty series: the demo agent emits no
   `gen_ai.usage.*` attribute.
 - Logs are still not exported over OTLP.
+
+## Phase 11 — Release evaluation, CLI, and GitHub gate (2026-07-25)
+
+### Added
+
+- `packages/contract-engine/src/release.ts` — the pure, deterministic release aggregation of
+  FR-011 and FR-012. No I/O and no clock read: `nowMs`, the aggregation window, the retrieval state
+  and the contract's lifecycle status all arrive as inputs. Produces evaluated, passed, failed,
+  errored and undecidable run counts; violation, unknown-route, duplicate-side-effect and
+  missing-prerequisite rates as exact fractions; latency, token and retry change from baseline;
+  route-family coverage; typed findings; typed disclosures; and the gate decision.
+- Release-scoped `numeric_budget` and `cardinality` rules, deferred at run scope since Phase 07,
+  are now decided from the samples every run already contributed (PRD section 11.11).
+- `packages/contract-engine/src/exit-codes.ts` — the FR-012 exit-code table, exported from the
+  engine so the API, the CLI, the workflow and the tests all derive the same number from the same
+  decision.
+- `packages/trace-graph/src/measure.ts` — `retryCountOf`, which reads attempt indices from a stored
+  canonical graph rather than adding a field to the evaluator's canonical output.
+- `packages/db/src/repositories/gate.ts` — the gate's reads: the newest completed release-scoped
+  evaluation, its per-run records joined to their trace runs and canonical graphs, and the
+  count-weighted baseline reference built from **approved** route families only.
+- `GET /api/releases/:releaseId/gate` — a read that runs no job and writes no row. Idempotent apart
+  from `retrievedAt`, and identical from a restarted API. Emits `flight_rules.release_gate` and
+  `flight_rules.release_gate.decisions`, both declared since Phase 04 and never previously called.
+- `apps/cli` — the six PRD commands (`config verify`, `contract validate <path>`,
+  `baseline capture`, `release evaluate`, `gate check`, `evidence export`), a `--json` mode that
+  emits exactly one validated document on stdout, progress confined to stderr, and the documented
+  exit codes. The CLI refuses to report a decision when the server's exit code disagrees with its
+  own mapping.
+- `.github/workflows/release-gate.yml` — a clean checkout, the pinned toolchain, the lockfile, a
+  real SigNoz deployment through Foundry, real telemetry, a mined contract, and the gate. The canary
+  step asserts exit code `2` specifically. Evidence and logs upload `if: always()` and cannot change
+  the result.
+- `scripts/seed-demo.sh` and `scripts/seed-demo.mjs` — PRD section 13 named this file and it had
+  never been written. Drives an empty database to an active contract and synced artefacts entirely
+  through the API.
+- `scripts/demo-full.sh` and `make demo-full` — the whole demo in one command, asserting the two
+  exit codes.
+- `make cli`, `make gate`, `make gate-json`, `make evidence`, `make demo-seed`.
+- `docs/adr/0010-release-aggregation-and-exit-codes.md`.
+- `docs/evidence/phase-11/cli-inventory.md`, written before the CLI was implemented.
+
+### Changed
+
+- `make signoz-purge` now also clears the project's artefact register rows and its completed
+  `signoz_sync` jobs. Without that, the documented purge-then-sync recovery could not work: the
+  sync job is idempotent on the contract's content, so a request after a purge returned the previous
+  job's cached conflict result and nothing was ever recreated.
+- The CLI's `field` renderer separates a label longer than its column from its value.
+
+### Fixed
+
+- **The domain redactor destroyed FlightRules' own token measurements.** `/token/i` matched
+  `maxTokenRegressionPercent` and `tokens`, so the live gate returned
+  `"maxTokenRegressionPercent": "[redacted]"` — a security control silently corrupting part of a
+  release decision. "token" is both a credential noun and this product's unit of LLM usage. Fixed
+  with an exact-name allowlist of the measurement keys FlightRules emits, rather than a looser
+  pattern that would also admit `access_tokens`. Tests assert `accessToken`, `refresh_token`,
+  `bearerToken`, `id_token`, `session_token`, `token` and `API_TOKEN` still redact.
+
+### Judgement calls
+
+- Decision precedence is `error > fail > insufficient_data > pass`. A proven zero-tolerance
+  violation in three runs outranks the absence of a twentieth run; reporting "insufficient data"
+  there would downgrade the finding the product exists to surface. The live canary shows both
+  `MIN_RUNS_NOT_MET` and `ZERO_TOLERANCE_VIOLATION`, and decides `fail`.
+- A release-scoped budget that **no** run reports is `not_measured` and disclosed; one that **some**
+  runs report is `insufficient_evidence` and makes the release `insufficient_data`. Neither is a
+  pass.
+- The violation rate is over failing **runs**, not violations, so one run with forty findings cannot
+  outweigh forty runs with one each.
+- `release evaluate` exits `0` for an evaluation that completed, whatever it found. Deciding is
+  `gate check`'s job.
+- Regression is measured against approved route families only, count-weighted by occurrence.

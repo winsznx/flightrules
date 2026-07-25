@@ -6,7 +6,47 @@ export {
 export type { EvaluateRunInput } from "./evaluate.js";
 export { evaluateRun, evaluateRunSafely } from "./evaluate.js";
 export { absentEvidence, describeSelector, evidenceFor, violation } from "./evidence.js";
+export type { ExitCode } from "./exit-codes.js";
+export {
+  EXIT_CODE_DESCRIPTIONS,
+  EXIT_CODES,
+  exitCodeForDecision,
+  exitCodeForError,
+} from "./exit-codes.js";
 export { GraphIndex } from "./graph-index.js";
+export type {
+  AggregateReleaseInput,
+  ChangeMeasure,
+  GateDisclosure,
+  GateDisclosureCode,
+  GateFinding,
+  GateFindingCode,
+  Rate,
+  ReleaseBaselineReference,
+  ReleaseChanges,
+  ReleaseCounts,
+  ReleaseDecision,
+  ReleaseEvaluation,
+  ReleaseEvidence,
+  ReleaseRates,
+  ReleaseRuleOutcome,
+  ReleaseRuleResult,
+  ReleaseRunRecord,
+  RetrievalState,
+} from "./release.js";
+export {
+  aggregateRelease,
+  GATE_DISCLOSURE_CODES,
+  GATE_FINDING_CODES,
+  hashReleaseEvaluation,
+  percentExceeds,
+  percentileOfAscending,
+  RELEASE_DECISIONS,
+  RELEASE_RULE_OUTCOMES,
+  RELEASE_SCHEMA_VERSION,
+  serialiseReleaseEvaluation,
+  toRate,
+} from "./release.js";
 export type {
   EvaluatedRun,
   EvaluationRuntime,

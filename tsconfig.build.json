@@ -41,6 +41,9 @@
       "path": "./apps/worker"
     },
     {
+      "path": "./apps/cli"
+    },
+    {
       "path": "./packages/test-fixtures"
     },
     {

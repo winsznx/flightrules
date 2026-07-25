@@ -1,0 +1,156 @@
+# Phase 11 live state — captured 2026-07-25T22:07:18Z
+
+## Environment
+SigNoz v0.134.0 setupCompleted True
+{"status":"ready","database":"up","schema":{"compatible":true,"applied":["0001","0002","0003","0004"],"missing":[]}}
+
+## Passing gate — refund-agent-v1 (after an API restart)
+PASS: This release stayed within the approved trajectory contract.
+
+Release
+-------
+  release                     refund-agent-v1
+  environment                 local
+  contract                    refund-agent-local 0.1.0 (active)
+  contract hash               42c4e1a39b36010398345c33f6a8f0bb1238c85a6c8498fb162a4b16d6e76514
+  evaluation                  019f9b48-d754-70ab-9cf8-dbe8abd2b4f7
+  evaluator                   1.0.0
+  baseline release            refund-agent-v1
+  decision hash               6d91e3869aa93ff4d20f21fe0c50720d8083f835d9dee0fb88fb3c02bcfef420
+
+Runs
+----
+  evaluated                   106
+  passed                      106
+  failed                      0
+  errored                     0
+  insufficient                0
+  minimum required            20
+
+Rates
+-----
+  violation                   0.000000%  (limit 0.5%)
+  unknown route               0.000000%  (limit 1%)
+  duplicate side effect       0.000000%
+  missing prerequisite        0.000000%
+
+Change from baseline
+--------------------
+  run.duration_ms             0.000000%  (32 -> 32)
+  gen_ai.usage.total_tokens   not measured
+  agent.retry.count           not measured
+
+Violations
+----------
+  total                       0
+  critical                    0
+  zero tolerance              0
+  by severity                 critical 0, high 0, medium 0, low 0
+
+Release-scoped rules
+--------------------
+  budget-release-duration-ms-90268c56 [pass] p95 of run.duration_ms was 32, within 39.
+
+Disclosures
+-----------
+  RETRY_CHANGE_NOT_MEASURED
+    No usable baseline value for agent.retry.count, so its change could not be measured.
+  TOKEN_REGRESSION_NOT_MEASURED
+    No usable baseline value for gen_ai.usage.total_tokens, so its change could not be measured.
+exit code: 0
+
+## Failing gate — refund-agent-v2
+FAIL: This release exceeded one or more trajectory thresholds.
+
+Release
+-------
+  release                     refund-agent-v2
+  environment                 local
+  contract                    refund-agent-local 0.1.0 (active)
+  contract hash               42c4e1a39b36010398345c33f6a8f0bb1238c85a6c8498fb162a4b16d6e76514
+  evaluation                  019f9b50-568f-71ae-9e38-3341d4b738e0
+  evaluator                   1.0.0
+  baseline release            refund-agent-v1
+  decision hash               6e398ff8a320c58f94cd7e45b469a96fbafcc61fad629d7542b1677848a123be
+
+Runs
+----
+  evaluated                   8
+  passed                      0
+  failed                      8
+  errored                     0
+  insufficient                0
+  minimum required            20
+
+Rates
+-----
+  violation                   100.000000%  (limit 0.5%)
+  unknown route               100.000000%  (limit 1%)
+  duplicate side effect       100.000000%
+  missing prerequisite        100.000000%
+
+Change from baseline
+--------------------
+  run.duration_ms             2593.750000%  (32 -> 862)
+  gen_ai.usage.total_tokens   not measured
+  agent.retry.count           not measured
+
+Violations
+----------
+  total                       80
+  critical                    24
+  zero tolerance              24
+  by severity                 critical 24, high 48, medium 8, low 0
+
+Release-scoped rules
+--------------------
+  budget-release-duration-ms-90268c56 [violation] p95 of run.duration_ms was 862, exceeding 39.
+
+Findings
+--------
+  ZERO_TOLERANCE_VIOLATION (fail)
+    24 zero-tolerance violation(s) were observed. A zero-tolerance rule has no permitted rate.
+    expected 0 zero-tolerance violation(s); observed 24 violation(s)
+  VIOLATION_RATE_EXCEEDED (fail)
+    100.000000% of runs violated the contract; the gate permits at most 0.5%.
+    expected at most 0.5%; observed 100.000000% (8 of 8)
+  UNKNOWN_ROUTE_RATE_EXCEEDED (fail)
+    100.000000% of runs followed a route the contract does not approve; the gate permits at most 1%.
+    expected at most 1%; observed 100.000000% (8 of 8)
+  LATENCY_REGRESSION_EXCEEDED (fail)
+    p95 latency moved 2593.750000% against the baseline; the gate permits at most 20%.
+    expected at most 20%; observed 2593.750000% (32 ms to 862 ms)
+  RELEASE_BUDGET_EXCEEDED (fail)
+    Release-wide p95 of run.duration_ms was 862, over the budget of 39.
+    expected at most 39; observed 862
+  MIN_RUNS_NOT_MET (insufficient_data)
+    8 completed run(s) were evaluated; the contract requires at least 20 before a release decision.
+    expected at least 20 run(s); observed 8 run(s)
+
+Disclosures
+-----------
+  RETRY_CHANGE_NOT_MEASURED
+    No usable baseline value for agent.retry.count, so its change could not be measured.
+  TOKEN_REGRESSION_NOT_MEASURED
+    No usable baseline value for gen_ai.usage.total_tokens, so its change could not be measured.
+
+Evidence
+--------
+  failing traces              010b8d74e8ba968c4a8a194679ab7fb7, 2735b2599b9cde94b459481140d9b2de, 74b622b27307b575afe32150f37eb45f, b4c6e6be146a9f03cf9e2e63c2c13e32, b9bff0ced7d10b5a58d8da6d58e369af
+  zero-tolerance rules        require-fraud-check-4dccc488, require-policy-retrieve-98fbf144, single-payment-refund-write-8846bedd
+  violated rules              budget-run-duration-ms-69ef06b5, require-fraud-check-4dccc488, require-payment-refund-a4f9c9ee, require-policy-retrieve-98fbf144, require-refund-calculate-973f0a45, retries-bounded-73060ad7, route-approved-family-5e4bcff6, single-payment-refund-write-8846bedd
+exit code: 2
+
+## Managed SigNoz artefacts
+synced   alert                  FlightRules / demo-commerce / refund-agent / Duplicate Side Effect Alert
+synced   alert                  FlightRules / demo-commerce / refund-agent / No Evaluation Data Alert
+synced   alert                  FlightRules / demo-commerce / refund-agent / Release Evaluation Error Alert
+synced   alert                  FlightRules / demo-commerce / refund-agent / Violation Rate Alert
+synced   dashboard              FlightRules / demo-commerce / refund-agent / Contract Health
+synced   notification_channel   FlightRules / demo-commerce / Notifications
+synced   saved_view             FlightRules / demo-commerce / refund-agent / Duplicate Side Effects
+synced   saved_view             FlightRules / demo-commerce / refund-agent / Release Comparison
+synced   saved_view             FlightRules / demo-commerce / refund-agent / Unknown Routes
+synced   saved_view             FlightRules / demo-commerce / refund-agent / Violating Runs
+
+summary: {"total": 10, "synced": 10, "drifted": 0, "failed": 0, "conflict": 0}

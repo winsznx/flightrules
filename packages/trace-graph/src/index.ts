@@ -24,6 +24,7 @@ export {
   similarity,
   weightedJaccard,
 } from "./features.js";
+export { retryCountOf } from "./measure.js";
 export type {
   TraceEdge,
   TraceGraph,

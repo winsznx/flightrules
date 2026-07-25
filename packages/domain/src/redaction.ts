@@ -38,9 +38,41 @@ const SECRET_KEY_PATTERNS = [
   /signoz[-_]?api[-_]?key/i,
 ];
 
+/**
+ * Keys whose name contains "token" in its *unit-of-LLM-usage* sense rather than its credential
+ * sense, and which therefore carry a number FlightRules must be able to report.
+ *
+ * `/token/i` above is deliberately broad — a key called `refreshToken` must never survive a log
+ * line. But "token" is also the unit this product measures: `maxTokenRegressionPercent` is a gate
+ * threshold and `tokens` is a change measurement, and redacting either destroys part of a release
+ * decision. This was found by running the gate against live data, which returned
+ * `"maxTokenRegressionPercent": "[redacted]"`.
+ *
+ * An exact-name allowlist rather than a cleverer pattern, on purpose. A pattern such as
+ * "token followed by a plural" would also admit `access_tokens`, and the cost of getting a
+ * redaction rule subtly wrong is a leaked credential. Every entry here is a key FlightRules itself
+ * emits, holding an integer or a decimal string; adding one is a deliberate change, and a test
+ * asserts that credential-shaped keys are still redacted.
+ */
+const TOKEN_MEASUREMENT_KEYS: ReadonlySet<string> = new Set([
+  "tokens",
+  "maxTokenRegressionPercent",
+  "inputTokensP95",
+  "outputTokensP95",
+  "inputTokens",
+  "outputTokens",
+  "totalTokens",
+  "tokenPercentile",
+  "tokenMarginPercent",
+  "gen_ai.usage.input_tokens",
+  "gen_ai.usage.output_tokens",
+  "gen_ai.usage.total_tokens",
+]);
+
 export const REDACTED = "[redacted]";
 
 export function isSecretKey(key: string): boolean {
+  if (TOKEN_MEASUREMENT_KEYS.has(key)) return false;
   return SECRET_KEY_PATTERNS.some((pattern) => pattern.test(key));
 }
 
