@@ -189,7 +189,7 @@ steps passed.
 PHASE: 01 Repository foundation and CI
 STATUS: PASS
 BRANCH: phase/01-foundation
-COMMITS: <filled at commit>
+COMMITS: 9e093daa81e36edeac126dfe3d97e4950d43ddd6 (phase), d9052ff3fd1a476c1655e28bcb12c1893dc1af4f (merge to main)
 SOURCES VERIFIED: 4 new source-lock entries (SL-036 to SL-039) covering Biome 2.5.5, secretlint 13.0.4, postgres 3.4.9 and the pnpm built-in licence and audit commands; all versions read from the npm registry and confirmed by installing and running them
 IMPLEMENTED: strict pnpm workspace; TypeScript strict base and project-reference build graph; Biome format and lint with raised rules; Vitest unit/integration project split that fails rather than skips; @flightrules/config environment validation with hosted-mode SSRF control; @flightrules/domain error model, typed envelope and redaction layer; @flightrules/db checksummed migrator, rollback, CLI and foundation schema with a UUIDv7 generator; compose.app.yaml PostgreSQL service; .env.example; Makefile with every required target plus `make verify`; five-job CI workflow; environment verification script; dependency licence checker; conventional commit template; ADR-0005; README
 TESTS RUN: make verify-env; pnpm install --frozen-lockfile; make format-check; make lint; make typecheck; make test; make build; make scan-secrets; make scan-licences; make scan-deps; make up; make db-migrate; make db-status; make db-rollback; make db-migrate; make test-integration; clean-install then git diff --exit-code on pnpm-lock.yaml then build

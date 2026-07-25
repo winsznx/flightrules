@@ -45,3 +45,42 @@ All notable changes to FlightRules are recorded here, one section per phase.
   `signoz_execute_builder_query` with `selectFields` can.
 - All `gen_ai.*` semantic conventions are experimental; `vcs.commit.sha` is not a released
   attribute name.
+
+## Phase 01 — Repository foundation and CI (2026-07-25)
+
+### Added
+
+- Strict pnpm workspace pinned to Node 24.14.1, pnpm 10.33.0 and TypeScript 7.0.2, with exact
+  version specifiers throughout and one canonical lockfile.
+- `tsconfig.base.json` with `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`,
+  `verbatimModuleSyntax` and `erasableSyntaxOnly`, and a project-reference build graph.
+- Biome formatting and linting with `noExplicitAny`, `noConsole`, `noNonNullAssertion` and
+  unused-code rules raised to error.
+- Vitest split into `unit` and `integration` projects; the integration project fails rather than
+  skips when a required service is absent.
+- `@flightrules/config` — environment validation reporting every invalid variable at once, with a
+  hosted-mode control that rejects loopback, link-local and private SigNoz addresses.
+- `@flightrules/domain` — the complete PRD error-code set with a typed envelope, plus a redaction
+  layer covering secret-key patterns, registered secret values, cyclic structures and the
+  forbidden telemetry key list.
+- `@flightrules/db` — checksummed SQL migrator with rollback, a CLI, and the foundation schema
+  (`signoz_connections`, `projects`, `audit_events`) with a PL/pgSQL UUIDv7 generator.
+- `compose.app.yaml` PostgreSQL 16 service on host port 5433, health-gated.
+- `Makefile` with every PRD-required target plus `make verify`.
+- `.env.example`, `scripts/verify-environment.sh`, `scripts/check-licences.mjs`, `.gitmessage`.
+- Five-job CI workflow: static checks, unit tests, database integration against real PostgreSQL,
+  security scanning, and a clean-install job that asserts installing does not modify the lockfile.
+- ADR-0005 recording the tooling selections the PRD left open.
+- README leading with the unsafe route that output evaluation misses.
+
+### Verified
+
+- 65 tests pass (57 unit, 8 integration); nothing skipped.
+- Migrations apply from empty, re-apply idempotently, roll back, and re-apply against real
+  PostgreSQL 16.
+- A clean install from the committed lockfile leaves the lockfile unmodified and builds.
+
+### Discovered
+
+- The secret scanner and the licence checker each failed the build on a real finding before
+  passing, which is what makes them controls rather than decoration.
