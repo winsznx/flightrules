@@ -401,52 +401,6 @@ export function registerCoreRoutes(
     },
   );
 
-  registry.add(
-    server,
-    {
-      method: "GET",
-      url: "/api/setup/signoz/artifacts",
-      summary: "The managed SigNoz artefact register. Compilation itself is Phase 10.",
-      tag: "setup",
-      query: z.object({ projectId: z.string() }),
-      response: z.object({
-        items: z.array(
-          z.object({
-            id: z.string(),
-            artifactType: z.string(),
-            managedName: z.string(),
-            signozResourceId: z.string().nullable(),
-            signozWebUrl: z.string().nullable(),
-            specHash: z.string(),
-            status: z.string(),
-            lastSyncedAt: IsoDate.nullable(),
-            lastVerifiedAt: IsoDate.nullable(),
-          }),
-        ),
-      }),
-      errors: [],
-    },
-    async ({ query }) => {
-      const projectId = requireUuid(query.projectId, "project");
-      const project = await findProject(sql, projectId);
-      if (!project) throw notFound("project", projectId);
-      const artifacts = await listArtifacts(sql, projectId);
-      return {
-        items: artifacts.map((artifact) => ({
-          id: artifact.id,
-          artifactType: artifact.artifactType,
-          managedName: artifact.managedName,
-          signozResourceId: artifact.signozResourceId,
-          signozWebUrl: artifact.signozWebUrl,
-          specHash: artifact.specHash,
-          status: artifact.status,
-          lastSyncedAt: iso(artifact.lastSyncedAt),
-          lastVerifiedAt: iso(artifact.lastVerifiedAt),
-        })),
-      };
-    },
-  );
-
   // -------------------------------------------------------------------------
   // 15.3 Projects (FR-001)
   // -------------------------------------------------------------------------

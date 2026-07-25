@@ -485,3 +485,70 @@ All notable changes to FlightRules are recorded here, one section per phase.
 - `forbidden_span` and `forbidden_path` are never proposed. Neither can be derived from observation:
   naming a data domain the agent never touched would be an invention rather than a finding.
 - A retried side effect's allowance is never widened by a safety margin, whatever the margin is set to.
+
+## Phase 10 — SigNoz artifact compiler (2026-07-25)
+
+### Added
+
+- `packages/artifact-compiler` — the deterministic compiler. `names.ts` builds PRD section 16.8's
+  managed names and rejects a segment that could forge or split one; `queries.ts` holds the typed
+  field references and filter expressions; `views.ts`, `dashboard.ts`, `alerts.ts` and
+  `channels.ts` build FR-013's four saved views, FR-014's ten-panel dashboard and FR-015's four
+  alerts plus the notification channel; `compile.ts` produces the ordered artefact set with a
+  `spec_hash` each and a plan hash over all of them; `plan.ts` decides create, update, unchanged,
+  recreate, conflict and stale; `verify.ts` compares a read-back against the intended specification
+  and reduces the verdict to something safe to persist.
+- `apps/worker/src/artifact-sync.ts` — the MCP conversation. Lists before writing, writes, reads
+  back by identifier, compares the material fields, and records the verdict. Contains no algorithm.
+- The `signoz_sync` job handler, emitting `flight_rules.compile_signoz_artifacts` and
+  `flight_rules.signoz_artifact_sync`.
+- `POST /api/contracts/:contractId/sync-signoz` and `POST /api/setup/signoz/sync-artifacts`, the two
+  routes deferred from Phase 09. `GET /api/setup/signoz/artifacts` now returns the verification
+  verdict, the operation performed, the drift state and a summary.
+- Migration `0004`: `signoz_sync` as a job type, `conflict` as an artefact status, and
+  `contract_id`, `last_operation`, `sync_attempt`, `verification_json` and `last_error_json` on
+  `signoz_artifacts`.
+- `packages/signoz-mcp`: update, delete and notification-channel operations, a create-channel
+  reader that captures the server's own delivery test, and a permissive delete reader.
+- ADR-0009 — SigNoz artifact compilation, ownership and verification.
+- Source-lock entries SL-053 … SL-059.
+
+### Fixed
+
+- **No FlightRules metric had ever reached SigNoz.** `bootstrapFromEnv` never opened a metric
+  pipeline, so both applications ran with the API's no-op meter and every `flight_rules.*`
+  recording was silently discarded (SL-053). Six FR-014 panels and all four FR-015 alerts depended
+  on those metrics.
+- **`flight_rules.duplicate_side_effects` was declared and never recorded.** A deterministic
+  classifier now lives in `packages/contract-engine`: an over-cardinality violation against a rule
+  whose selector pins it to a write or an external call.
+- **PRD section 17.3's evaluator spans were declared and never created.** The worker now emits
+  `flight_rules.evaluate_release` and `flight_rules.evaluate_run`.
+- The acceptance matrix's Phase 09 claims about exported metrics and duplicate-side-effect
+  recording were false. Corrected, and now true.
+
+### Verified
+
+- 961 unit tests and 209 integration tests pass; 1,170 total, 0 failed, 0 skipped.
+- A contract activation produced ten managed SigNoz resources through MCP, each read back and
+  field-compared. A second identical sync created none and updated none.
+- A resource deleted by hand is recreated; one replaced by hand is adopted and restored; one of a
+  managed name FlightRules does not own returns a conflict and is left untouched; a superseded
+  artefact is reported stale rather than deleted.
+- A real canary evaluation — 14 runs, 140 violations, 42 zero-tolerance — drove the
+  `Violation Rate Alert` and the `Duplicate Side Effect Alert` to `firing` within two evaluation
+  cycles. Alert history records the transition.
+- The four saved views return real evaluated canary runs with typed values, not nulls.
+
+### Known limitations
+
+- `signoz_update_view` corrupts stored data and breaks the tenant's whole view list in the pinned
+  version (SL-057). Saved views are replaced by delete-then-create; the defect is recorded, not
+  worked around silently.
+- Alert **recovery** is not yet evidenced: the canary keeps violating, so the rate alert has not
+  crossed back below its recovery target.
+- Notification **delivery** is not verified. The default destination is a local webhook nothing is
+  listening on, and SigNoz's own test notification failure is recorded rather than hidden.
+- Panel 8, "Token usage baseline versus canary", is an honest empty series: the demo agent emits no
+  `gen_ai.usage.*` attribute.
+- Logs are still not exported over OTLP.

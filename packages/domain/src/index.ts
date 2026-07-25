@@ -1,3 +1,5 @@
+export type { JsonValue } from "./canonical.js";
+export { canonicalHash, canonicalise, canonicalJson, canonicalObject } from "./canonical.js";
 export type { ErrorCode, ErrorEnvelope, FlightRulesErrorOptions } from "./errors.js";
 export {
   defaultMessageFor,
@@ -32,6 +34,8 @@ export {
   isCausalEdgeType,
   isSideEffect,
   SEVERITIES,
+  SIDE_EFFECT_ATTRIBUTE,
+  SIDE_EFFECTING_VALUES,
   SIDE_EFFECTS,
   severityRank,
   TRACE_QUALITY,

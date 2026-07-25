@@ -9,6 +9,17 @@
 export const SIDE_EFFECTS = ["none", "read", "write", "external", "unknown"] as const;
 export type SideEffect = (typeof SIDE_EFFECTS)[number];
 
+/** The attribute a contract rule selects on to pin itself to a side-effecting step. */
+export const SIDE_EFFECT_ATTRIBUTE = "agent.side_effect";
+
+/**
+ * The classifications that change the world outside the agent.
+ *
+ * `read` does not: repeating it is wasteful, not unsafe. A duplicate side effect is only a product
+ * finding for these two.
+ */
+export const SIDE_EFFECTING_VALUES: readonly SideEffect[] = ["write", "external"];
+
 const SIDE_EFFECT_SET: ReadonlySet<string> = new Set(SIDE_EFFECTS);
 
 export function isSideEffect(value: unknown): value is SideEffect {

@@ -41,6 +41,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@flightrules/artifact-compiler':
+        specifier: workspace:*
+        version: link:../../packages/artifact-compiler
       '@flightrules/baseline-miner':
         specifier: workspace:*
         version: link:../../packages/baseline-miner
@@ -188,6 +191,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@flightrules/artifact-compiler':
+        specifier: workspace:*
+        version: link:../../packages/artifact-compiler
       '@flightrules/baseline-miner':
         specifier: workspace:*
         version: link:../../packages/baseline-miner
@@ -221,6 +227,18 @@ importers:
       zod:
         specifier: 4.4.3
         version: 4.4.3
+
+  packages/artifact-compiler:
+    dependencies:
+      '@flightrules/contract-schema':
+        specifier: workspace:*
+        version: link:../contract-schema
+      '@flightrules/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@flightrules/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
 
   packages/baseline-miner:
     dependencies:
@@ -401,6 +419,9 @@ importers:
       '@flightrules/api':
         specifier: workspace:*
         version: link:../../apps/api
+      '@flightrules/artifact-compiler':
+        specifier: workspace:*
+        version: link:../artifact-compiler
       '@flightrules/contract-schema':
         specifier: workspace:*
         version: link:../contract-schema

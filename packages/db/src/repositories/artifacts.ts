@@ -15,8 +15,26 @@ import type { Db } from "../sql.js";
 export const ARTIFACT_TYPES = ["saved_view", "dashboard", "alert", "notification_channel"] as const;
 export type ArtifactType = (typeof ARTIFACT_TYPES)[number];
 
-export const ARTIFACT_STATUSES = ["pending", "synced", "drifted", "failed", "deleted"] as const;
+export const ARTIFACT_STATUSES = [
+  "pending",
+  "synced",
+  "drifted",
+  "failed",
+  "deleted",
+  "conflict",
+] as const;
 export type ArtifactStatus = (typeof ARTIFACT_STATUSES)[number];
+
+/** What the last sync actually did to the remote resource (migration 0004). */
+export const ARTIFACT_OPERATIONS = [
+  "created",
+  "updated",
+  "unchanged",
+  "conflict",
+  "failed",
+  "stale",
+] as const;
+export type ArtifactOperation = (typeof ARTIFACT_OPERATIONS)[number];
 
 interface ArtifactRow {
   readonly id: string;
@@ -31,6 +49,11 @@ interface ArtifactRow {
   readonly last_verified_at: Date | null;
   readonly status: ArtifactStatus;
   readonly remote_snapshot_json: unknown;
+  readonly contract_id: string | null;
+  readonly last_operation: ArtifactOperation | null;
+  readonly sync_attempt: number;
+  readonly verification_json: unknown;
+  readonly last_error_json: unknown;
   readonly created_at: Date;
   readonly updated_at: Date;
 }
@@ -48,6 +71,11 @@ export interface StoredArtifact {
   readonly lastVerifiedAt: Date | null;
   readonly status: ArtifactStatus;
   readonly remoteSnapshot: unknown;
+  readonly contractId: string | null;
+  readonly lastOperation: ArtifactOperation | null;
+  readonly syncAttempt: number;
+  readonly verification: unknown;
+  readonly lastError: unknown;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -65,6 +93,11 @@ const ARTIFACT_COLUMNS = [
   "last_verified_at",
   "status",
   "remote_snapshot_json",
+  "contract_id",
+  "last_operation",
+  "sync_attempt",
+  "verification_json",
+  "last_error_json",
   "created_at",
   "updated_at",
 ] as const;
@@ -83,6 +116,11 @@ function toStoredArtifact(row: ArtifactRow): StoredArtifact {
     lastVerifiedAt: row.last_verified_at,
     status: row.status,
     remoteSnapshot: row.remote_snapshot_json,
+    contractId: row.contract_id,
+    lastOperation: row.last_operation,
+    syncAttempt: row.sync_attempt,
+    verification: row.verification_json,
+    lastError: row.last_error_json,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -100,18 +138,35 @@ export interface UpsertArtifactInput {
   readonly lastSyncedAt: Date | null;
   readonly lastVerifiedAt: Date | null;
   readonly remoteSnapshot: unknown;
+  readonly contractId?: string | null;
+  readonly lastOperation?: ArtifactOperation | null;
+  /**
+   * The attempt number this write represents. Passed in rather than incremented in SQL so a
+   * retried sync that reruns the same attempt does not inflate the counter.
+   */
+  readonly syncAttempt?: number;
+  readonly verification?: unknown;
+  readonly lastError?: unknown;
 }
 
 export async function upsertArtifact(sql: Db, input: UpsertArtifactInput): Promise<StoredArtifact> {
   const rows = await sql<ArtifactRow[]>`
     insert into signoz_artifacts (
       project_id, agent_id, artifact_type, managed_name, signoz_resource_id, signoz_web_url,
-      spec_hash, status, last_synced_at, last_verified_at, remote_snapshot_json
+      spec_hash, status, last_synced_at, last_verified_at, remote_snapshot_json,
+      contract_id, last_operation, sync_attempt, verification_json, last_error_json
     ) values (
       ${input.projectId}, ${input.agentId}, ${input.artifactType}, ${input.managedName},
       ${input.signozResourceId}, ${input.signozWebUrl}, ${input.specHash}, ${input.status},
       ${input.lastSyncedAt}, ${input.lastVerifiedAt},
-      ${sql.json(canonicalObject(input.remoteSnapshot))}::jsonb
+      ${sql.json(canonicalObject(input.remoteSnapshot))}::jsonb,
+      ${input.contractId ?? null}, ${input.lastOperation ?? null}, ${input.syncAttempt ?? 0},
+      ${sql.json(canonicalObject(input.verification ?? {}))}::jsonb,
+      ${
+        input.lastError === undefined || input.lastError === null
+          ? null
+          : sql.json(canonicalObject(input.lastError))
+      }
     )
     on conflict (project_id, managed_name) do update set
       agent_id = excluded.agent_id,
@@ -122,7 +177,12 @@ export async function upsertArtifact(sql: Db, input: UpsertArtifactInput): Promi
       status = excluded.status,
       last_synced_at = coalesce(excluded.last_synced_at, signoz_artifacts.last_synced_at),
       last_verified_at = coalesce(excluded.last_verified_at, signoz_artifacts.last_verified_at),
-      remote_snapshot_json = excluded.remote_snapshot_json
+      remote_snapshot_json = excluded.remote_snapshot_json,
+      contract_id = coalesce(excluded.contract_id, signoz_artifacts.contract_id),
+      last_operation = excluded.last_operation,
+      sync_attempt = excluded.sync_attempt,
+      verification_json = excluded.verification_json,
+      last_error_json = excluded.last_error_json
     returning ${sql(ARTIFACT_COLUMNS)}`;
   const row = rows[0];
   if (!row) throw new Error("signoz_artifacts returned no row");

@@ -118,6 +118,46 @@ export const createdResourceSchema = z.object({
   ]),
 });
 
+/**
+ * `signoz_create_notification_channel` does not use the create envelope.
+ *
+ * It returns `{channel: {status, data: {...}}, test_notification: {...}}`, because the server
+ * **sends a real test notification** as part of creation and reports whether the destination
+ * accepted it. That is a genuine delivery signal and FlightRules records it verbatim rather than
+ * assuming a created channel delivers (Phase 10 evidence, SL-055).
+ */
+export const createdChannelSchema = z.object({
+  channel: z.object({
+    status: z.string().optional(),
+    data: z.object({ id: z.string() }).catchall(z.unknown()),
+  }),
+  test_notification: z
+    .object({
+      success: z.boolean().optional(),
+      message: z.string().optional(),
+      error: z.string().optional(),
+    })
+    .optional(),
+});
+
+export type CreatedChannelPayload = z.infer<typeof createdChannelSchema>;
+
+/**
+ * Delete responses are not uniform on the pinned server (SL-058).
+ *
+ * `signoz_delete_view` returns `{"status":"success"}` with no `data` at all,
+ * `signoz_delete_notification_channel` returns `{"status":"success","id":"…"}`, and
+ * `signoz_delete_dashboard` returns the plain sentence `dashboard deleted`. Validating a delete
+ * against the single-resource envelope therefore fails a delete that in fact succeeded, which is
+ * how a view *replacement* came to be reported as a create failure. The schema accepts whatever
+ * shape arrives; what matters is that the call did not error.
+ */
+export const deletedResourceSchema = z
+  .object({ status: z.string().optional(), id: z.string().optional() })
+  .catchall(z.unknown());
+
+export type DeletedResourcePayload = z.infer<typeof deletedResourceSchema>;
+
 /** A get-by-id call returns the resource itself under `data`. */
 export const singleResourceSchema = z.object({
   data: z.record(z.string(), z.unknown()),

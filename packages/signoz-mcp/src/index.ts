@@ -37,7 +37,10 @@ export type { ExtractionResult, PayloadCandidate } from "./parse.js";
 export { extractPayloads, stripCodeFence } from "./parse.js";
 export {
   builderQueryReader,
+  channelDeliveryOf,
+  createdChannelReader,
   createdResourceReader,
+  deletedResourceReader,
   fieldKeysReader,
   fieldNamesOf,
   fieldValuesOf,
@@ -51,6 +54,8 @@ export {
 export type {
   BuilderQueryPayload,
   BuilderRow,
+  CreatedChannelPayload,
+  DeletedResourcePayload,
   FieldKeysPayload,
   FieldValuesPayload,
   ListPayload,
@@ -60,7 +65,9 @@ export type {
 export {
   builderQueryPayloadSchema,
   builderRowSchema,
+  createdChannelSchema,
   createdResourceSchema,
+  deletedResourceSchema,
   errorEnvelopeSchema,
   fieldKeyDescriptorSchema,
   fieldKeysPayloadSchema,

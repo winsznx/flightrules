@@ -16,9 +16,23 @@ export interface WorkerConfig {
   readonly nodeEnv: "development" | "test" | "production";
   readonly databaseUrl: string;
   readonly databasePoolSize: number;
+  readonly signozUrl: string;
   readonly signozMcpUrl: string;
   readonly signozApiKey: string;
   readonly mcpRequestTimeoutMs: number;
+  /**
+   * Where SigNoz posts a fired alert (Phase 10, FR-015).
+   *
+   * The default points at a local sink that does not exist. That is deliberate: SigNoz sends a
+   * real test notification when the channel is created, so the default configuration produces a
+   * recorded delivery *failure* rather than a silent assumption of success. FlightRules never
+   * reports delivery as verified unless the server's own test said so. Set this to a routable
+   * destination to make delivery real. Alert *firing* is proven from alert history and does not
+   * depend on the destination at all.
+   */
+  readonly alertWebhookUrl: string;
+  /** Violations in one evaluation window above which the managed rate alert fires. */
+  readonly violationAlertThreshold: number;
   readonly maxTracesPerEvaluation: number;
   readonly maxSpansPerTrace: number;
   readonly demoMode: boolean;
@@ -95,9 +109,19 @@ export function loadWorkerConfig(
       min: 1,
       max: 100,
     }),
+    signozUrl: env.SIGNOZ_URL,
     signozMcpUrl: env.SIGNOZ_MCP_URL,
     signozApiKey: env.SIGNOZ_API_KEY,
     mcpRequestTimeoutMs: env.MCP_REQUEST_TIMEOUT_MS,
+    alertWebhookUrl:
+      source["FLIGHTRULES_ALERT_WEBHOOK_URL"] ??
+      "http://host.docker.internal:4000/internal/alert-sink",
+    violationAlertThreshold: boundedInteger(
+      source["FLIGHTRULES_VIOLATION_ALERT_THRESHOLD"],
+      0,
+      "FLIGHTRULES_VIOLATION_ALERT_THRESHOLD",
+      { min: 0, max: 1_000_000 },
+    ),
     maxTracesPerEvaluation: env.MAX_TRACES_PER_EVALUATION,
     maxSpansPerTrace: env.MAX_SPANS_PER_TRACE,
     demoMode: env.DEMO_MODE,

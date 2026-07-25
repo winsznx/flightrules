@@ -6,7 +6,7 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 09, 2026-07-25.
+Last updated: Phase 10, 2026-07-25.
 
 ## Critical final assertions (PRD section 23)
 
@@ -21,9 +21,9 @@ Last updated: Phase 09, 2026-07-25.
 | A7 | The active contract passes v1 | `packages/contract-engine` | `packages/contract-engine/src/evaluate.test.ts`, `evaluate.signoz.integration.test.ts` | `docs/evidence/phase-07-result.md` — the committed contract evaluated against a live v1 trace: pass, 13 rules passed, 2 deferred, 0 violations | DONE |
 | A8 | The active contract fails v2 | `packages/contract-engine` | `packages/contract-engine/src/evaluate.test.ts`, `evaluate.signoz.integration.test.ts` | `docs/evidence/phase-07-result.md` — live v2 trace: fail, 6 violations, 3 critical and zero-tolerance, naming the missing fraud check, the missing policy check and the duplicate refund | DONE |
 | A9 | The failure links to real SigNoz trace evidence | `packages/domain`, `apps/web` violation inspector | evidence linking test | `docs/evidence/phase-15-result.md` | PENDING |
-| A10 | FlightRules creates and verifies a real SigNoz dashboard | `packages/artifact-compiler` | dashboard create + read-back test | `docs/evidence/phase-10-result.md` | PENDING |
-| A11 | FlightRules creates and verifies real SigNoz views | `packages/artifact-compiler` | view create + read-back test | `docs/evidence/phase-10-result.md` | PENDING |
-| A12 | FlightRules creates an alert that fires from the v2 violation | `packages/artifact-compiler` | alert firing test via alert history | `docs/evidence/phase-10-result.md` | PENDING |
+| A10 | FlightRules creates and verifies a real SigNoz dashboard | `packages/artifact-compiler`, `apps/worker/src/artifact-sync.ts` | `compile.test.ts` dashboard suite, `phase-10.signoz.integration.test.ts` create + read-back | `docs/evidence/phase-10-result.md` — `Contract Health` created through MCP, read back, its ten PRD panel titles field-compared | DONE |
+| A11 | FlightRules creates and verifies real SigNoz views | `packages/artifact-compiler` | `compile.test.ts` view suite, `phase-10.signoz.integration.test.ts` | `docs/evidence/phase-10-result.md` — FR-013's four views created, read back, field-compared, and returning real evaluated canary runs | DONE |
+| A12 | FlightRules creates an alert that fires from the v2 violation | `packages/artifact-compiler`, `apps/worker` | `compile.test.ts` alert suite, `phase-10.signoz.integration.test.ts` | `docs/evidence/phase-10-result.md` — a 140-violation canary evaluation drove `Violation Rate Alert` and `Duplicate Side Effect Alert` to `firing`; alert history records the transition at value 80 | DONE |
 | A13 | The CLI gate returns exit code 2 for v2 | `apps/cli` | gate exit-code tests | `docs/evidence/phase-11-result.md` | PENDING |
 | A14 | No raw prompts or chain-of-thought are required | `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` forbidden-attribute redactor tests | `docs/evidence/phase-04-result.md` — both traces evaluated end to end with no prompt or reasoning attribute present | DONE |
 | A15 | A clean clone can reproduce the system | `scripts/*`, `README.md` | `scripts/verify-reproducibility.sh` | `docs/evidence/phase-17-result.md` | PENDING |
@@ -37,7 +37,7 @@ Last updated: Phase 09, 2026-07-25.
 | 3 | SigNoz MCP Server enabled and reachable | `casting.yaml` `spec.mcp` | `packages/test-fixtures/src/signoz.signoz.integration.test.ts` | phase-02 | DONE |
 | 4 | Claude Code can connect to the SigNoz MCP Server | `docs/RUNBOOK.md` section 3 | documented manual step; the same endpoint, transport and header are exercised by the SDK integration tests | phase-02 | DONE |
 | 5 | FlightRules backend connects using an official MCP client | `packages/signoz-mcp` | `packages/signoz-mcp/src/mcp-client.signoz.integration.test.ts` | phase-05 — 21 integration tests against the pinned v0.9.0 server | DONE |
-| 6 | Instrumented refund-agent demo emits traces, metrics and logs | `apps/demo-*`, `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts`, `packages/telemetry/src/instruments.ts` | phase-04 traces; phase-09 — a meter provider and OTLP metric exporter emit the declared instruments, and both applications write structured JSON logs carrying request, job and evaluation identifiers | DONE |
+| 6 | Instrumented refund-agent demo emits traces, metrics and logs | `apps/demo-*`, `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts`, `packages/telemetry/src/instruments.ts` | phase-04 traces; phase-10 — fifteen `flight_rules.*` metric series confirmed present in SigNoz by `signoz_list_metrics` after a real worker evaluation. Both applications write structured JSON logs to stdout; **logs are not yet exported over OTLP** | IN PROGRESS |
 | 7 | Baseline and canary releases distinguishable via attributes | `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` | phase-04 — `agent.release.id` retrieved as `refund-agent-v1` and `refund-agent-v2` from the two live traces | DONE |
 | 8 | Complete trace trees fetched and reconstructed | `packages/trace-graph` | `packages/trace-graph/src/graph.test.ts` | phase-06 — 12-span and 8-span traces reconstructed from live SigNoz | DONE |
 | 9 | Trace nodes deduplicated by span ID | `packages/trace-graph` | duplicate, conflicting-duplicate and completeness tests | phase-06 | DONE |
@@ -46,10 +46,10 @@ Last updated: Phase 09, 2026-07-25.
 | 12 | Versioned YAML contract proposed, reviewed, validated, stored, evaluated | `packages/baseline-miner`, `packages/contract-schema`, `packages/contract-engine`, `packages/db`, `apps/api` | `propose.test.ts`, `emit.test.ts`, `decisions.test.ts`, `validate.test.ts`, `lifecycle.integration.test.ts`, `api.integration.test.ts` | phase-09 — a 28-rule draft proposed from 76 live runs through the job system, stored with every rule's evidence basis, approved and activated through the API, and evaluated against both releases | DONE |
 | 13 | All P0 rule types work | `packages/contract-engine` | `packages/contract-engine/src/rules.test.ts` — all eleven types with passing, violating and empty-evidence cases; a test asserts the fixture set covers `RULE_TYPES` exactly | phase-07 | DONE |
 | 14 | Deterministic pass/fail decisions and typed violations | `packages/contract-engine` | `evaluate.test.ts` — byte-equality across repeated runs, span order, attribute order, rule order and contract key order, plus seven 300-run properties | phase-07 | DONE |
-| 15 | Evaluation telemetry emitted back to SigNoz | `packages/telemetry`, `apps/worker` | `packages/telemetry/src/telemetry.test.ts`, `apps/worker/src/handlers.ts` | phase-09 — the worker records evaluation, violation, unknown-route, duplicate-side-effect and similarity metrics through the typed instrument surface, exported over OTLP | DONE |
-| 16 | SigNoz dashboard created through MCP with real data | `packages/artifact-compiler` | dashboard data test | phase-10 | PENDING |
-| 17 | At least one saved SigNoz trace view created through MCP | `packages/signoz-mcp` verify helper, `packages/artifact-compiler` | create-read-verify integration test | phase-05 (view created, read back, field-compared, deleted), phase-10 | IN PROGRESS |
-| 18 | At least one SigNoz alert created through MCP and proven to fire | `packages/artifact-compiler` | alert firing test | phase-10 | PENDING |
+| 15 | Evaluation telemetry emitted back to SigNoz | `packages/telemetry`, `apps/worker` | `packages/telemetry/src/telemetry.test.ts`, `packages/contract-engine/src/side-effects.test.ts` | phase-10 — **corrected**: the Phase 09 claim was false, because no meter provider existed (SL-053) and duplicate side effects were never recorded. Both fixed and verified live: `signoz_list_metrics` returns fifteen `flight_rules.*` series and three managed alerts fire from them | DONE |
+| 16 | SigNoz dashboard created through MCP with real data | `packages/artifact-compiler` | `compile.test.ts`, `phase-10.signoz.integration.test.ts` | phase-10 — ten panels; six read fifteen live `flight_rules.*` metric series, three read the agent's own traces, one lists live violating runs. Panel 8 is an honest empty series because the demo emits no token attribute | DONE |
+| 17 | At least one saved SigNoz trace view created through MCP | `packages/artifact-compiler`, `apps/worker/src/artifact-sync.ts` | `phase-10.signoz.integration.test.ts` | phase-10 — four views created, read back, field-compared, idempotent on re-sync, recreated after a manual delete, restored after a manual replacement | DONE |
+| 18 | At least one SigNoz alert created through MCP and proven to fire | `packages/artifact-compiler` | `phase-10.signoz.integration.test.ts`, alert-history capture | phase-10 — four alerts created and verified; three firing on real canary data. Recovery is not yet evidenced (phase-10 limitation 2) | DONE |
 | 19 | Release comparison shows baseline versus canary topology diff | `packages/trace-graph`, `apps/web` | diff tests | phase-14 | PENDING |
 | 20 | Violation inspector links to the original SigNoz trace | `apps/web` | inspector route tests | phase-15 | PENDING |
 | 21 | CLI or GitHub Action gate exits non-zero when thresholds fail | `apps/cli`, `.github/workflows/release-gate.yml` | exit-code tests | phase-11 | PENDING |
@@ -74,10 +74,10 @@ Last updated: Phase 09, 2026-07-25.
 | FR-010 | Run evaluation | `packages/contract-engine` | `rules.test.ts`, `evaluate.test.ts`, `evaluate.signoz.integration.test.ts` | phase-07 — both live traces evaluated end to end | DONE |
 | FR-011 | Release evaluation | `packages/contract-engine` | aggregation tests | phase-11 | PENDING |
 | FR-012 | Release gate | `apps/cli` | exit-code tests | phase-11 | PENDING |
-| FR-013 | SigNoz saved-view compiler | `packages/artifact-compiler` | view read-back tests | phase-10 | PENDING |
-| FR-014 | SigNoz dashboard compiler | `packages/artifact-compiler` | dashboard tests | phase-10 | PENDING |
-| FR-015 | SigNoz alert compiler | `packages/artifact-compiler` | alert tests | phase-10 | PENDING |
-| FR-016 | Violation telemetry | `packages/telemetry`, `apps/worker` | `telemetry.test.ts`, live evaluation | phase-09 | DONE |
+| FR-013 | SigNoz saved-view compiler | `packages/artifact-compiler` | `compile.test.ts`, `phase-10.signoz.integration.test.ts` | phase-10 — all four PRD views, created and verified. `signoz_update_view` is unusable in the pinned version (SL-057), so replacement is delete-then-create | DONE |
+| FR-014 | SigNoz dashboard compiler | `packages/artifact-compiler` | `compile.test.ts` dashboard suite | phase-10 — one managed dashboard, ten panels with the PRD's exact titles and order | DONE |
+| FR-015 | SigNoz alert compiler | `packages/artifact-compiler` | `compile.test.ts` alert suite, live firing | phase-10 — four alerts; the notification channel is created and its name verified by list before every alert write | DONE |
+| FR-016 | Violation telemetry | `packages/telemetry`, `apps/worker` | `telemetry.test.ts`, `side-effects.test.ts`, live evaluation | phase-10 — **corrected**: Phase 09 recorded metrics into a no-op meter and never exported one (SL-053), and never recorded duplicate side effects at all. Both fixed; fifteen `flight_rules.*` metrics and the PRD section 17.3 evaluator spans are now in SigNoz. Logs are still not exported over OTLP | DONE |
 | FR-017 | Evidence linking | `packages/db`, `apps/api` | `api.integration.test.ts`, live `GET /api/violations/:id/evidence` | phase-09 | DONE |
 | FR-018 | Contract lifecycle | `apps/api`, `packages/db` | `lifecycle.integration.test.ts`, `api.integration.test.ts` — every transition, every refusal, one active per agent and environment enforced by a partial unique index | phase-09 | DONE |
 | FR-019 | Audit history | `apps/api`, `packages/db` | `api.integration.test.ts`, `lifecycle.integration.test.ts` — an audit row per lifecycle event, written by the transaction that made the change | phase-09 | DONE |

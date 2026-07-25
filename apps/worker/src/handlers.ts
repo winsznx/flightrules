@@ -10,7 +10,13 @@ import {
   resolveSelection,
   signozTraceSource,
 } from "@flightrules/baseline-miner";
-import { type ApprovedRoute, EVALUATOR_VERSION, evaluateRun } from "@flightrules/contract-engine";
+import {
+  type ApprovedRoute,
+  countDuplicateSideEffects,
+  EVALUATOR_VERSION,
+  evaluateRun,
+  sideEffectingRuleIds,
+} from "@flightrules/contract-engine";
 import { canonicalContract, parseContract } from "@flightrules/contract-schema";
 import type { JobType } from "@flightrules/db";
 import {
@@ -30,18 +36,32 @@ import {
   persistBaseline,
   persistRunEvaluation,
   recordAudit,
+  SignozSyncInputSchema,
   startEvaluation,
   upsertTraceGraph,
   upsertTraceRun,
 } from "@flightrules/db";
 import { FlightRulesError } from "@flightrules/domain";
-import type { FlightRulesMetrics } from "@flightrules/telemetry";
+import {
+  AGENT,
+  FLIGHT_RULES,
+  type FlightRulesMetrics,
+  recordFlightRulesSpan,
+  SPAN_NAMES,
+  withFlightRulesSpan,
+} from "@flightrules/telemetry";
 import {
   buildTraceGraph,
   canonicaliseGraph,
   featuresOfGraph,
   type TraceGraph,
 } from "@flightrules/trace-graph";
+import {
+  ArtifactSynchroniser,
+  persistArtifactWrites,
+  readRegisteredArtifacts,
+  synchroniseArtifacts,
+} from "./artifact-sync.js";
 import type { CommitFn, JobContext, JobHandler } from "./runner.js";
 import { CancelledError, TerminalJobError } from "./runner.js";
 import { type SignozFactory, WORKER_OPERATION_CONTEXT } from "./signoz.js";
@@ -600,6 +620,8 @@ function evaluationHandler(dependencies: HandlerDependencies): JobHandler {
       releaseKey: input.releaseKey,
       scope: input.scope,
     };
+    // Computed once for the whole release: which rules pin themselves to a side-effecting step.
+    const sideEffectingRules = sideEffectingRuleIds(parsed.value.contract);
 
     return async (tx: Db) => {
       await startEvaluation(tx, input.evaluationId);
@@ -612,6 +634,7 @@ function evaluationHandler(dependencies: HandlerDependencies): JobHandler {
 
       let violations = 0;
       let zeroTolerance = 0;
+      let duplicateSideEffects = 0;
       let failed = 0;
       let errored = 0;
       let insufficient = 0;
@@ -663,6 +686,32 @@ function evaluationHandler(dependencies: HandlerDependencies): JobHandler {
         for (const violation of evaluation.violations) {
           dependencies.metrics?.recordViolation(dimensions, violation.ruleType, violation.severity);
         }
+        const duplicates = countDuplicateSideEffects(sideEffectingRules, evaluation.violations);
+        if (duplicates > 0) {
+          dependencies.metrics?.recordDuplicateSideEffect(dimensions, duplicates);
+        }
+        duplicateSideEffects += duplicates;
+
+        // PRD section 17.3. The evaluator's own verdict has to be in SigNoz for the Phase 10
+        // "violating runs" view and "latest violating traces" panel to select on something real.
+        recordFlightRulesSpan(SPAN_NAMES.evaluateRun, {
+          [FLIGHT_RULES.projectId]: input.projectId,
+          [FLIGHT_RULES.agentId]: input.agentId,
+          [FLIGHT_RULES.contractId]: input.contractId,
+          [FLIGHT_RULES.contractVersion]: contractRow.semanticVersion,
+          [FLIGHT_RULES.releaseId]: release.id,
+          [FLIGHT_RULES.evaluationId]: input.evaluationId,
+          [FLIGHT_RULES.evaluationStatus]: evaluation.status,
+          [FLIGHT_RULES.violationCount]: evaluation.counts.violations,
+          [FLIGHT_RULES.routeFingerprint]: evaluation.routeFingerprint,
+          [FLIGHT_RULES.routeSimilarity]: Number(evaluation.similarity.decimal),
+          [FLIGHT_RULES.evaluatedTraceId]: evaluation.traceId,
+          [FLIGHT_RULES.evaluatorVersion]: EVALUATOR_VERSION,
+          [AGENT.releaseId]: input.releaseKey,
+          "flight_rules.route.approved": evaluation.routeApproved,
+          "flight_rules.violation.zero_tolerance_count": evaluation.counts.zeroToleranceViolations,
+          "flight_rules.duplicate_side_effect.count": duplicates,
+        });
       }
 
       const status =
@@ -681,6 +730,7 @@ function evaluationHandler(dependencies: HandlerDependencies): JobHandler {
         insufficientRuns: insufficient,
         violations,
         zeroToleranceViolations: zeroTolerance,
+        duplicateSideEffects,
         contractContentHash: contractRow.contentHash,
         evaluatorVersion: EVALUATOR_VERSION,
       };
@@ -695,6 +745,21 @@ function evaluationHandler(dependencies: HandlerDependencies): JobHandler {
       });
 
       dependencies.metrics?.recordEvaluation(dimensions, status, input.endMs - input.startMs);
+      recordFlightRulesSpan(SPAN_NAMES.evaluateRelease, {
+        [FLIGHT_RULES.projectId]: input.projectId,
+        [FLIGHT_RULES.agentId]: input.agentId,
+        [FLIGHT_RULES.contractId]: input.contractId,
+        [FLIGHT_RULES.contractVersion]: contractRow.semanticVersion,
+        [FLIGHT_RULES.releaseId]: release.id,
+        [FLIGHT_RULES.evaluationId]: input.evaluationId,
+        [FLIGHT_RULES.evaluationStatus]: status,
+        [FLIGHT_RULES.violationCount]: violations,
+        [FLIGHT_RULES.evaluatorVersion]: EVALUATOR_VERSION,
+        [AGENT.releaseId]: input.releaseKey,
+        "flight_rules.run.count": evaluated.length,
+        "flight_rules.violation.zero_tolerance_count": zeroTolerance,
+        "flight_rules.duplicate_side_effect.count": duplicateSideEffects,
+      });
 
       return {
         evaluationId: input.evaluationId,
@@ -754,6 +819,160 @@ function demoRunHandler(dependencies: HandlerDependencies): JobHandler {
   };
 }
 
+// ---------------------------------------------------------------------------
+// signoz_sync
+// ---------------------------------------------------------------------------
+
+/**
+ * Compiles the active contract into SigNoz artefacts and verifies every one of them.
+ *
+ * Like every other handler, this one contains no algorithm: compilation, planning and comparison
+ * are `@flightrules/artifact-compiler`, and the MCP conversation is `artifact-sync.ts`. What lives
+ * here is the job's shape — read the contract, refuse if it is not approved or active, run the
+ * sync, and hand the runner a commit function that writes the register inside the transaction that
+ * marks the job succeeded.
+ */
+function signozSyncHandler(dependencies: HandlerDependencies): JobHandler {
+  return async (context: JobContext): Promise<CommitFn> => {
+    const input = parseInput(SignozSyncInputSchema, context.job.input, "SigNoz sync");
+    await ensureRunning(context);
+
+    const contract = await findContract(context.sql, input.contractId);
+    if (!contract) {
+      throw new TerminalJobError("NOT_FOUND", "The contract to synchronise no longer exists.");
+    }
+    if (contract.status !== "approved" && contract.status !== "active") {
+      throw new TerminalJobError(
+        "STATE_TRANSITION_INVALID",
+        `A ${contract.status} contract cannot be compiled into SigNoz artefacts.`,
+      );
+    }
+    if (contract.contentHash !== input.contractContentHash) {
+      // The contract changed after the job was queued. Compiling the new one would produce
+      // artefacts nobody asked for, so this fails rather than silently doing something else.
+      throw new TerminalJobError(
+        "CONTRACT_CONFLICT",
+        "The contract changed after this synchronisation was queued.",
+      );
+    }
+
+    await context.progress("compiling", "compiling managed SigNoz artefacts");
+
+    const session = await dependencies.signoz();
+    try {
+      const registered = await readRegisteredArtifacts(context.sql, input.projectId);
+      const { result, writes } = await withFlightRulesSpan(
+        SPAN_NAMES.compileSignozArtifacts,
+        {
+          [FLIGHT_RULES.projectId]: input.projectId,
+          [FLIGHT_RULES.agentId]: input.agentId,
+          [FLIGHT_RULES.contractId]: input.contractId,
+          [FLIGHT_RULES.contractVersion]: input.contractVersion,
+        },
+        async () =>
+          synchroniseArtifacts(
+            {
+              projectId: input.projectId,
+              agentId: input.agentId,
+              contractId: input.contractId,
+              projectSlug: input.projectSlug,
+              agentKey: input.agentKey,
+              contractVersion: input.contractVersion,
+              rootSpanName: input.rootSpanName,
+              violationThreshold: input.violationThreshold,
+              webhookUrl: context.config.alertWebhookUrl,
+              signozBaseUrl: context.config.signozUrl,
+              attempt: context.job.attempt,
+            },
+            registered,
+            {
+              synchroniser: new ArtifactSynchroniser(session.operations),
+              now: context.now,
+              progress: (stage, message) => context.progress(stage, message),
+            },
+          ),
+      );
+
+      for (const outcome of result.outcomes) {
+        dependencies.metrics?.recordArtifactSync(
+          input.projectSlug,
+          input.agentKey,
+          outcome.artifactType,
+          outcome.operation,
+        );
+      }
+
+      // The register is written in its own transaction, before the commit function, precisely so
+      // that a verification failure still leaves the evidence behind: the commit transaction is
+      // rolled back when the job fails, and a rolled-back mismatch record is no record at all.
+      await context.sql.begin((tx) => persistArtifactWrites(tx, writes));
+
+      return async (tx: Db) => {
+        await recordAudit(tx, {
+          projectId: input.projectId,
+          actorType: "system",
+          eventType: "artifact.synced",
+          entityType: "contract",
+          entityId: input.contractId,
+          details: {
+            planHash: result.planHash,
+            created: result.created,
+            updated: result.updated,
+            unchanged: result.unchanged,
+            conflicts: result.conflicts,
+            failed: result.failed,
+            stale: [...result.stale],
+          },
+        });
+
+        if (result.failed > 0) {
+          // Operating-contract rule 13: a read-back mismatch fails the job. The register has
+          // already recorded which artefact and which field, so the failure is diagnosable.
+          const failures = result.outcomes.filter((outcome) => outcome.operation === "failed");
+          throw new FlightRulesError("ARTIFACT_VERIFY_FAILED", {
+            // The names are in the message as well as the details, because a job row stores the
+            // message and an operator reading it should not have to open the register to learn
+            // which artefact failed.
+            message: `SigNoz artefacts did not match their intended specification: ${failures
+              .map(
+                (outcome) =>
+                  `${outcome.managedName} [${(outcome.verification?.mismatchedFields ?? []).join(", ") || (outcome.reason ?? "unknown")}]`,
+              )
+              .join("; ")}`,
+            details: {
+              failed: failures.map((outcome) => ({
+                managedName: outcome.managedName,
+                mismatchedFields: outcome.verification?.mismatchedFields ?? [],
+                reason: outcome.reason ?? null,
+              })),
+            },
+          });
+        }
+
+        return {
+          planHash: result.planHash,
+          created: result.created,
+          updated: result.updated,
+          unchanged: result.unchanged,
+          conflicts: result.conflicts,
+          stale: [...result.stale],
+          channel: { ...result.channel },
+          artifacts: result.outcomes.map((outcome) => ({
+            managedName: outcome.managedName,
+            artifactType: outcome.artifactType,
+            operation: outcome.operation,
+            status: outcome.status,
+            signozResourceId: outcome.resourceId,
+            signozWebUrl: outcome.webUrl,
+          })),
+        };
+      };
+    } finally {
+      await session.close().catch(() => {});
+    }
+  };
+}
+
 export function createHandlers(
   dependencies: HandlerDependencies,
 ): Readonly<Record<JobType, JobHandler>> {
@@ -762,5 +981,6 @@ export function createHandlers(
     contract_proposal: contractProposalHandler(dependencies),
     evaluation: evaluationHandler(dependencies),
     demo_run: demoRunHandler(dependencies),
+    signoz_sync: signozSyncHandler(dependencies),
   };
 }

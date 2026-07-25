@@ -8,6 +8,7 @@ export {
   SPAN_NAMES,
   STABLE,
 } from "./attributes.js";
+export type { BootstrapOptions } from "./bootstrap.js";
 export { bootstrapFromEnv } from "./bootstrap.js";
 export type { ServiceSpanDescription, ServiceSpanOptions } from "./fastify.js";
 export { activeServiceSpan, registerServiceSpans } from "./fastify.js";
@@ -22,3 +23,5 @@ export {
   protectSecret,
   startTelemetry,
 } from "./sdk.js";
+export type { FlightRulesSpanName } from "./spans.js";
+export { definedAttributes, recordFlightRulesSpan, withFlightRulesSpan } from "./spans.js";

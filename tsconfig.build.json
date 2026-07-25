@@ -26,6 +26,9 @@
       "path": "./packages/contract-engine"
     },
     {
+      "path": "./packages/artifact-compiler"
+    },
+    {
       "path": "./packages/baseline-miner"
     },
     {

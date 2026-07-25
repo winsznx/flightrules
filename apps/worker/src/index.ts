@@ -1,7 +1,9 @@
 // Telemetry starts before anything issues HTTP, so the instrumentation can patch it.
 import { bootstrapFromEnv } from "@flightrules/telemetry";
 
-const telemetry = bootstrapFromEnv(process.env["OTEL_SERVICE_NAME"] ?? "flightrules-worker");
+const telemetry = bootstrapFromEnv(process.env["OTEL_SERVICE_NAME"] ?? "flightrules-worker", {
+  metrics: true,
+});
 
 import process from "node:process";
 import { assertSchemaCompatible, connect, MIGRATIONS_DIR } from "@flightrules/db";

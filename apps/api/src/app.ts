@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { AppContext } from "./context.js";
 import { sendError } from "./http.js";
 import { openApiDocument, RouteRegistry } from "./registry.js";
+import { registerArtifactRoutes } from "./routes/artifacts.js";
 import { registerCoreRoutes } from "./routes/core.js";
 import { registerDemoRoutes } from "./routes/demo.js";
 import { registerLifecycleRoutes } from "./routes/lifecycle.js";
@@ -148,6 +149,7 @@ export function buildApi(options: BuildApiOptions): BuiltApi {
   const registry = new RouteRegistry();
   registerCoreRoutes(server, registry, context);
   registerLifecycleRoutes(server, registry, context);
+  registerArtifactRoutes(server, registry, context);
   registerDemoRoutes(server, registry, context);
 
   // PRD Phase 09 task 11: documentation generated from the same declarations that serve traffic.

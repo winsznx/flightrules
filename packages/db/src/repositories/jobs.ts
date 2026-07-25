@@ -27,6 +27,7 @@ export const JOB_TYPES = [
   "contract_proposal",
   "evaluation",
   "demo_run",
+  "signoz_sync",
 ] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 

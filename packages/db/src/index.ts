@@ -20,12 +20,14 @@ export type {
   ContractProposalInput,
   DemoRunInput,
   EvaluationInput,
+  SignozSyncInput,
 } from "./job-inputs.js";
 export {
   BaselineMiningInputSchema,
   ContractProposalInputSchema,
   DemoRunInputSchema,
   EvaluationInputSchema,
+  SignozSyncInputSchema,
 } from "./job-inputs.js";
 export type { AppliedMigration, MigrateResult, MigrationFile } from "./migrator.js";
 export {

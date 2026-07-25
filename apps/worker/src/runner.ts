@@ -41,7 +41,13 @@ import type { WorkerConfig } from "./config.js";
  * the two states a job has that mining does not are added here. Copying the five by hand would let
  * the two lists drift, and a UI keyed on stage names would silently stop matching.
  */
-export const WORKER_STAGES = [...MINING_STAGES, "evaluating_runs", "running_demo"] as const;
+export const WORKER_STAGES = [
+  ...MINING_STAGES,
+  "evaluating_runs",
+  "running_demo",
+  "compiling",
+  "syncing",
+] as const;
 export type WorkerStage = (typeof WORKER_STAGES)[number];
 
 const STAGE_INDEX = new Map<string, number>(

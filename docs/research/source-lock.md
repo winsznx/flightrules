@@ -569,3 +569,115 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
   `sql.json(value)` must be cast with `::jsonb` when it is an operand of `||`, because the parameter
   is sent as `json` and `jsonb || json` has no operator.
 - Local file: `packages/db/src/sql.ts`, `packages/db/src/repositories/*.ts`.
+
+## SL-053 — `bootstrapFromEnv` never opened a metric pipeline, so no FlightRules metric ever reached SigNoz
+
+- Source: the installed `@opentelemetry/api@1.9.1` and the running stack (tier 1, installed runtime).
+- Verified claim: `metrics.getMeter(name)` returns a **no-op** meter until a global `MeterProvider`
+  is registered. `packages/telemetry`'s `startTelemetry` only constructs one when `options.metrics`
+  is true, and `bootstrapFromEnv` — the function both applications call — never passed it, although
+  `sdk.ts` documents "The API and the worker both enable it". Every `flight_rules.*` recording was
+  therefore discarded inside the API's no-op instrument.
+- Proof of the defect: `signoz_list_metrics` with `searchText: "flight_rules"` returned `[]` against
+  a stack holding ten hours of demo telemetry and two completed evaluations.
+- Proof of the fix: with `metrics: true`, a single real worker evaluation makes
+  `flight_rules.evaluations`, `flight_rules.violations`, `flight_rules.unknown_routes`,
+  `flight_rules.duplicate_side_effects`, `flight_rules.evaluation.duration.{bucket,count,sum,min,max}`,
+  `flight_rules.route.similarity.*` and `flight_rules.signoz_artifact_sync` all appear in
+  `signoz_list_metrics`.
+- Impact: without this, six of FR-014's ten dashboard panels and all four FR-015 alerts would have
+  been decorative empty artefacts. Fixed in Phase 10 as a precondition of its own exit gate.
+- Local file: `packages/telemetry/src/bootstrap.ts`, `apps/api/src/index.ts`, `apps/worker/src/index.ts`.
+
+## SL-054 — FlightRules metrics arrive as **cumulative** sums, and histograms explode into five series
+
+- Source: `signoz_list_metrics` against the running SigNoz v0.134.0 (tier 1, runtime).
+- Verified claim: every `flight_rules.*` counter is reported with `"temporality":"cumulative"`, and
+  `flight_rules.evaluation.duration` is stored as five separate metrics —
+  `.bucket` (histogram), `.count` and `.sum` (cumulative sums), `.min` and `.max` (gauges). The
+  dotted suffix form is what SigNoz uses; the underscore form does not exist.
+- Impact: a dashboard panel that charts a cumulative counter with `timeAggregation: "sum"` draws a
+  monotonically rising line that says nothing about the selected window. Every FlightRules counter
+  panel and every alert therefore uses `increase`, and the duration percentile reads
+  `flight_rules.evaluation.duration.bucket` with `spaceAggregation: "p95"`.
+- Local file: `packages/artifact-compiler/src/dashboard.ts`, `packages/artifact-compiler/src/alerts.ts`.
+
+## SL-055 — `signoz_create_notification_channel` sends a real test notification and reports its outcome
+
+- Source: live call against SigNoz MCP v0.9.0 (tier 1, runtime).
+- Verified claim: the response is **not** the create envelope. It is
+  `{channel: {status, data: {id, …}}, test_notification: {success, message, error}}`, and the server
+  performs an actual delivery attempt during creation. A loopback destination that nothing is
+  listening on returns `success: false` with `dial tcp [::1]:4000: connect: connection refused`, and
+  the MCP layer appends a warning notice. SigNoz redacts the destination URL in its own error text.
+- Impact: FlightRules records `deliveryTested` and `deliveryVerified` verbatim from this response and
+  never infers delivery from a created channel. The default local webhook destination produces a
+  recorded delivery *failure* rather than an assumed success. Alert **firing** is proven separately
+  from alert history and does not depend on the destination.
+- Local file: `packages/signoz-mcp/src/schemas.ts` (`createdChannelSchema`),
+  `packages/artifact-compiler/src/channels.ts`.
+
+## SL-056 — List tools return the resource identifier under a different key per resource type
+
+- Source: live calls against SigNoz MCP v0.9.0 (tier 1, runtime).
+- Verified claim:
+
+  | tool | name field | identifier field |
+  |---|---|---|
+  | `signoz_list_views` | `name` | `id` |
+  | `signoz_list_notification_channels` | `name` | `id` |
+  | `signoz_list_dashboards` | `name` | **`uuid`** |
+  | `signoz_list_alert_rules` | **`alert`** | **`ruleId`** |
+
+  A dashboard's `title` is *not* in its list item at all — the list reports `name`, while
+  `signoz_get_dashboard` and `signoz_create_dashboard` nest the title under `data.title`.
+- Impact: a client that looks for `id` everywhere finds no identifier for a dashboard or an alert,
+  concludes both are absent, and creates a second copy on every sync. The Phase 10 live integration
+  test caught exactly this — two managed dashboards of the same name — which is the duplicate
+  artefact PRD section 20.1 forbids. The field map is now explicit and shared by the synchroniser
+  and its test.
+- Local file: `apps/worker/src/artifact-sync.ts` (`LIST_FIELDS`).
+
+## SL-057 — `signoz_update_view` corrupts the stored query and takes the tenant's whole view list down
+
+- Source: reproduced three times against SigNoz MCP v0.9.0 and SigNoz v0.134.0 (tier 1, runtime).
+- Verified claim: whatever body `signoz_update_view` is given — a freshly compiled specification, or
+  the exact body `signoz://view/instructions` prescribes (fetch, strip server-populated fields,
+  modify, resubmit) — the server persists `saved_views.data` as a **hex-encoded byte string**
+  (`\x7b2271756572696573…`) instead of JSON. Every subsequent `signoz_list_views` then fails with
+  `HTTP 500: error in unmarshalling explorer query data: invalid character '\' looking for beginning
+  of value`, for **every saved view in the tenant**, including views FlightRules did not create.
+  Recovery requires deleting the corrupted row directly from the metastore.
+- Scope: `signoz_update_dashboard` and `signoz_update_alert` were tested the same way and are
+  **correct** — a dashboard's widget title and an alert's threshold both round-trip faithfully and
+  their list endpoints stay healthy. Only the saved-view update path is affected.
+- Impact and alternative: FlightRules does not call `signoz_update_view`. A saved view is replaced by
+  delete-then-create, which is verifiable, leaves one resource per managed name, and costs only a new
+  resource identifier — which the artefact register records. This is the smallest honest alternative
+  that preserves FR-013; the capability is not faked and the defect is not hidden.
+- Local file: `apps/worker/src/artifact-sync.ts` (`ArtifactSynchroniser.update`).
+
+## SL-058 — Delete responses have three different shapes, none of them the single-resource envelope
+
+- Source: live calls against SigNoz MCP v0.9.0 (tier 1, runtime).
+- Verified claim: `signoz_delete_view` returns `{"status":"success"}` with no `data` key;
+  `signoz_delete_notification_channel` returns `{"status":"success","id":"…"}`;
+  `signoz_delete_dashboard` returns the plain sentence `dashboard deleted`.
+- Impact: validating a delete against `singleResourceSchema` rejects a delete that in fact succeeded.
+  That is how a saved-view *replacement* came to be reported as `ARTIFACT_CREATE_FAILED` in the
+  Phase 10 live run. A dedicated permissive `deletedResourceSchema` is used instead; what matters for
+  a delete is that the call did not error, not what it echoed.
+- Local file: `packages/signoz-mcp/src/schemas.ts`, `packages/signoz-mcp/src/readers.ts`.
+
+## SL-059 — Dashboard widgets have required fields whose absence is a warning, not an error
+
+- Source: live `signoz_create_dashboard` against SigNoz MCP v0.9.0 (tier 1, runtime).
+- Verified claim: omitting `selectedLogFields`, `selectedTracesFields`, `thresholds` or
+  `contextLinks` from a widget, `promql` or `clickhouse_sql` from its query, or `selectColumns` or
+  `functions` from a `queryData` entry, does **not** fail the call. The server returns
+  `Input validation notice: … The call still ran best-effort: mismatched values may have been ignored
+  or replaced with defaults.` and stores the dashboard anyway.
+- Impact: a best-effort write is exactly the silently-wrong artefact Phase 10 exists to prevent, so
+  every field the input schema declares is supplied even when its value is empty. The server also
+  assigns its own `query.id` UUID to each widget, so a read-back must not compare the whole query.
+- Local file: `packages/artifact-compiler/src/dashboard.ts`.
