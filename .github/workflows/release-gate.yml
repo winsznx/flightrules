@@ -1,0 +1,220 @@
+name: Release gate
+
+# The FlightRules release gate, run the way a consumer would run it (PRD Phase 11 tasks 8 to 10).
+#
+# The job deploys the pinned SigNoz stack, seeds real telemetry, mines a real baseline, activates a
+# real contract, evaluates the release and then runs `flightrules gate check`. The step fails with
+# the CLI's own exit code. There is no `continue-on-error`, no `|| true` and no step that uploads a
+# result and reports success regardless — a workflow that always passes while collecting artifacts
+# is the exact failure mode PRD section 20.1 forbids.
+#
+# The same sequence is reproducible locally with `make demo-full`; nothing here depends on state
+# that only exists on a runner.
+
+on:
+  push:
+    branches: ["main", "phase/**"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Release key to gate"
+        required: false
+        default: "refund-agent-v2"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24.14.1"
+  PNPM_VERSION: "10.33.0"
+  FOUNDRY_VERSION: "v0.2.16"
+
+jobs:
+  gate:
+    name: Trajectory release gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: flightrules
+          POSTGRES_PASSWORD: flightrules
+          POSTGRES_DB: flightrules
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U flightrules -d flightrules"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      DATABASE_URL: postgres://flightrules:flightrules@localhost:5433/flightrules
+      API_URL: http://localhost:4000
+      API_PORT: "4000"
+      DEMO_MODE: "true"
+      DEPLOYMENT_ENVIRONMENT: local
+      FLIGHTRULES_PROJECT: demo-commerce
+      FLIGHTRULES_AGENT: refund-agent
+      BASELINE_RELEASE: refund-agent-v1
+      CANARY_RELEASE: refund-agent-v2
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      # The lockfile is the contract. `--frozen-lockfile` fails rather than resolving a different
+      # tree than the one this repository was tested against.
+      - name: Install from the committed lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Deploy the pinned SigNoz stack through Foundry
+        run: |
+          curl -fsSL https://signoz.io/foundry.sh | FOUNDRY_VERSION="${FOUNDRY_VERSION}" bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Cast the deployment
+        run: foundryctl cast -f casting.yaml --format text --no-ledger --no-updater
+
+      # The password is generated per run and never echoed. `bootstrap-signoz.sh` writes the minted
+      # API key to .env with mode 600; no step prints .env and no step exports it to the log.
+      - name: Bootstrap SigNoz and mint an API key
+        run: bash scripts/bootstrap-signoz.sh
+        env:
+          SIGNOZ_ADMIN_PASSWORD: ${{ format('ci-{0}-{1}', github.run_id, github.run_attempt) }}
+
+      - name: Verify every SigNoz surface
+        run: bash scripts/verify-signoz.sh
+
+      - name: Apply migrations
+        run: pnpm --filter @flightrules/db run migrate
+
+      - name: Start the demo topology
+        run: docker compose -f compose.app.yaml up -d --build --wait
+
+      - name: Start the API and the worker
+        run: |
+          set -a; . ./.env; set +a
+          node apps/api/dist/index.js > "$RUNNER_TEMP/api.log" 2>&1 &
+          node apps/worker/dist/index.js > "$RUNNER_TEMP/worker.log" 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -fsS "$API_URL/health/ready" | grep -q '"status":"ready"'; then
+              echo "API ready"; exit 0
+            fi
+            sleep 2
+          done
+          echo "the API never became ready" >&2
+          tail -50 "$RUNNER_TEMP/api.log" >&2
+          exit 1
+
+      - name: Verify the CLI configuration
+        run: node apps/cli/dist/index.js config verify
+
+      - name: Validate the committed contract
+        run: |
+          node apps/cli/dist/index.js contract validate \
+            contracts/demo-commerce/refund-agent/production/contract.yaml
+
+      - name: Emit known-good telemetry
+        run: DEMO_RUNS=25 bash scripts/run-demo-v1.sh
+
+      - name: Seed the project, baseline, contract and SigNoz artefacts
+        run: bash scripts/seed-demo.sh
+
+      - name: Evaluate the approved release
+        run: |
+          set -a; . ./.env; set +a
+          node apps/cli/dist/index.js release evaluate \
+            --release "$BASELINE_RELEASE" --lookback 360 --timeout 600
+
+      # The approved release must pass. A non-zero exit here means the baseline the contract was
+      # mined from no longer satisfies it, which is a real regression and fails the workflow.
+      - name: Release gate — approved release must pass
+        run: |
+          set -a; . ./.env; set +a
+          node apps/cli/dist/index.js gate check --release "$BASELINE_RELEASE"
+
+      - name: Emit the unsafe canary
+        run: DEMO_RUNS=8 bash scripts/run-demo-v2.sh
+
+      - name: Evaluate the canary
+        run: |
+          set -a; . ./.env; set +a
+          node apps/cli/dist/index.js release evaluate \
+            --release "$CANARY_RELEASE" --lookback 60 --timeout 600
+
+      # The canary must be *caught*. The gate exits 2, so the step is inverted deliberately and the
+      # exact code is asserted: a 0 here would mean the product's central claim is false, and any
+      # other non-zero code would mean it failed for the wrong reason.
+      - name: Release gate — the unsafe canary must be rejected with exit 2
+        id: canary
+        run: |
+          set -a; . ./.env; set +a
+          set +e
+          node apps/cli/dist/index.js gate check --release "$CANARY_RELEASE"
+          code=$?
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" -ne 2 ]; then
+            echo "the canary gate returned $code; a contract violation is exit 2" >&2
+            exit 1
+          fi
+          echo "the canary was rejected with exit 2, as required"
+
+      - name: Export the evidence
+        if: always()
+        run: |
+          set -a; . ./.env; set +a
+          mkdir -p "$RUNNER_TEMP/evidence"
+          node apps/cli/dist/index.js evidence export --include-violations \
+            --release "$CANARY_RELEASE" --out "$RUNNER_TEMP/evidence/canary-gate.json" || true
+          node apps/cli/dist/index.js evidence export \
+            --release "$BASELINE_RELEASE" --out "$RUNNER_TEMP/evidence/baseline-gate.json" || true
+
+      # The evidence is uploaded whatever happened, but nothing about the upload can change the
+      # job's result: the gate steps above have already decided it.
+      - name: Upload the gate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-evidence
+          path: ${{ runner.temp }}/evidence
+          if-no-files-found: warn
+          retention-days: 14
+
+      # Application logs only. `.env` holds the minted SigNoz key and is never uploaded.
+      - name: Upload the application logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-logs
+          path: |
+            ${{ runner.temp }}/api.log
+            ${{ runner.temp }}/worker.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Tear down
+        if: always()
+        run: |
+          docker compose -f compose.app.yaml down -v || true
+          docker compose -f pours/deployment/compose.yaml -p signoz down -v || true

@@ -81,6 +81,21 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
 
+  apps/cli:
+    dependencies:
+      '@flightrules/contract-engine':
+        specifier: workspace:*
+        version: link:../../packages/contract-engine
+      '@flightrules/contract-schema':
+        specifier: workspace:*
+        version: link:../../packages/contract-schema
+      '@flightrules/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+
   apps/demo-agent:
     dependencies:
       '@flightrules/domain':

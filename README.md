@@ -95,6 +95,35 @@ make verify              # format, lint, typecheck, test, build, secret and lice
 | `make db-migrate` / `make db-rollback` / `make db-status` | Database migrations |
 | `make scan-secrets` / `make scan-licences` / `make scan-deps` | Security and licence gates |
 | `make verify` | The complete validation suite |
+| `make api` / `make worker` | Run the API and the job worker |
+| `make demo-seed` | Empty database to an active contract and synced SigNoz artefacts, through the API |
+| `make demo-full` | The whole demo: telemetry, contract, artefacts, a passing gate and a failing one |
+| `make gate` / `make gate-json` | Read the release-gate decision and exit with its code |
+| `make evidence` | Export the replayable decision document |
+
+## The release gate
+
+```bash
+make demo-full     # emits telemetry, mines a contract, and asserts exit 0 then exit 2
+```
+
+`flightrules gate check` returns the decision and the process exit code:
+
+| Code | Meaning |
+|---|---|
+| `0` | pass — the release stayed within the trajectory contract |
+| `1` | reserved for an unclassified crash; never returned by a classified path |
+| `2` | contract violation |
+| `3` | insufficient data — too few completed runs, truncated retrieval, or a stale window |
+| `4` | integration or evaluation error |
+| `5` | invalid configuration |
+
+The decision is computed from persisted evidence by a pure function. No model is involved, the same
+evidence always produces the same `decisionHash`, and a restarted API returns the identical answer.
+`.github/workflows/release-gate.yml` runs the same commands and asserts exit code `2` on the canary.
+
+Full operating detail, including every CLI flag and the failure traps, is in
+[`docs/RUNBOOK.md`](docs/RUNBOOK.md) section 12.
 
 ## Architecture
 

@@ -8,6 +8,13 @@
  * deliberate operator action that resolves that, and it is deliberately not something a sync does
  * on its own — deleting a resource somebody may rely on is not a side effect.
  *
+ * It also clears the project's register rows and the completed `signoz_sync` jobs, because the sync
+ * job is idempotent on the contract's content: without that, a sync requested after a purge returns
+ * the *previous* job's cached conflict result and nothing is ever recreated. Deleting the remote
+ * resources alone therefore leaves the deployment permanently unsyncable, which is what this second
+ * half exists to prevent. Both are operator recovery actions on state the operator just destroyed —
+ * nothing here is evidence of anything, and the product never does it on its own.
+ *
  * Usage:
  *   node scripts/purge-managed-artifacts.mjs <project-slug>
  */
@@ -78,3 +85,35 @@ for (const [label, listTool, listArgs, nameField, idField, deleteTool] of SWEEPS
 
 process.stdout.write(`${removed} managed artefact(s) deleted for ${projectSlug}\n`);
 await client.close();
+
+const databaseUrl = process.env["DATABASE_URL"];
+if (!databaseUrl) {
+  process.stdout.write(
+    "DATABASE_URL is not set, so the artefact register was left alone. " +
+      "The next sync will return its cached result until the register is cleared.\n",
+  );
+  process.exit(0);
+}
+
+// Through the product's own connector, so the register is read with the settings the product uses.
+const { connect } = await import(new URL("../packages/db/dist/index.js", import.meta.url).href);
+const sql = connect(databaseUrl, { max: 1 });
+try {
+  const [project] = await sql`select id from projects where slug = ${projectSlug}`;
+  if (!project) {
+    process.stdout.write(`no project "${projectSlug}" in the database; register untouched\n`);
+  } else {
+    const artefacts = await sql`
+      delete from signoz_artifacts where project_id = ${project.id} returning id`;
+    const jobs = await sql`
+      delete from jobs
+      where job_type = 'signoz_sync' and project_id = ${project.id}
+      returning id`;
+    process.stdout.write(
+      `cleared ${artefacts.length} register row(s) and ${jobs.length} sync job(s); ` +
+        "the next sync will create and verify from scratch\n",
+    );
+  }
+} finally {
+  await sql.end({ timeout: 5 });
+}

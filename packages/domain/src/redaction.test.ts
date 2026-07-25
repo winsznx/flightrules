@@ -84,6 +84,50 @@ describe("secret redaction", () => {
   it.each(["traceId", "spanName", "releaseId", "keyboard"])("treats %s as safe", (key) => {
     expect(isSecretKey(key)).toBe(false);
   });
+
+  it.each([
+    "accessToken",
+    "refresh_token",
+    "bearerToken",
+    "id_token",
+    "session_token",
+    "token",
+    "API_TOKEN",
+  ])("still treats the credential key %s as a secret", (key) => {
+    // #then narrowing the token rule for measurements must not admit a credential
+    expect(isSecretKey(key)).toBe(true);
+  });
+
+  it.each([
+    "tokens",
+    "maxTokenRegressionPercent",
+    "inputTokensP95",
+    "outputTokensP95",
+    "gen_ai.usage.input_tokens",
+    "gen_ai.usage.output_tokens",
+  ])("treats the token measurement %s as safe", (key) => {
+    // #given a key whose "token" is the unit of LLM usage, not a credential
+    // #then it survives redaction, because a gate threshold and a change measurement are part of
+    // a release decision and destroying them would silently corrupt the decision
+    expect(isSecretKey(key)).toBe(false);
+  });
+
+  it("keeps a token measurement intact through a full redaction pass", () => {
+    // #given the shape the release gate actually returns
+    const gate = {
+      gate: { maxTokenRegressionPercent: "25", maxViolationPercent: "0.5" },
+      changes: { tokens: { baseline: 400, candidate: 500, measured: true } },
+      apiKey: "must-not-survive",
+    };
+
+    // #when it is redacted on the way out
+    const redacted = redact(gate) as typeof gate;
+
+    // #then the thresholds and measurements survive and the credential does not
+    expect(redacted.gate.maxTokenRegressionPercent).toBe("25");
+    expect(redacted.changes.tokens).toEqual({ baseline: 400, candidate: 500, measured: true });
+    expect(redacted.apiKey).toBe(REDACTED);
+  });
 });
 
 describe("forbidden telemetry keys", () => {

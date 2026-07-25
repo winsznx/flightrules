@@ -306,3 +306,66 @@ SigNoz UI under Alerts, or through MCP with `signoz_list_alert_rules` and `signo
 | A dashboard is stored but a panel is empty or wrong | The server accepts an incomplete widget "best-effort" and only warns (SL-059) | Supply every field the input schema declares, even when empty |
 | A dashboard panel shows a rising line that never falls | A cumulative counter charted with `sum` (SL-054) | Use `increase` |
 | Every artefact reports `conflict` on a fresh sync | The FlightRules database was rebuilt while SigNoz kept its resources, so the register no longer records creating them — which is the ownership rule working, not a bug | `PROJECT=demo-commerce make signoz-purge`, then `make signoz-sync` |
+| A sync after a purge still reports `conflict`, and the job says `created=False` | The `signoz_sync` job is idempotent on the contract's content, so a repeated request returns the *previous* job's cached result | `make signoz-purge` also clears the register rows and the completed sync jobs. It needs `DATABASE_URL`; without it the remote resources go and the register stays, which is exactly the state that cannot re-sync. |
+
+---
+
+## 12. The release gate (Phase 11)
+
+The gate is a **read** over persisted evidence. It runs no job and fetches no trace, so it is safe
+to call repeatedly and returns the same decision from a restarted API.
+
+```bash
+make demo-seed                       # empty database -> active contract -> synced artefacts
+
+node apps/cli/dist/index.js release evaluate \
+  --project demo-commerce --agent refund-agent --release refund-agent-v1 --lookback 360
+PROJECT=demo-commerce AGENT=refund-agent RELEASE=refund-agent-v1 make gate    # exit 0
+
+DEMO_RUNS=8 make demo-v2
+node apps/cli/dist/index.js release evaluate \
+  --project demo-commerce --agent refund-agent --release refund-agent-v2 --lookback 60
+PROJECT=demo-commerce AGENT=refund-agent RELEASE=refund-agent-v2 make gate    # exit 2
+```
+
+Or all of it at once: **`make demo-full`**. It emits the telemetry, seeds the contract, evaluates
+both releases and asserts the two exit codes, failing if they are anything but `0` then `2`.
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | pass — the release stayed within the trajectory contract |
+| `1` | reserved for an unclassified crash; never returned by a classified path |
+| `2` | contract violation |
+| `3` | insufficient data — too few completed runs, truncated retrieval, or a stale window |
+| `4` | integration or evaluation error — a dependency failed, or a run evaluation errored |
+| `5` | invalid configuration — bad arguments, an unknown project or agent, an invalid contract |
+
+`flightrules release evaluate` exits `0` for an evaluation that *completed*, whatever it found.
+Deciding is `gate check`'s job.
+
+### CLI
+
+```text
+flightrules config verify                  the API, the database, the schema, SigNoz
+flightrules contract validate <path>       offline; no network, no database
+flightrules baseline capture               --project --agent --release --lookback
+flightrules release evaluate               --project --agent --release --lookback
+flightrules gate check                     the decision, and the process exit code
+flightrules evidence export --out <file>   the replayable decision document
+```
+
+`--json` emits exactly one document on stdout; progress always goes to stderr. Set
+`FLIGHTRULES_PROJECT`, `FLIGHTRULES_AGENT` and `FLIGHTRULES_RELEASE` to drop the repeated flags.
+When `GITHUB_STEP_SUMMARY` is set, `gate check` appends a Markdown summary to it.
+
+### Traps
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `NOT_FOUND: No route matches that path` from `gate check` | The running API predates the gate route | `pnpm exec tsc --build --force tsconfig.build.json`, then restart `make api`. `tsc --build` alone has been observed leaving a new route out of `dist` |
+| `RELEASE_INSUFFICIENT_DATA`, exit 3, on a release you just ran | Telemetry exists but nothing has evaluated it | `flightrules release evaluate` first; the gate never evaluates on demand |
+| `AGGREGATION_STALE` | The evaluation window closed more than `--max-age` ago (24 h by default) | Re-evaluate. A decision about old evidence is not a decision about the release now |
+| `CONTRACT_NOT_ACTIVE`, exit 4 | The contract those runs were judged against has been superseded | Re-evaluate against the current active contract |
+| A CI step passes while the canary is broken | Something is swallowing the exit code | The workflow asserts exit `2` explicitly. Never wrap `gate check` in `\|\| true` |
