@@ -6,13 +6,13 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 00, 2026-07-25.
+Last updated: Phase 02, 2026-07-25.
 
 ## Critical final assertions (PRD section 23)
 
 | ID | Assertion | Implementation | Test | Runtime evidence | Status |
 |---|---|---|---|---|---|
-| A1 | Foundry reproduces SigNoz and MCP from casting files | `casting.yaml`, `casting.yaml.lock`, `pours/` | `scripts/verify-reproducibility.sh` | `docs/evidence/phase-02-result.md` | PENDING |
+| A1 | Foundry reproduces SigNoz and MCP from casting files | `casting.yaml`, `casting.yaml.lock`, `pours/` | `scripts/verify-reproducibility.sh`, `packages/test-fixtures/src/deployment.test.ts` | `docs/evidence/phase-02-result.md` | DONE |
 | A2 | v1 and v2 emit real distributed telemetry | `apps/demo-agent`, `apps/demo-services/*`, `packages/telemetry` | telemetry integration tests | `docs/evidence/phase-04-result.md` | PENDING |
 | A3 | v1 and v2 return materially the same customer answer | `apps/demo-agent` | demo equivalence test | `docs/evidence/phase-03-result.md` | PENDING |
 | A4 | v1 includes policy and fraud checks | `apps/demo-agent` | route assertion test | `docs/evidence/phase-03-result.md` | PENDING |
@@ -32,10 +32,10 @@ Last updated: Phase 00, 2026-07-25.
 
 | # | Requirement | Implementation | Test | Runtime evidence | Status |
 |---|---|---|---|---|---|
-| 1 | Reproducible SigNoz installation through Foundry | `casting.yaml` | `scripts/verify-signoz.sh` | phase-02 | PENDING |
-| 2 | Repository contains `casting.yaml` and `casting.yaml.lock` | repository root | reproducibility check | phase-02 | PENDING |
-| 3 | SigNoz MCP Server enabled and reachable | `casting.yaml` `spec.mcp` | MCP liveness test | phase-00 (proven), phase-02 (committed) | IN PROGRESS |
-| 4 | Claude Code can connect to the SigNoz MCP Server | `docs/RUNBOOK.md` | manual documented step | phase-02 | PENDING |
+| 1 | Reproducible SigNoz installation through Foundry | `casting.yaml` | `scripts/verify-signoz.sh` | phase-02 | DONE |
+| 2 | Repository contains `casting.yaml` and `casting.yaml.lock` | repository root | reproducibility check | phase-02 | DONE |
+| 3 | SigNoz MCP Server enabled and reachable | `casting.yaml` `spec.mcp` | `packages/test-fixtures/src/signoz.signoz.integration.test.ts` | phase-02 | DONE |
+| 4 | Claude Code can connect to the SigNoz MCP Server | `docs/RUNBOOK.md` section 3 | documented manual step; the same endpoint, transport and header are exercised by the SDK integration tests | phase-02 | DONE |
 | 5 | FlightRules backend connects using an official MCP client | `packages/signoz-mcp` | MCP client integration tests | phase-00 (proven), phase-05 | IN PROGRESS |
 | 6 | Instrumented refund-agent demo emits traces, metrics and logs | `apps/demo-*`, `packages/telemetry` | telemetry integration tests | phase-04 | PENDING |
 | 7 | Baseline and canary releases distinguishable via attributes | `packages/telemetry` | field discovery test | phase-04 | PENDING |

@@ -201,7 +201,7 @@ by `make signoz-down`, `make signoz-destroy` and `make down`.
 PHASE: 02 SigNoz deployment through Foundry
 STATUS: PASS
 BRANCH: phase/02-signoz-foundry
-COMMITS: <filled at commit>
+COMMITS: bb500315da51a39b32b1eac7b07e27d95232adfc (phase), 3b878ab6e3e04961aecbca2c3ed6b0ea5abcea15 (merge to main)
 SOURCES VERIFIED: 10 existing source-lock entries re-confirmed against this deployment (SL-001, SL-003 to SL-010, SL-015 to SL-019); the live MCP capability snapshot in docs/research/mcp-capabilities.json was regenerated from this stack (41 tools, 19 resources, full input and output schemas)
 IMPLEMENTED: pinned casting.yaml with the MCP molding enabled and no secrets; committed casting.yaml.lock and pours/; idempotent SigNoz bootstrap creating the organisation, root user, flightrules-mcp service account, signoz-admin role assignment and a 90-day API key written to a mode-600 .env; verify-signoz.sh covering deployment images, API health and version, setup completion, MCP liveness, readiness, authenticated initialize and invalid-key rejection, real OTLP ingestion and gRPC listener state; verify-reproducibility.sh re-forging into a clean directory and diffing; MCP capability snapshot script with a required-tool assertion; @flightrules/test-fixtures with casting and deployment tests; SigNoz integration test suite; nine Makefile targets; a CI job that deploys, bootstraps, verifies and tears down; docs/RUNBOOK.md
 TESTS RUN: foundryctl gauge; foundryctl forge (twice, for lock stability); foundryctl cast; scripts/bootstrap-signoz.sh; scripts/verify-signoz.sh; scripts/verify-reproducibility.sh; node scripts/snapshot-mcp-capabilities.mjs; make test; make test-integration-db; make test-integration-signoz; make verify
