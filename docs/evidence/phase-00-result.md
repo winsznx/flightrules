@@ -283,7 +283,7 @@ repository and is excluded by `.gitignore` policy.
 PHASE: 00 Source lock and feasibility proof
 STATUS: PASS
 BRANCH: phase/00-source-lock
-COMMITS: <filled at commit>
+COMMITS: ba600b8a12f1fefb8f7b28fe171597e9d17ea27b (phase), 1f87df23ce0cc6f4af432a580d0aaf6a3db40a80 (merge to main)
 SOURCES VERIFIED: 35 source-lock entries (docs/research/source-lock.md), 41 live MCP tool schemas (docs/research/mcp-capabilities.json), 19 live MCP resources, 1 generated SigNoz OpenAPI schema (750,482 bytes), Foundry casting JSON Schema at v0.2.16
 IMPLEMENTED: no application code (correct for this phase); Git repository initialised; PRD copied to docs/PRD.md verbatim; CLAUDE.md operating contract; source lock; compatibility matrix; MCP capability snapshot; OpenTelemetry attribute register; ADR-0001 stack and version policy; ADR-0002 SigNoz deployment and pinning; ADR-0003 SigNoz access boundary; ADR-0004 telemetry attribute conventions; initial acceptance matrix; Phase 00 plan and result; six committed feasibility-proof scripts
 TESTS RUN: foundryctl gauge; foundryctl forge (twice, for lock stability); foundryctl cast; SigNoz health, version, MCP livez/readyz/healthz probes; OTLP HTTP ingestion POST; MCP initialize/tools-list/resources-list via the official TypeScript SDK; signoz_get_field_keys; signoz_get_trace_details; signoz_execute_builder_query raw with custom-attribute selectFields; signoz_create_view -> signoz_get_view -> signoz_list_views -> signoz_delete_view; TypeScript 7.0.2 strict typecheck; Next.js 16 + React 19 + TypeScript 7 typecheck; OpenTelemetry semantic-conventions export enumeration
