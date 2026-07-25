@@ -194,7 +194,7 @@ Total: **384 tests passed, 0 failed, 0 skipped.**
 PHASE: 06 Trace graph and normalisation engine
 STATUS: PASS
 BRANCH: phase/06-trace-graph
-COMMITS: recorded in CHANGELOG.md and below
+COMMITS: 7b8e2aa (phase), 5949148 (merge to main)
 SOURCES VERIFIED: 3 — live Query Builder responses characterising the timestamp column's serialised precision (SL-044); PostgreSQL 16 runtime behaviour of the Phase 01 identifier generator together with RFC 9562 section 6.2 Method 3 (SL-045); and two demo traces captured verbatim from the running deployment as test fixtures
 IMPLEMENTED: packages/normaliser with the ten ordered PRD section 11.6 steps, bounded non-backtracking identifier recognition, and a versioned content-hashed configuration; packages/trace-graph with span deduplication by (trace_id, span_id), PRD section 11.4 root selection including a synthetic root, orphan and cycle detection, trace-quality classification, canonical serialisation, SHA-256 route fingerprints, weighted feature sets with Jaccard similarity, the twelve typed graph changes, and redacted deterministic JSON export; a fixture-capture script that reads real traces through the Phase 05 client
 TESTS RUN: pnpm run typecheck; make test; make test-integration; make verify; make db-migrate; make demo-v1; make demo-v2
