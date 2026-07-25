@@ -66,7 +66,7 @@ All 22 required tools are present at v0.9.0.
 
 | PRD-required tool | Present | Notes |
 |---|---|---|
-| `signoz_get_field_keys` | Yes | `fieldContext` accepts `attribute`; `tag` is an alias (SL-022) |
+| `signoz_get_field_keys` | Yes | `fieldContext` accepts `attribute`; `tag` is an alias (SL-022). Returns a `fieldDataType` per field; omits `timestamp` and every resource attribute (SL-051) |
 | `signoz_get_field_values` | Yes | |
 | `signoz_search_traces` | Yes | fixed column set; no field selection |
 | `signoz_get_trace_details` | Yes | fixed column set; **no custom attributes** (SL-020) |
@@ -87,7 +87,7 @@ All 22 required tools are present at v0.9.0.
 | `signoz_update_alert` | Yes | full replace |
 | `signoz_get_alert_history` | Yes | requires SigNoz ≥ 0.118.0; `state` enum includes `firing` and `recovering` (SL-024) |
 | `signoz_list_notification_channels` | Yes | |
-| `signoz_execute_builder_query` | Yes | the primary trace-retrieval path (SL-021) |
+| `signoz_execute_builder_query` | Yes | the primary trace-retrieval path (SL-021). `nextCursor` is empty exactly when a page is not full, which is the only truncation signal (SL-050) |
 
 Additional tools available beyond the PRD's minimum: `signoz_aggregate_logs`,
 `signoz_check_metric_cardinality`, `signoz_check_metric_usage`, `signoz_delete_alert`,

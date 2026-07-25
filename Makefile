@@ -3,7 +3,7 @@ SHELL := /usr/bin/env bash
 .PHONY: help verify-env install lint lint-fix format format-check typecheck test test-integration \
         test-integration-db test-integration-signoz test-e2e build up down db-migrate db-rollback db-status scan-secrets scan-licences \
         scan-deps verify clean contract-validate demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
-        signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility
+        signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility mine-demo-baseline
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -62,6 +62,9 @@ demo-v2: ## Run the unsafe refund-agent-v2 release
 
 demo-reset: ## Reset demo state without touching the SigNoz installation
 	@bash scripts/reset-demo.sh
+
+mine-demo-baseline: ## Mine a baseline from live v1 telemetry and write the proposed contract
+	@set -a; [ -f .env ] && . ./.env; set +a; node scripts/mine-demo-baseline.mjs
 
 down: ## Stop FlightRules application services
 	docker compose -f compose.app.yaml down

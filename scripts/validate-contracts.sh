@@ -16,10 +16,13 @@ if [ ! -f "$CLI" ]; then
   pnpm --filter @flightrules/contract-schema run build >/dev/null
 fi
 
-# Production contracts and the per-rule test fixtures. The fixtures are included deliberately: a
-# fixture that stopped validating would silently weaken the evaluator's test coverage.
+# Production contracts, the per-rule test fixtures, and the contract the baseline miner generated
+# from live telemetry. The fixtures are included deliberately: a fixture that stopped validating would
+# silently weaken the evaluator's test coverage. The generated contract is included because a document
+# the miner emits must keep validating as the DSL changes, and regenerating it is one command
+# (`make mine-demo-baseline`).
 mapfile -t documents < <(
-  find contracts packages/contract-engine/fixtures/contracts \
+  find contracts packages/contract-engine/fixtures/contracts docs/evidence/phase-08 \
     -type f -name '*.yaml' 2>/dev/null | sort
 )
 
