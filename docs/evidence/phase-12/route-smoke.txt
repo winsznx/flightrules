@@ -1,8 +1,8 @@
-# Phase 12 route smoke — captured 2026-07-25T22:53:40.880Z
+# Phase 12 route smoke — captured 2026-07-25T23:30:58.001Z
 
-project    demo-commerce  019f9b74-601a-7267-8141-9e917ae7bfcb
-agent      refund-agent  019f9b74-6027-7111-85ef-5397fa92fb8e
-contract   refund-agent-local 0.1.0 (active)  019f9b7a-9961-729a-a28e-20135298d7fa
+project    demo-commerce  019f9b9c-a048-732c-9939-1bf66295bf4d
+agent      refund-agent  019f9b9c-a05b-7094-bc3c-e75f40abe68f
+contract   refund-agent-local 0.1.0 (active)  019f9b9d-2630-7039-8ea8-65d9945c1cd2
 
 HTTP  MARKER            EVIDENCE                       ROUTE
 200   landing           title+content+skip             /
@@ -22,7 +22,7 @@ HTTP  MARKER            EVIDENCE                       ROUTE
 200   contract-studio   title+content+skip             /projects/:project/agents/:agent/contracts/:contract
 200   releases          title+content+skip             /projects/:project/agents/:agent/releases
 200   release-diff      title+content+skip             /projects/:project/agents/:agent/releases/:release
-200   release-diff      title+content+skip             /projects/:project/agents/:agent/releases/019f9b7a-1cea-734b-bd0a-f9e027f238f7
+200   release-diff      title+content+skip             /projects/:project/agents/:agent/releases/019f9b9c-d6e3-7201-b83d-2479c714c69d
 200   violation         title+content+skip             /projects/:project/violations/:violation
 200   integration       title+content+skip             /projects/:project/integrations/signoz
 
