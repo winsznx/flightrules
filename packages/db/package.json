@@ -19,6 +19,12 @@
     "migrate:status": "tsx src/cli.ts status"
   },
   "dependencies": {
-    "postgres": "3.4.9"
+    "@flightrules/baseline-miner": "workspace:*",
+    "@flightrules/contract-engine": "workspace:*",
+    "@flightrules/contract-schema": "workspace:*",
+    "@flightrules/domain": "workspace:*",
+    "@flightrules/trace-graph": "workspace:*",
+    "postgres": "3.4.9",
+    "zod": "4.4.3"
   }
 }

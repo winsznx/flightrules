@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { ERROR_CODES, FlightRulesError, isErrorCode, toErrorEnvelope } from "./index.js";
 
 describe("error model", () => {
-  it("defines every error code required by the PRD error model", () => {
-    expect(ERROR_CODES).toEqual([
+  it("defines every error code PRD section 19 requires, in order", () => {
+    // PRD section 19 says "Required error codes **include**", so this asserts the required set is
+    // present and first; the three Phase 09 additions are asserted separately below.
+    expect(ERROR_CODES.slice(0, 23)).toEqual([
       "CONFIG_INVALID",
       "SIGNOZ_UNREACHABLE",
       "SIGNOZ_AUTH_FAILED",
@@ -27,6 +29,16 @@ describe("error model", () => {
       "ALERT_DID_NOT_FIRE",
       "JOB_ALREADY_RUNNING",
       "DEMO_DISABLED",
+    ]);
+  });
+
+  it("carries exactly the three Phase 09 additions recorded in ADR-0008", () => {
+    // PRD section 19 names "not found", "validation failure" and "illegal transition" as outcomes
+    // the API must distinguish, and no PRD code covers any of them.
+    expect(ERROR_CODES.slice(23)).toEqual([
+      "NOT_FOUND",
+      "VALIDATION_FAILED",
+      "STATE_TRANSITION_INVALID",
     ]);
   });
 

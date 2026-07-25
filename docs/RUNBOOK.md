@@ -84,7 +84,24 @@ Verify with `/mcp` or `claude mcp list`.
 ```bash
 make up          # PostgreSQL, health-gated
 make db-migrate  # apply migrations
+make api         # the API on API_PORT (4000 by default)
+make worker      # the job worker, in a second terminal
 ```
+
+Neither application migrates at startup. Both read the migration ledger and refuse to start against
+a database missing a migration they were built for, so a half-migrated database fails loudly instead
+of producing errors that read as product bugs.
+
+| Check | Command | Healthy result |
+|---|---|---|
+| API liveness | `curl -s localhost:4000/health/live` | `{"status":"ok",...}` |
+| API readiness | `curl -s localhost:4000/health/ready` | `"status":"ready"`, `"compatible":true` |
+| Dependencies | `curl -s localhost:4000/health/dependencies` | database `up`; SigNoz `up` or `degraded` |
+| API surface | `curl -s localhost:4000/api/openapi.json` | the generated OpenAPI document |
+
+A worker stops claiming on `SIGTERM` and finishes the job it holds. A worker that is killed leaves
+its job in `running` until the lease expires (`WORKER_LEASE_SECONDS`, 120 s by default), after which
+any worker returns it to the queue or fails it terminally once its attempts are exhausted.
 
 ---
 

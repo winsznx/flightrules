@@ -39,6 +39,45 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(tsx@4.23.1)(yaml@2.9.0))
 
+  apps/api:
+    dependencies:
+      '@flightrules/baseline-miner':
+        specifier: workspace:*
+        version: link:../../packages/baseline-miner
+      '@flightrules/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@flightrules/contract-engine':
+        specifier: workspace:*
+        version: link:../../packages/contract-engine
+      '@flightrules/contract-schema':
+        specifier: workspace:*
+        version: link:../../packages/contract-schema
+      '@flightrules/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@flightrules/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@flightrules/normaliser':
+        specifier: workspace:*
+        version: link:../../packages/normaliser
+      '@flightrules/signoz-mcp':
+        specifier: workspace:*
+        version: link:../../packages/signoz-mcp
+      '@flightrules/telemetry':
+        specifier: workspace:*
+        version: link:../../packages/telemetry
+      '@flightrules/trace-graph':
+        specifier: workspace:*
+        version: link:../../packages/trace-graph
+      fastify:
+        specifier: 5.10.0
+        version: 5.10.0
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+
   apps/demo-agent:
     dependencies:
       '@flightrules/domain':
@@ -147,6 +186,42 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
 
+  apps/worker:
+    dependencies:
+      '@flightrules/baseline-miner':
+        specifier: workspace:*
+        version: link:../../packages/baseline-miner
+      '@flightrules/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@flightrules/contract-engine':
+        specifier: workspace:*
+        version: link:../../packages/contract-engine
+      '@flightrules/contract-schema':
+        specifier: workspace:*
+        version: link:../../packages/contract-schema
+      '@flightrules/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@flightrules/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@flightrules/normaliser':
+        specifier: workspace:*
+        version: link:../../packages/normaliser
+      '@flightrules/signoz-mcp':
+        specifier: workspace:*
+        version: link:../../packages/signoz-mcp
+      '@flightrules/telemetry':
+        specifier: workspace:*
+        version: link:../../packages/telemetry
+      '@flightrules/trace-graph':
+        specifier: workspace:*
+        version: link:../../packages/trace-graph
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+
   packages/baseline-miner:
     dependencies:
       '@flightrules/contract-schema':
@@ -227,9 +302,27 @@ importers:
 
   packages/db:
     dependencies:
+      '@flightrules/baseline-miner':
+        specifier: workspace:*
+        version: link:../baseline-miner
+      '@flightrules/contract-engine':
+        specifier: workspace:*
+        version: link:../contract-engine
+      '@flightrules/contract-schema':
+        specifier: workspace:*
+        version: link:../contract-schema
+      '@flightrules/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@flightrules/trace-graph':
+        specifier: workspace:*
+        version: link:../trace-graph
       postgres:
         specifier: 3.4.9
         version: 3.4.9
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/domain: {}
 
@@ -303,7 +396,23 @@ importers:
         specifier: 5.10.0
         version: 5.10.0
 
-  packages/test-fixtures: {}
+  packages/test-fixtures:
+    dependencies:
+      '@flightrules/api':
+        specifier: workspace:*
+        version: link:../../apps/api
+      '@flightrules/contract-schema':
+        specifier: workspace:*
+        version: link:../contract-schema
+      '@flightrules/db':
+        specifier: workspace:*
+        version: link:../db
+      '@flightrules/worker':
+        specifier: workspace:*
+        version: link:../../apps/worker
+      fastify:
+        specifier: 5.10.0
+        version: 5.10.0
 
   packages/trace-graph:
     dependencies:

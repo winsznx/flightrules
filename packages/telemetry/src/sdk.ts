@@ -1,7 +1,21 @@
 import { FORBIDDEN_TELEMETRY_KEYS, registerSecretValue } from "@flightrules/domain";
-import { type Attributes, DiagConsoleLogger, DiagLogLevel, diag } from "@opentelemetry/api";
+import {
+  type Attributes,
+  DiagConsoleLogger,
+  DiagLogLevel,
+  diag,
+  metrics,
+} from "@opentelemetry/api";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { resourceFromAttributes } from "@opentelemetry/resources";
+import {
+  InMemoryMetricExporter,
+  MeterProvider,
+  PeriodicExportingMetricReader,
+  type PushMetricExporter,
+  type ResourceMetrics,
+} from "@opentelemetry/sdk-metrics";
 import {
   BatchSpanProcessor,
   InMemorySpanExporter,
@@ -66,12 +80,25 @@ export interface TelemetryOptions {
   /** Adds an in-memory exporter alongside OTLP so tests can assert on real exported spans. */
   readonly captureInMemory?: boolean;
   readonly diagnostics?: boolean;
+  /**
+   * Emit metrics as well as traces (PRD section 17.4, FR-016).
+   *
+   * Off by default so a demo service that only produces traces does not open a second exporter.
+   * The API and the worker both enable it.
+   */
+  readonly metrics?: boolean;
+  /** Export interval for metrics. Short in tests, so an assertion does not wait a minute. */
+  readonly metricIntervalMs?: number;
 }
 
 export interface TelemetryHandle {
   readonly provider: NodeTracerProvider;
+  readonly meterProvider: MeterProvider | undefined;
   readonly redactor: ForbiddenAttributeRedactor;
   readonly memory: InMemorySpanExporter | undefined;
+  readonly metricMemory: InMemoryMetricExporter | undefined;
+  /** Collected metrics from the in-memory reader. Empty unless `captureInMemory` was set. */
+  collectedMetrics(): readonly ResourceMetrics[];
   /** Reads finished spans. Must be called before {@link shutdown}, which clears the exporter. */
   finishedSpans(): readonly ReadableSpan[];
   forceFlush(): Promise<void>;
@@ -113,20 +140,54 @@ export function startTelemetry(options: TelemetryOptions): TelemetryHandle {
   ];
   if (memory) processors.push(new SimpleSpanProcessor(memory));
 
-  const provider = new NodeTracerProvider({
-    resource: resourceFromAttributes(buildResourceAttributes(options)),
-    spanProcessors: processors,
-  });
+  const resource = resourceFromAttributes(buildResourceAttributes(options));
+
+  const provider = new NodeTracerProvider({ resource, spanProcessors: processors });
   provider.register();
+
+  let meterProvider: MeterProvider | undefined;
+  let metricMemory: InMemoryMetricExporter | undefined;
+  if (options.metrics) {
+    const readers = [
+      new PeriodicExportingMetricReader({
+        exporter: new OTLPMetricExporter({
+          url: `${options.otlpEndpoint}/v1/metrics`,
+        }) as PushMetricExporter,
+        exportIntervalMillis: options.metricIntervalMs ?? 15_000,
+      }),
+    ];
+    if (options.captureInMemory) {
+      // AggregationTemporality.DELTA is 1; importing the enum here would pull a value-only import
+      // into a module that otherwise only needs types, so the reader is constructed with the
+      // exporter's own default temporality instead.
+      metricMemory = new InMemoryMetricExporter(0);
+      readers.push(
+        new PeriodicExportingMetricReader({
+          exporter: metricMemory,
+          exportIntervalMillis: options.metricIntervalMs ?? 100,
+        }),
+      );
+    }
+    meterProvider = new MeterProvider({ resource, readers });
+    metrics.setGlobalMeterProvider(meterProvider);
+  }
 
   return {
     provider,
+    meterProvider,
     redactor,
     memory,
+    metricMemory,
+    collectedMetrics: () => metricMemory?.getMetrics() ?? [],
     finishedSpans: () => memory?.getFinishedSpans() ?? [],
-    forceFlush: () => provider.forceFlush(),
+    forceFlush: async () => {
+      await provider.forceFlush();
+      await meterProvider?.forceFlush();
+    },
     shutdown: async () => {
       await provider.forceFlush();
+      await meterProvider?.forceFlush();
+      await meterProvider?.shutdown();
       await provider.shutdown();
     },
   };

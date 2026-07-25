@@ -1,12 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import {
-  connect,
-  MIGRATIONS_DIR,
-  migrateDownOne,
-  migrateUp,
-  readApplied,
-  type Sql,
-} from "./index.js";
+import { connect, MIGRATIONS_DIR, migrateDownOne, migrateUp, readApplied } from "./index.js";
+import type { Db } from "./sql.js";
 
 const databaseUrl = process.env["DATABASE_URL"];
 if (!databaseUrl) {
@@ -16,7 +10,7 @@ if (!databaseUrl) {
   );
 }
 
-let sql: Sql;
+let sql: Db;
 
 beforeAll(async () => {
   sql = connect(databaseUrl, { max: 2 });

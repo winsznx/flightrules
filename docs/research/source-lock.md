@@ -549,3 +549,23 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
   (`deployment.environment.name`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`,
   `service.name`, `timestamp`), 0 mismatched.
 - Local file: `packages/baseline-miner/src/retrieve.ts`, `packages/baseline-miner/src/mining.signoz.integration.test.ts`.
+
+## SL-052 — `postgres@3.4.9` types a pool and a transaction as siblings, not as parent and child
+
+- Source: the installed `node_modules/.pnpm/postgres@3.4.9/.../types/index.d.ts` (tier 1, installed runtime)
+- Verified claim: `interface Sql<TTypes> extends ISql<TTypes>` and
+  `interface TransactionSql<TTypes> extends ISql<TTypes>`. Neither extends the other. `Sql` adds
+  `begin`, `end`, `CLOSE`, `END`, `PostgresError`, `options`, `parameters` and the listener surface;
+  `TransactionSql` adds `savepoint` and `prepare`. So a function typed to take `Sql` **cannot** be
+  called with the handle `sql.begin(cb)` provides, and a repository written that way needs a second
+  copy of every query to run inside a transaction.
+- Impact: every FlightRules repository function takes `ISql`, re-exported as
+  `@flightrules/db`'s `Db`. `Sql` is reserved for the pool, which is the only place `begin` and
+  `end` are called. This is what makes "the audit row is written by the transaction that made the
+  change" expressible without duplicating queries.
+- Also verified by direct probe against the running PostgreSQL 16, in the same session:
+  `sql`select ${sql(["id","name"])} from projects`` renders an identifier list;
+  `returning ${sql(columns)}` works the same way; a nested `sql`…`` fragment interpolates; and
+  `sql.json(value)` must be cast with `::jsonb` when it is an operand of `||`, because the parameter
+  is sent as `json` and `jsonb || json` has no operator.
+- Local file: `packages/db/src/sql.ts`, `packages/db/src/repositories/*.ts`.

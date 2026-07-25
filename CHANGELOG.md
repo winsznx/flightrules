@@ -352,6 +352,51 @@ All notable changes to FlightRules are recorded here, one section per phase.
   contract unable to pass its own baseline. The insufficient-evidence path is proven by a dedicated
   fixture contract instead.
 
+## Phase 09 — Application core, API, jobs, and persistence (2026-07-25)
+
+### Added
+
+- `packages/db/migrations/0003_application_core.sql` — the thirteen remaining P0 tables of PRD
+  section 14, completing the sixteen: `agents`, `releases`, `jobs`, `trace_runs`, `trace_graphs`,
+  `baseline_versions`, `route_families`, `contracts`, `contract_rules`, `evaluations`,
+  `run_evaluations`, `violations`, `signoz_artifacts`. Every closed vocabulary is a check
+  constraint, every percentage is tied to its own counts by a check, and one active contract per
+  agent and environment is a partial unique index.
+- `packages/db` repositories for all sixteen tables, canonical JSON for every `jsonb` write,
+  canonical-graph restoration on read, cursor pagination over the UUIDv7 key, the
+  schema-compatibility check both applications refuse to start without, and the shared job input
+  contract.
+- `apps/api` — Fastify. Every Phase 09 route of PRD section 15, the typed error envelope with an
+  exhaustive code-to-status map, bounded request identifiers, structured redacted logging, the
+  body-size limit, and an OpenAPI document generated from the same route declarations that serve
+  the traffic.
+- `apps/worker` — race-safe claiming through `for update skip locked`, leases with heartbeats and
+  recovery, monotonic progress events, result commit inside the transaction that marks success,
+  retry classification, cancellation and graceful shutdown; four job handlers that call the
+  existing deterministic packages rather than reimplementing them.
+- Metric emission (PRD section 17.4, FR-016): `packages/telemetry` now creates a meter provider and
+  a typed recording surface whose dimensions are filtered against the declared spec.
+- `docs/adr/0008-application-core-persistence-and-jobs.md`.
+- 132 tests: 32 unit, 94 database integration, 6 live SigNoz — including two-connection concurrency
+  tests, atomic-commit tests that deliberately crash, lease recovery, and the full end-to-end gate.
+
+### Changed
+
+- `packages/domain` gains `NOT_FOUND`, `VALIDATION_FAILED` and `STATE_TRANSITION_INVALID`. PRD
+  section 19 opens with "Required error codes **include**" and names these outcomes as ones the API
+  must distinguish; ADR-0008 decision 10 records the addition, and a test pins the PRD's own
+  twenty-three first and unchanged.
+
+### Verified at runtime
+
+- 76 live `refund-agent-v1` runs mined through the job system into one route family at
+  `43070aa4…`, persisted with 80 trace runs and 80 canonical graphs in one transaction.
+- A 28-rule draft contract proposed from the reviewed baseline, accepted by the Phase 07 validator,
+  stored with every rule's evidence basis, then approved and activated.
+- A fresh v1 evaluation passed with 0 violations; the canary failed with 40 violations including 12
+  zero-tolerance, every one resolvable to its trace evidence through the API.
+- A repeated identical submission returned the same job; a restarted API served every result.
+
 ## Phase 08 — Baseline mining and contract proposal (2026-07-25)
 
 ### Added

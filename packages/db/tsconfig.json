@@ -6,5 +6,12 @@
     "tsBuildInfoFile": "./dist/.tsbuildinfo"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.integration.test.ts"]
+  "exclude": ["src/**/*.test.ts", "src/**/*.integration.test.ts"],
+  "references": [
+    { "path": "../domain" },
+    { "path": "../trace-graph" },
+    { "path": "../contract-schema" },
+    { "path": "../contract-engine" },
+    { "path": "../baseline-miner" }
+  ]
 }

@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.integration.test.ts"],
+  "references": [
+    { "path": "../../packages/config" },
+    { "path": "../../packages/domain" },
+    { "path": "../../packages/telemetry" },
+    { "path": "../../packages/signoz-mcp" },
+    { "path": "../../packages/normaliser" },
+    { "path": "../../packages/trace-graph" },
+    { "path": "../../packages/contract-schema" },
+    { "path": "../../packages/contract-engine" },
+    { "path": "../../packages/baseline-miner" },
+    { "path": "../../packages/db" }
+  ]
+}
