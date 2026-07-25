@@ -174,7 +174,7 @@ evaluation.id|run.id`.
 PHASE: 04 OpenTelemetry instrumentation
 STATUS: PASS
 BRANCH: phase/04-telemetry
-COMMITS: <filled at commit>
+COMMITS: 4d392b06b0e3e2e0c6650cd2e861083afc5e2df7 (phase), a4101caab8e91e19c6adcb389c985c0ded35effa (merge to main)
 SOURCES VERIFIED: SL-029 to SL-032 re-confirmed against the installed packages at runtime; attribute names are imported from @opentelemetry/semantic-conventions and its /incubating entry point rather than written as literals, so the stability of every name is verified by construction
 IMPLEMENTED: packages/telemetry with the attribute register in code, OTLP trace export, a forbidden-attribute redacting span processor, explicit Fastify server-span instrumentation with incoming context extraction, per-service bootstrap, and declared metric instruments with permitted dimension sets; agent run spans and per-step tool spans; outbound W3C trace context propagation; OTLP configuration for all six demo containers
 TESTS RUN: pnpm run typecheck; make test; make test-integration; make verify; docker compose up -d --build --wait; live v1 and v2 runs; MCP retrieval of both traces

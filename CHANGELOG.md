@@ -157,3 +157,28 @@ All notable changes to FlightRules are recorded here, one section per phase.
 - Against live containers: v1 produces one ledger entry, v2 produces two with distinct idempotency
   key hashes, and both return a byte-identical customer message.
 - 20 seeded v1 runs produce zero duplicate side effects; one appended v2 run produces exactly one.
+
+## Phase 04 — OpenTelemetry instrumentation (2026-07-25)
+
+### Added
+
+- `@flightrules/telemetry`: attribute register imported from the installed semantic-conventions
+  packages, OTLP trace export, a forbidden-attribute redacting span processor, explicit Fastify
+  server-span instrumentation with incoming context extraction, and declared metric instruments
+  with their permitted dimension sets.
+- Agent run spans and per-step tool spans with release, run, side-effect, data-domain, retry and
+  step-category attributes; W3C trace context propagated to every service call.
+
+### Verified
+
+- The v1 run produces a complete 12-span trace across all six services, retrieved from SigNoz.
+- The v2 run produces an 8-span trace with the policy and fraud services absent and two write
+  spans at retry 0 and 1 — the regression is visible in telemetry alone.
+- 193 tests pass; nothing skipped.
+
+### Known limitation
+
+- The timed-out payment attempt's server span is never exported, because the client aborts while
+  the handler is still in flight and `onRequestAbort` does not fire for it. Duplicate detection is
+  unaffected (both client-side write spans are present). Carried into Phase 06 as an explicit
+  trace-quality requirement.
