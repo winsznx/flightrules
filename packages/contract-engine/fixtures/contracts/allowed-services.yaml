@@ -1,0 +1,37 @@
+apiVersion: flightrules.dev/v1alpha1
+kind: TrajectoryContract
+metadata:
+  id: allowed-services
+  name: Allowed services rule
+  version: 1.0.0
+  project: demo-commerce
+  agent: refund-agent
+  environment: production
+  createdAt: 2026-07-25T00:00:00Z
+spec:
+  selectors:
+    workflowName: refund-workflow
+    releaseAttribute: agent.release.id
+    environmentAttribute: deployment.environment.name
+    rootSpan: refund.request
+  approvedRoutes: []
+  rules:
+    - id: approved-services-only
+      type: allowed_values
+      field: service.name
+      values:
+        - flightrules-demo-agent
+        - flightrules-policy-service
+        - flightrules-order-service
+        - flightrules-fraud-service
+        - flightrules-payment-service
+        - flightrules-notification-service
+      severity: high
+  gate:
+    minCompletedRuns: 1
+    evaluationTimeoutSeconds: 60
+    maxViolationPercent: 0
+    maxUnknownRoutePercent: 0
+    maxLatencyRegressionPercent: 10
+    maxTokenRegressionPercent: 10
+    zeroToleranceRuleIds: []

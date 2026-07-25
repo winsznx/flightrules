@@ -1,0 +1,404 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://flightrules.dev/schema/trajectory-contract.v1alpha1.schema.json",
+  "title": "FlightRules TrajectoryContract v1alpha1",
+  "description": "Structural schema for the FlightRules contract DSL (PRD section 10). This describes shape only. Cross-field consistency — duplicate rule identifiers, impossible ranges, contradictory rules, undefined route and rule references — is decided by @flightrules/contract-schema, which is the authority. A document accepted here may still be rejected there.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "flightrules.dev/v1alpha1" },
+    "kind": { "const": "TrajectoryContract" },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "spec": { "$ref": "#/$defs/spec" }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$",
+      "maxLength": 128
+    },
+    "attributeKey": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9._-]*$",
+      "maxLength": 128
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^(sha256:)?[0-9a-f]{64}$"
+    },
+    "scalar": {
+      "type": ["string", "number", "boolean"]
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "severity": {
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "scope": {
+      "enum": ["run", "release"]
+    },
+    "relationship": {
+      "enum": ["direct", "any_depth"]
+    },
+    "operator": {
+      "enum": ["equals", "not_equals", "in", "not_in", "exists", "matches"]
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "version", "project", "agent", "environment", "createdAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$"
+        },
+        "project": { "$ref": "#/$defs/identifier" },
+        "agent": { "$ref": "#/$defs/identifier" },
+        "environment": { "$ref": "#/$defs/identifier" },
+        "createdAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?(Z|[+-]\\d{2}:\\d{2})$"
+        },
+        "baselineRelease": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    },
+    "attributeCondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "operator"],
+      "properties": {
+        "key": { "$ref": "#/$defs/attributeKey" },
+        "operator": { "$ref": "#/$defs/operator" },
+        "value": {
+          "oneOf": [
+            { "$ref": "#/$defs/scalar" },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 256,
+              "items": { "$ref": "#/$defs/scalar" }
+            }
+          ]
+        }
+      }
+    },
+    "selector": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "namePattern": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "service": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "operation": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "attributes": {
+          "oneOf": [
+            {
+              "type": "object",
+              "maxProperties": 32,
+              "propertyNames": { "$ref": "#/$defs/attributeKey" },
+              "additionalProperties": { "$ref": "#/$defs/scalar" }
+            },
+            {
+              "type": "array",
+              "maxItems": 32,
+              "items": { "$ref": "#/$defs/attributeCondition" }
+            }
+          ]
+        }
+      },
+      "not": {
+        "required": ["name", "namePattern"]
+      }
+    },
+    "ruleBase": {
+      "type": "object",
+      "required": ["id", "type", "severity"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "description": { "type": "string", "maxLength": 1024 }
+      }
+    },
+    "rule": {
+      "allOf": [{ "$ref": "#/$defs/ruleBase" }],
+      "oneOf": [
+        { "$ref": "#/$defs/requiredSpanRule" },
+        { "$ref": "#/$defs/requiredAncestryRule" },
+        { "$ref": "#/$defs/requiredEdgeRule" },
+        { "$ref": "#/$defs/forbiddenSpanRule" },
+        { "$ref": "#/$defs/forbiddenPathRule" },
+        { "$ref": "#/$defs/cardinalityRule" },
+        { "$ref": "#/$defs/allowedValuesRule" },
+        { "$ref": "#/$defs/attributeConstraintRule" },
+        { "$ref": "#/$defs/retryBudgetRule" },
+        { "$ref": "#/$defs/approvedRoutesRule" },
+        { "$ref": "#/$defs/numericBudgetRule" }
+      ]
+    },
+    "requiredSpanRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "severity", "selector", "cardinality"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "required_span" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "description": { "type": "string", "maxLength": 1024 },
+        "selector": { "$ref": "#/$defs/selector" },
+        "cardinality": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["min", "max"],
+          "properties": {
+            "min": { "$ref": "#/$defs/nonNegativeInteger" },
+            "max": { "$ref": "#/$defs/nonNegativeInteger" }
+          }
+        }
+      }
+    },
+    "requiredAncestryRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "severity", "ancestor", "descendant", "relationship"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "required_ancestry" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "description": { "type": "string", "maxLength": 1024 },
+        "ancestor": { "$ref": "#/$defs/selector" },
+        "descendant": { "$ref": "#/$defs/selector" },
+        "relationship": { "$ref": "#/$defs/relationship" }
+      }
+    },
+    "requiredEdgeRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "severity", "from", "to", "relationship"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "required_edge" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "description": { "type": "string", "maxLength": 1024 },
+        "from": { "$ref": "#/$defs/selector" },
+        "to": { "$ref": "#/$defs/selector" },
+        "relationship": { "$ref": "#/$defs/relationship" }
+      }
+    },
+    "forbiddenSpanRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "severity", "selector"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "forbidden_span" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "description": { "type": "string", "maxLength": 1024 },
+        "selector": { "$ref": "#/$defs/selector" }
+      }
+    },
+    "forbiddenPathRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "severity", "from", "to"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "forbidden_path" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "description": { "type": "string", "maxLength": 1024 },
+        "from": { "$ref": "#/$defs/selector" },
+        "to": { "$ref": "#/$defs/selector" },
+        "unless": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["contains"],
+          "properties": {
+            "contains": { "$ref": "#/$defs/selector" }
+          }
+        }
+      }
+    },
+    "cardinalityRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "severity", "selector", "min", "max", "scope"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "cardinality" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "description": { "type": "string", "maxLength": 1024 },
+        "selector": { "$ref": "#/$defs/selector" },
+        "min": { "$ref": "#/$defs/nonNegativeInteger" },
+        "max": { "$ref": "#/$defs/nonNegativeInteger" },
+        "scope": { "$ref": "#/$defs/scope" }
+      }
+    },
+    "allowedValuesRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "severity", "field", "values"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "allowed_values" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "description": { "type": "string", "maxLength": 1024 },
+        "field": { "$ref": "#/$defs/attributeKey" },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/scalar" }
+        },
+        "selector": { "$ref": "#/$defs/selector" }
+      }
+    },
+    "attributeConstraintRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "severity", "selector", "field", "operator"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "attribute_constraint" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "description": { "type": "string", "maxLength": 1024 },
+        "selector": { "$ref": "#/$defs/selector" },
+        "field": { "$ref": "#/$defs/attributeKey" },
+        "operator": { "$ref": "#/$defs/operator" },
+        "value": {
+          "oneOf": [
+            { "$ref": "#/$defs/scalar" },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 256,
+              "items": { "$ref": "#/$defs/scalar" }
+            }
+          ]
+        }
+      }
+    },
+    "retryBudgetRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "severity",
+        "selector",
+        "maxPerTool",
+        "maxRunTotal",
+        "sideEffectMax"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "retry_budget" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "description": { "type": "string", "maxLength": 1024 },
+        "selector": { "$ref": "#/$defs/selector" },
+        "maxPerTool": { "$ref": "#/$defs/nonNegativeInteger" },
+        "maxRunTotal": { "$ref": "#/$defs/nonNegativeInteger" },
+        "sideEffectMax": { "$ref": "#/$defs/nonNegativeInteger" }
+      }
+    },
+    "approvedRoutesRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "severity", "fingerprints", "minSimilarity"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "approved_routes" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "description": { "type": "string", "maxLength": 1024 },
+        "fingerprints": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000,
+          "items": { "$ref": "#/$defs/fingerprint" }
+        },
+        "minSimilarity": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "numericBudgetRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "severity", "metric", "aggregation", "max", "scope"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "numeric_budget" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "description": { "type": "string", "maxLength": 1024 },
+        "metric": {
+          "enum": ["run.duration_ms", "gen_ai.usage.input_tokens", "gen_ai.usage.output_tokens"]
+        },
+        "aggregation": { "enum": ["sum", "max", "avg", "p95", "p99"] },
+        "max": { "$ref": "#/$defs/nonNegativeInteger" },
+        "scope": { "$ref": "#/$defs/scope" }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minCompletedRuns",
+        "evaluationTimeoutSeconds",
+        "maxViolationPercent",
+        "maxUnknownRoutePercent",
+        "maxLatencyRegressionPercent",
+        "maxTokenRegressionPercent",
+        "zeroToleranceRuleIds"
+      ],
+      "properties": {
+        "minCompletedRuns": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "evaluationTimeoutSeconds": { "type": "integer", "minimum": 1, "maximum": 86400 },
+        "maxViolationPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "maxUnknownRoutePercent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "maxLatencyRegressionPercent": { "type": "number", "minimum": 0, "maximum": 10000 },
+        "maxTokenRegressionPercent": { "type": "number", "minimum": 0, "maximum": 10000 },
+        "zeroToleranceRuleIds": {
+          "type": "array",
+          "maxItems": 500,
+          "items": { "$ref": "#/$defs/identifier" }
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selectors", "approvedRoutes", "rules", "gate"],
+      "properties": {
+        "selectors": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["workflowName", "releaseAttribute", "environmentAttribute"],
+          "properties": {
+            "workflowName": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "releaseAttribute": { "$ref": "#/$defs/attributeKey" },
+            "environmentAttribute": { "$ref": "#/$defs/attributeKey" },
+            "rootSpan": { "type": "string", "minLength": 1, "maxLength": 128 }
+          }
+        },
+        "approvedRoutes": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": { "$ref": "#/$defs/fingerprint" }
+        },
+        "rules": {
+          "type": "array",
+          "maxItems": 500,
+          "items": { "$ref": "#/$defs/rule" }
+        },
+        "budgets": {
+          "type": "object",
+          "maxProperties": 0
+        },
+        "gate": { "$ref": "#/$defs/gate" }
+      }
+    }
+  }
+}

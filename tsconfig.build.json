@@ -20,6 +20,12 @@
       "path": "./packages/trace-graph"
     },
     {
+      "path": "./packages/contract-schema"
+    },
+    {
+      "path": "./packages/contract-engine"
+    },
+    {
       "path": "./packages/db"
     },
     {

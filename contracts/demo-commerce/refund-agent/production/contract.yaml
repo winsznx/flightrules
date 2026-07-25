@@ -1,0 +1,226 @@
+apiVersion: flightrules.dev/v1alpha1
+kind: TrajectoryContract
+metadata:
+  id: refund-agent-production
+  name: Refund Agent Production Contract
+  version: 1.0.0
+  project: demo-commerce
+  agent: refund-agent
+  environment: production
+  createdAt: 2026-07-25T00:00:00Z
+  baselineRelease: refund-agent-v1
+spec:
+  selectors:
+    workflowName: refund-workflow
+    releaseAttribute: agent.release.id
+    environmentAttribute: deployment.environment.name
+    rootSpan: refund.request
+
+  # The canonical route fingerprint of the approved refund-agent-v1 topology, produced by
+  # @flightrules/trace-graph from a trace fetched from SigNoz. Every rule that references a route
+  # family must reference a fingerprint listed here.
+  approvedRoutes:
+    - sha256:43070aa4af4f6c2c912a8d7bcc724f1d199e0425dc8ad7256b528eec195cb037
+
+  rules:
+    # ---------------------------------------------------------------------------------------------
+    # Prerequisites the release must not skip. These are the rules the canary breaks.
+    # ---------------------------------------------------------------------------------------------
+    - id: require-policy-check
+      type: required_span
+      description: A refund may not be decided without retrieving the refund policy.
+      selector:
+        name: policy.retrieve
+      cardinality:
+        min: 1
+        max: 1
+      severity: critical
+
+    - id: require-fraud-check
+      type: required_span
+      description: A refund may not be issued without a fraud check.
+      selector:
+        name: fraud.check
+      cardinality:
+        min: 1
+        max: 1
+      severity: critical
+
+    # ---------------------------------------------------------------------------------------------
+    # Side-effect discipline. `single-refund-write` is what catches the duplicate refund.
+    # ---------------------------------------------------------------------------------------------
+    - id: single-refund-write
+      type: cardinality
+      description: The refund payment call must be issued at most once per run.
+      selector:
+        name: payment.refund
+        attributes:
+          agent.side_effect: write
+      min: 0
+      max: 1
+      scope: run
+      severity: critical
+
+    - id: refund-must-be-idempotent
+      type: attribute_constraint
+      description: Every refund payment call must carry an idempotency key.
+      selector:
+        name: payment.refund
+      field: agent.idempotency.present
+      operator: equals
+      value: true
+      severity: critical
+
+    - id: bounded-retries
+      type: retry_budget
+      description: A side-effecting tool call may not be retried at all.
+      selector:
+        operation: execute_tool
+      maxPerTool: 2
+      maxRunTotal: 4
+      sideEffectMax: 0
+      severity: high
+
+    # ---------------------------------------------------------------------------------------------
+    # Structure. `refund-handler-follows-refund-call` is the rule whose evidence the aborted
+    # first payment attempt destroys, so on the canary it reports insufficient evidence rather
+    # than a violation. See docs/evidence/phase-07-result.md.
+    # ---------------------------------------------------------------------------------------------
+    - id: refund-handler-follows-refund-call
+      type: required_edge
+      description: Every refund payment call must be answered by the payment service.
+      from:
+        name: payment.refund
+      to:
+        name: payment.refund.handler
+      relationship: direct
+      severity: high
+
+    - id: refund-under-workflow-root
+      type: required_ancestry
+      description: A refund payment call must occur inside the refund workflow, never standalone.
+      ancestor:
+        name: refund.request
+      descendant:
+        name: payment.refund
+      relationship: any_depth
+      severity: high
+
+    # ---------------------------------------------------------------------------------------------
+    # Blast radius. Neither release touches the admin domain; these bound what a future one may do.
+    # ---------------------------------------------------------------------------------------------
+    - id: forbid-admin-write
+      type: forbidden_span
+      description: The refund agent may never write to the admin data domain.
+      selector:
+        attributes:
+          agent.data_domain: admin
+          agent.side_effect: write
+      severity: critical
+
+    - id: no-unapproved-admin-path
+      type: forbidden_path
+      description: No path from a customer refund request may reach the admin domain without an approval step.
+      from:
+        name: refund.request
+      to:
+        attributes:
+          agent.data_domain: admin
+      unless:
+        contains:
+          name: approval.verify
+      severity: critical
+
+    # ---------------------------------------------------------------------------------------------
+    # Known surface. An unknown tool or service is a behavioural change even when nothing fails.
+    # ---------------------------------------------------------------------------------------------
+    - id: approved-tools-only
+      type: allowed_values
+      description: The agent may only call tools that were present in the approved baseline.
+      field: gen_ai.tool.name
+      values:
+        - retrieve_policy
+        - lookup_order
+        - check_fraud
+        - calculate_refund
+        - issue_refund
+        - notify_customer
+      severity: high
+
+    - id: approved-services-only
+      type: allowed_values
+      description: The trajectory may only involve services that were present in the approved baseline.
+      field: service.name
+      values:
+        - flightrules-demo-agent
+        - flightrules-policy-service
+        - flightrules-order-service
+        - flightrules-fraud-service
+        - flightrules-payment-service
+        - flightrules-notification-service
+      severity: high
+
+    # ---------------------------------------------------------------------------------------------
+    # Route identity.
+    # ---------------------------------------------------------------------------------------------
+    - id: approved-route-family
+      type: approved_routes
+      description: The run must follow an approved route family.
+      fingerprints:
+        - sha256:43070aa4af4f6c2c912a8d7bcc724f1d199e0425dc8ad7256b528eec195cb037
+      minSimilarity: 0.92
+      severity: high
+
+    # ---------------------------------------------------------------------------------------------
+    # Budgets. The run-scoped latency budget catches the retry storm.
+    #
+    # The token budget is release-scoped deliberately. This agent makes no model call, so no span
+    # carries gen_ai.usage.output_tokens, and a *run*-scoped token budget would correctly report
+    # insufficient evidence on every run — which would make the whole run insufficient_data and the
+    # active contract unable to pass its own baseline. A rule that can never be decided against the
+    # agent it governs is a contract-authoring error, not a finding. Release scope defers it to the
+    # Phase 11 aggregation, where it will have data if this agent ever calls a model.
+    #
+    # The insufficient-evidence path is proven instead by
+    # packages/contract-engine/fixtures/contracts/run-scoped-token-budget.yaml, which is evaluated
+    # against these same two real traces in the unit and live integration suites.
+    # ---------------------------------------------------------------------------------------------
+    - id: run-latency-budget
+      type: numeric_budget
+      description: A single refund run must complete within 500 milliseconds.
+      metric: run.duration_ms
+      aggregation: max
+      max: 500
+      scope: run
+      severity: medium
+
+    - id: release-latency-budget
+      type: numeric_budget
+      description: Release-wide p95 refund latency must stay within 8 seconds.
+      metric: run.duration_ms
+      aggregation: p95
+      max: 8000
+      scope: release
+      severity: medium
+
+    - id: output-token-budget
+      type: numeric_budget
+      description: Release-wide p95 output tokens must stay within 1200.
+      metric: gen_ai.usage.output_tokens
+      aggregation: p95
+      max: 1200
+      scope: release
+      severity: medium
+
+  gate:
+    minCompletedRuns: 20
+    evaluationTimeoutSeconds: 600
+    maxViolationPercent: 0.5
+    maxUnknownRoutePercent: 1.0
+    maxLatencyRegressionPercent: 20
+    maxTokenRegressionPercent: 25
+    zeroToleranceRuleIds:
+      - require-policy-check
+      - require-fraud-check
+      - single-refund-write
+      - refund-must-be-idempotent

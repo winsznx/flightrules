@@ -1,0 +1,34 @@
+apiVersion: flightrules.dev/v1alpha1
+kind: TrajectoryContract
+metadata:
+  id: attribute-constraint
+  name: Attribute constraint rule
+  version: 1.0.0
+  project: demo-commerce
+  agent: refund-agent
+  environment: production
+  createdAt: 2026-07-25T00:00:00Z
+spec:
+  selectors:
+    workflowName: refund-workflow
+    releaseAttribute: agent.release.id
+    environmentAttribute: deployment.environment.name
+    rootSpan: refund.request
+  approvedRoutes: []
+  rules:
+    - id: refund-must-be-idempotent
+      type: attribute_constraint
+      selector:
+        name: payment.refund
+      field: agent.idempotency.present
+      operator: equals
+      value: true
+      severity: critical
+  gate:
+    minCompletedRuns: 1
+    evaluationTimeoutSeconds: 60
+    maxViolationPercent: 0
+    maxUnknownRoutePercent: 0
+    maxLatencyRegressionPercent: 10
+    maxTokenRegressionPercent: 10
+    zeroToleranceRuleIds: []

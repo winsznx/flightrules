@@ -1,0 +1,33 @@
+apiVersion: flightrules.dev/v1alpha1
+kind: TrajectoryContract
+metadata:
+  id: run-latency-budget
+  name: Run latency budget
+  version: 1.0.0
+  project: demo-commerce
+  agent: refund-agent
+  environment: production
+  createdAt: 2026-07-25T00:00:00Z
+spec:
+  selectors:
+    workflowName: refund-workflow
+    releaseAttribute: agent.release.id
+    environmentAttribute: deployment.environment.name
+    rootSpan: refund.request
+  approvedRoutes: []
+  rules:
+    - id: run-latency-budget
+      type: numeric_budget
+      metric: run.duration_ms
+      aggregation: max
+      max: 500
+      scope: run
+      severity: medium
+  gate:
+    minCompletedRuns: 1
+    evaluationTimeoutSeconds: 60
+    maxViolationPercent: 0
+    maxUnknownRoutePercent: 0
+    maxLatencyRegressionPercent: 10
+    maxTokenRegressionPercent: 10
+    zeroToleranceRuleIds: []

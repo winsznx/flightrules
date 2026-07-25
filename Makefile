@@ -2,7 +2,7 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 .PHONY: help verify-env install lint lint-fix format format-check typecheck test test-integration \
         test-integration-db test-integration-signoz test-e2e build up down db-migrate db-rollback db-status scan-secrets scan-licences \
-        scan-deps verify clean demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
+        scan-deps verify clean contract-validate demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
         signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility
 
 help: ## Show available targets
@@ -75,6 +75,9 @@ db-rollback: ## Revert the most recent database migration
 db-status: ## Show applied database migrations
 	pnpm --filter @flightrules/db run migrate:status
 
+contract-validate: ## Validate every committed contract document
+	@bash scripts/validate-contracts.sh
+
 scan-secrets: ## Scan the repository for committed secrets
 	pnpm run scan:secrets
 
@@ -118,6 +121,7 @@ verify: ## Complete validation suite
 	@$(MAKE) typecheck
 	@$(MAKE) test
 	@$(MAKE) build
+	@$(MAKE) contract-validate
 	@$(MAKE) scan-secrets
 	@$(MAKE) scan-licences
 
