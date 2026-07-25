@@ -147,6 +147,37 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
 
+  packages/baseline-miner:
+    dependencies:
+      '@flightrules/contract-schema':
+        specifier: workspace:*
+        version: link:../contract-schema
+      '@flightrules/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@flightrules/normaliser':
+        specifier: workspace:*
+        version: link:../normaliser
+      '@flightrules/signoz-mcp':
+        specifier: workspace:*
+        version: link:../signoz-mcp
+      '@flightrules/trace-graph':
+        specifier: workspace:*
+        version: link:../trace-graph
+      yaml:
+        specifier: 2.9.0
+        version: 2.9.0
+    devDependencies:
+      '@flightrules/contract-engine':
+        specifier: workspace:*
+        version: link:../contract-engine
+      '@flightrules/test-fixtures':
+        specifier: workspace:*
+        version: link:../test-fixtures
+      fast-check:
+        specifier: 4.9.0
+        version: 4.9.0
+
   packages/config:
     dependencies:
       zod:

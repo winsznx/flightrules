@@ -1,0 +1,505 @@
+#  FlightRules generated this contract from mined baseline evidence. It is a DRAFT.
+#  Nothing here is enforced until a human approves and activates the contract.
+#
+#  Baseline        bl-cf3f1e336ce4de3a1ea727a856ba827a
+#  Sample size     34 approved run(s)
+#  Route families  1 approved
+#  Normaliser      1.0.0 (57dee0d05549eebd)
+#  Content hash    46b1d9edc0225748345514466d9e6e260db5dc03fe75a4b41f23ac1977d5258d
+#
+#  Assumptions
+#    - Every rule was derived from 34 approved run(s) of release refund-agent-v1 between 2026-07-25T09:53:45.451Z and 2026-07-25T15:53:45.451Z.
+#    - A step is proposed as required only when it occurred in every observable approved run; the required-support threshold of 1.000000 classifies the rest for review but never proposes a rule the baseline itself violates.
+#    - A cardinality bound is the 95th percentile of the observed per-run counts when the maximum exceeds it, so an outlying duplicate is disclosed rather than permitted.
+#    - Retry allowances on a side-effecting step are never widened by a safety margin.
+#    - Absent telemetry is never treated as zero: a metric no approved run reported is disclosed and no budget is proposed for it.
+#    - Route identity is exact by fingerprint under normaliser 1.0.0 (57dee0d05549); a similarity score only classifies a failure and never decides one.
+#    - This proposal is a draft. No rule is active until a human approves and activates the contract.
+#
+#  Disclosures
+#    - BUDGET_NOT_PROPOSED [gen_ai.usage.input_tokens]: No gen_ai.usage.input_tokens budget is proposed: ATTRIBUTE_NOT_EMITTED (0 of 34 run(s) reported it).
+#    - BUDGET_NOT_PROPOSED [gen_ai.usage.output_tokens]: No gen_ai.usage.output_tokens budget is proposed: ATTRIBUTE_NOT_EMITTED (0 of 34 run(s) reported it).
+#    - FIELD_TYPE_UNVERIFIED: The SigNoz field catalogue does not list deployment.environment.name, gen_ai.usage.input_tokens, gen_ai.usage.output_tokens, service.name, timestamp. Each is declared as a string, which is the server's own default resolution, so a null return means the value was not emitted rather than wrongly typed.
+#
+#  Approved route fingerprints
+#    - sha256:43070aa4af4f6c2c912a8d7bcc724f1d199e0425dc8ad7256b528eec195cb037
+
+apiVersion: flightrules.dev/v1alpha1
+kind: TrajectoryContract
+metadata:
+  id: refund-agent-production
+  name: refund-agent production contract
+  version: 0.1.0
+  project: demo-commerce
+  agent: refund-agent
+  environment: production
+  createdAt: 2026-07-25T00:00:00Z
+  baselineRelease: refund-agent-v1
+spec:
+  selectors:
+    workflowName: refund-workflow
+    releaseAttribute: agent.release.id
+    environmentAttribute: deployment.environment.name
+    rootSpan: refund.request
+  approvedRoutes:
+    - sha256:43070aa4af4f6c2c912a8d7bcc724f1d199e0425dc8ad7256b528eec195cb037
+  rules:
+    #  answered-customer-notify-customer-notify-handler-df1a993d
+    #    basis        remote_handler_edge (customer.notify -> customer.notify.handler)
+    #    observed     customer.notify.handler is a Server span under the Client span customer.notify in 34 of 34 observable run(s)
+    #    recommended  customer.notify must be answered directly by customer.notify.handler
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: answered-customer-notify-customer-notify-handler-df1a993d
+      type: required_edge
+      severity: high
+      description: customer.notify.handler answered customer.notify in every approved run.
+      from:
+        name: customer.notify
+      to:
+        name: customer.notify.handler
+      relationship: direct
+    #  answered-fraud-check-fraud-check-handler-d7a1661c
+    #    basis        remote_handler_edge (fraud.check -> fraud.check.handler)
+    #    observed     fraud.check.handler is a Server span under the Client span fraud.check in 34 of 34 observable run(s)
+    #    recommended  fraud.check must be answered directly by fraud.check.handler
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: answered-fraud-check-fraud-check-handler-d7a1661c
+      type: required_edge
+      severity: high
+      description: fraud.check.handler answered fraud.check in every approved run.
+      from:
+        name: fraud.check
+      to:
+        name: fraud.check.handler
+      relationship: direct
+    #  answered-order-lookup-order-lookup-handler-e0ccc0ba
+    #    basis        remote_handler_edge (order.lookup -> order.lookup.handler)
+    #    observed     order.lookup.handler is a Server span under the Client span order.lookup in 34 of 34 observable run(s)
+    #    recommended  order.lookup must be answered directly by order.lookup.handler
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: answered-order-lookup-order-lookup-handler-e0ccc0ba
+      type: required_edge
+      severity: high
+      description: order.lookup.handler answered order.lookup in every approved run.
+      from:
+        name: order.lookup
+      to:
+        name: order.lookup.handler
+      relationship: direct
+    #  answered-payment-refund-payment-refund-handler-6bb72e01
+    #    basis        remote_handler_edge (payment.refund -> payment.refund.handler)
+    #    observed     payment.refund.handler is a Server span under the Client span payment.refund in 34 of 34 observable run(s)
+    #    recommended  payment.refund must be answered directly by payment.refund.handler
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: answered-payment-refund-payment-refund-handler-6bb72e01
+      type: required_edge
+      severity: high
+      description: payment.refund.handler answered payment.refund in every approved run.
+      from:
+        name: payment.refund
+      to:
+        name: payment.refund.handler
+      relationship: direct
+    #  answered-policy-retrieve-policy-retrieve-handler-c4f4e404
+    #    basis        remote_handler_edge (policy.retrieve -> policy.retrieve.handler)
+    #    observed     policy.retrieve.handler is a Server span under the Client span policy.retrieve in 34 of 34 observable run(s)
+    #    recommended  policy.retrieve must be answered directly by policy.retrieve.handler
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: answered-policy-retrieve-policy-retrieve-handler-c4f4e404
+      type: required_edge
+      severity: high
+      description: policy.retrieve.handler answered policy.retrieve in every approved run.
+      from:
+        name: policy.retrieve
+      to:
+        name: policy.retrieve.handler
+      relationship: direct
+    #  approved-domains-1b0ec195
+    #    basis        observed_data_domains (agent.data_domain)
+    #    observed     5 distinct value(s): messaging, orders, payments, policy, risk
+    #    recommended  only these 5 value(s)
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: approved-domains-1b0ec195
+      type: allowed_values
+      severity: high
+      description: The approved baseline used exactly these 5 data domain(s).
+      field: agent.data_domain
+      values:
+        - messaging
+        - orders
+        - payments
+        - policy
+        - risk
+    #  approved-services-ef1c4b45
+    #    basis        observed_services (service.name)
+    #    observed     6 distinct value(s): flightrules-demo-agent, flightrules-fraud-service, flightrules-notification-service, flightrules-order-service, flightrules-payment-service, flightrules-policy-service
+    #    recommended  only these 6 value(s)
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: approved-services-ef1c4b45
+      type: allowed_values
+      severity: high
+      description: The approved baseline used exactly these 6 service(s).
+      field: service.name
+      values:
+        - flightrules-demo-agent
+        - flightrules-fraud-service
+        - flightrules-notification-service
+        - flightrules-order-service
+        - flightrules-payment-service
+        - flightrules-policy-service
+    #  approved-tools-f9d35d43
+    #    basis        observed_tools (gen_ai.tool.name)
+    #    observed     6 distinct value(s): calculate_refund, check_fraud, issue_refund, lookup_order, notify_customer, retrieve_policy
+    #    recommended  only these 6 value(s)
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: approved-tools-f9d35d43
+      type: allowed_values
+      severity: high
+      description: The approved baseline used exactly these 6 tool(s).
+      field: gen_ai.tool.name
+      values:
+        - calculate_refund
+        - check_fraud
+        - issue_refund
+        - lookup_order
+        - notify_customer
+        - retrieve_policy
+    #  attribute-payment-refund-agent-idempotency-present-2e1b0f99
+    #    basis        attribute_agreement (payment.refund.agent.idempotency.present)
+    #    observed     34 of 34 span(s) reported agent.idempotency.present = true
+    #    recommended  agent.idempotency.present must equal true
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: attribute-payment-refund-agent-idempotency-present-2e1b0f99
+      type: attribute_constraint
+      severity: critical
+      description: Every payment.refund span reported agent.idempotency.present = true.
+      selector:
+        name: payment.refund
+      field: agent.idempotency.present
+      operator: equals
+      value: true
+    #  attribute-payment-refund-handler-agent-idempotency-present-7e79c0b5
+    #    basis        attribute_agreement (payment.refund.handler.agent.idempotency.present)
+    #    observed     34 of 34 span(s) reported agent.idempotency.present = true
+    #    recommended  agent.idempotency.present must equal true
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: attribute-payment-refund-handler-agent-idempotency-present-7e79c0b5
+      type: attribute_constraint
+      severity: critical
+      description: Every payment.refund.handler span reported agent.idempotency.present = true.
+      selector:
+        name: payment.refund.handler
+      field: agent.idempotency.present
+      operator: equals
+      value: true
+    #  budget-release-duration-ms-90268c56
+    #    basis        duration_percentile (run.duration_ms)
+    #    observed     p95 83 ms over 34 run(s)
+    #    recommended  at most 100 ms (20% above the observed percentile)
+    #    support      1.000000 over 34 run(s)
+    #    review       this bound is not simply the observation; confirm it
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: budget-release-duration-ms-90268c56
+      type: numeric_budget
+      severity: medium
+      description: Release-wide p95 latency across the approved runs was 83 ms.
+      metric: run.duration_ms
+      aggregation: p95
+      max: 100
+      scope: release
+    #  budget-run-duration-ms-69ef06b5
+    #    basis        duration_maximum (run.duration_ms)
+    #    observed     4..95 ms, median 6 ms
+    #    recommended  at most 143 ms per run (50% above the observed maximum)
+    #    support      1.000000 over 34 run(s)
+    #    review       this bound is not simply the observation; confirm it
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: budget-run-duration-ms-69ef06b5
+      type: numeric_budget
+      severity: medium
+      description: Approved runs completed within 95 ms.
+      metric: run.duration_ms
+      aggregation: max
+      max: 143
+      scope: run
+    #  require-customer-notify-91cbb1e2
+    #    basis        node_presence (customer.notify)
+    #    observed     present in 34 of 34 observable run(s); 1..1 occurrence(s) per run, p95 1
+    #    recommended  required, 1..1 per run
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: require-customer-notify-91cbb1e2
+      type: required_span
+      severity: high
+      description: Observed in every one of 34 approved run(s).
+      selector:
+        name: customer.notify
+      cardinality:
+        min: 1
+        max: 1
+    #  require-fraud-check-4dccc488
+    #    basis        node_presence (fraud.check)
+    #    observed     present in 34 of 34 observable run(s); 1..1 occurrence(s) per run, p95 1
+    #    recommended  required, 1..1 per run
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: require-fraud-check-4dccc488
+      type: required_span
+      severity: critical
+      description: Observed in every one of 34 approved run(s).
+      selector:
+        name: fraud.check
+      cardinality:
+        min: 1
+        max: 1
+    #  require-order-lookup-e3cbe09a
+    #    basis        node_presence (order.lookup)
+    #    observed     present in 34 of 34 observable run(s); 1..1 occurrence(s) per run, p95 1
+    #    recommended  required, 1..1 per run
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: require-order-lookup-e3cbe09a
+      type: required_span
+      severity: critical
+      description: Observed in every one of 34 approved run(s).
+      selector:
+        name: order.lookup
+      cardinality:
+        min: 1
+        max: 1
+    #  require-payment-refund-a4f9c9ee
+    #    basis        node_presence (payment.refund)
+    #    observed     present in 34 of 34 observable run(s); 1..1 occurrence(s) per run, p95 1
+    #    recommended  required, 1..1 per run
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: require-payment-refund-a4f9c9ee
+      type: required_span
+      severity: high
+      description: Observed in every one of 34 approved run(s).
+      selector:
+        name: payment.refund
+      cardinality:
+        min: 1
+        max: 1
+    #  require-policy-retrieve-98fbf144
+    #    basis        node_presence (policy.retrieve)
+    #    observed     present in 34 of 34 observable run(s); 1..1 occurrence(s) per run, p95 1
+    #    recommended  required, 1..1 per run
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: require-policy-retrieve-98fbf144
+      type: required_span
+      severity: critical
+      description: Observed in every one of 34 approved run(s).
+      selector:
+        name: policy.retrieve
+      cardinality:
+        min: 1
+        max: 1
+    #  require-refund-calculate-973f0a45
+    #    basis        node_presence (refund.calculate)
+    #    observed     present in 34 of 34 observable run(s); 1..1 occurrence(s) per run, p95 1
+    #    recommended  required, 1..1 per run
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: require-refund-calculate-973f0a45
+      type: required_span
+      severity: high
+      description: Observed in every one of 34 approved run(s).
+      selector:
+        name: refund.calculate
+      cardinality:
+        min: 1
+        max: 1
+    #  retries-bounded-73060ad7
+    #    basis        observed_retries (retry budget)
+    #    observed     per step 0..0, per run 0..0, on a side effect 0..0
+    #    recommended  per step at most 0, per run at most 0, on a side effect at most 0
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: retries-bounded-73060ad7
+      type: retry_budget
+      severity: high
+      description: Approved runs retried at most 0 time(s) per step and 0 time(s) in total.
+      selector:
+        operation: execute_tool
+      maxPerTool: 0
+      maxRunTotal: 0
+      sideEffectMax: 0
+    #  route-approved-family-5e4bcff6
+    #    basis        approved_route_family (route identity)
+    #    observed     34 run(s) across 1 approved family/families
+    #    recommended  only these 1 fingerprint(s)
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: route-approved-family-5e4bcff6
+      type: approved_routes
+      severity: high
+      description: 1 approved route family/families.
+      fingerprints:
+        - sha256:43070aa4af4f6c2c912a8d7bcc724f1d199e0425dc8ad7256b528eec195cb037
+      minSimilarity: 0.92
+    #  single-customer-notify-external-d1867585
+    #    basis        side_effect_cardinality (customer.notify)
+    #    observed     1..1 external occurrence(s) per run, p95 1
+    #    recommended  at most 1 per run
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: single-customer-notify-external-d1867585
+      type: cardinality
+      severity: critical
+      description: A external on customer.notify occurred at most 1 time(s) per approved run.
+      selector:
+        name: customer.notify
+        attributes:
+          - key: agent.side_effect
+            operator: equals
+            value: external
+      min: 0
+      max: 1
+      scope: run
+    #  single-customer-notify-handler-external-98ffb98a
+    #    basis        side_effect_cardinality (customer.notify.handler)
+    #    observed     1..1 external occurrence(s) per run, p95 1
+    #    recommended  at most 1 per run
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: single-customer-notify-handler-external-98ffb98a
+      type: cardinality
+      severity: critical
+      description: A external on customer.notify.handler occurred at most 1 time(s) per approved run.
+      selector:
+        name: customer.notify.handler
+        attributes:
+          - key: agent.side_effect
+            operator: equals
+            value: external
+      min: 0
+      max: 1
+      scope: run
+    #  single-payment-refund-handler-write-82eaae51
+    #    basis        side_effect_cardinality (payment.refund.handler)
+    #    observed     1..1 write occurrence(s) per run, p95 1
+    #    recommended  at most 1 per run
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: single-payment-refund-handler-write-82eaae51
+      type: cardinality
+      severity: critical
+      description: A write on payment.refund.handler occurred at most 1 time(s) per approved run.
+      selector:
+        name: payment.refund.handler
+        attributes:
+          - key: agent.side_effect
+            operator: equals
+            value: write
+      min: 0
+      max: 1
+      scope: run
+    #  single-payment-refund-write-8846bedd
+    #    basis        side_effect_cardinality (payment.refund)
+    #    observed     1..1 write occurrence(s) per run, p95 1
+    #    recommended  at most 1 per run
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: single-payment-refund-write-8846bedd
+      type: cardinality
+      severity: critical
+      description: A write on payment.refund occurred at most 1 time(s) per approved run.
+      selector:
+        name: payment.refund
+        attributes:
+          - key: agent.side_effect
+            operator: equals
+            value: write
+      min: 0
+      max: 1
+      scope: run
+    #  within-refund-request-customer-notify-686984da
+    #    basis        side_effect_ancestry (refund.request -> customer.notify)
+    #    observed     every customer.notify span descended from refund.request in 34 approved run(s)
+    #    recommended  customer.notify must descend from refund.request
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: within-refund-request-customer-notify-686984da
+      type: required_ancestry
+      severity: high
+      description: customer.notify ran inside refund.request in every approved run.
+      ancestor:
+        name: refund.request
+      descendant:
+        name: customer.notify
+      relationship: any_depth
+    #  within-refund-request-customer-notify-handler-bccf4884
+    #    basis        side_effect_ancestry (refund.request -> customer.notify.handler)
+    #    observed     every customer.notify.handler span descended from refund.request in 34 approved run(s)
+    #    recommended  customer.notify.handler must descend from refund.request
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: within-refund-request-customer-notify-handler-bccf4884
+      type: required_ancestry
+      severity: high
+      description: customer.notify.handler ran inside refund.request in every approved run.
+      ancestor:
+        name: refund.request
+      descendant:
+        name: customer.notify.handler
+      relationship: any_depth
+    #  within-refund-request-payment-refund-959e479d
+    #    basis        side_effect_ancestry (refund.request -> payment.refund)
+    #    observed     every payment.refund span descended from refund.request in 34 approved run(s)
+    #    recommended  payment.refund must descend from refund.request
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: within-refund-request-payment-refund-959e479d
+      type: required_ancestry
+      severity: high
+      description: payment.refund ran inside refund.request in every approved run.
+      ancestor:
+        name: refund.request
+      descendant:
+        name: payment.refund
+      relationship: any_depth
+    #  within-refund-request-payment-refund-handler-e3efb985
+    #    basis        side_effect_ancestry (refund.request -> payment.refund.handler)
+    #    observed     every payment.refund.handler span descended from refund.request in 34 approved run(s)
+    #    recommended  payment.refund.handler must descend from refund.request
+    #    support      1.000000 over 34 run(s)
+    #    traces       03bb200b93672f970077b72184e08a2f, 7309f08bf366d73abf8b247f55b82032, edb1a80074f00ca8b92c5a40c4f20c12
+    - id: within-refund-request-payment-refund-handler-e3efb985
+      type: required_ancestry
+      severity: high
+      description: payment.refund.handler ran inside refund.request in every approved run.
+      ancestor:
+        name: refund.request
+      descendant:
+        name: payment.refund.handler
+      relationship: any_depth
+  gate:
+    minCompletedRuns: 20
+    evaluationTimeoutSeconds: 600
+    maxViolationPercent: 0.5
+    maxUnknownRoutePercent: 1
+    maxLatencyRegressionPercent: 20
+    maxTokenRegressionPercent: 25
+    zeroToleranceRuleIds:
+      - attribute-payment-refund-agent-idempotency-present-2e1b0f99
+      - attribute-payment-refund-handler-agent-idempotency-present-7e79c0b5
+      - require-fraud-check-4dccc488
+      - require-order-lookup-e3cbe09a
+      - require-policy-retrieve-98fbf144
+      - single-customer-notify-external-d1867585
+      - single-customer-notify-handler-external-98ffb98a
+      - single-payment-refund-handler-write-82eaae51
+      - single-payment-refund-write-8846bedd

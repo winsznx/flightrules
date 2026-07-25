@@ -13,6 +13,7 @@ export {
   approvedRefundRows,
   approvedRefundSpans,
   deepChainRows,
+  renumberTrace,
   spanRows,
   wideTraceRows,
 } from "./spans.js";

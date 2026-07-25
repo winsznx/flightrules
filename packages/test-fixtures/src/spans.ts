@@ -258,6 +258,68 @@ export function approvedRefundRows(
   });
 }
 
+/**
+ * Rewrites a captured trace into a distinct logical run.
+ *
+ * Baseline mining needs many runs of one route, and the only honest way to produce them from captured
+ * telemetry is to change exactly what varies between two runs of identical behaviour: the trace
+ * identifier, the span identifiers, the run identifier, the start time and the duration. Everything a
+ * route fingerprint is computed from is left untouched, so a renumbered run must land in the same
+ * route family — which is the property the mining tests assert rather than assume.
+ *
+ * Span identifiers are rewritten by a stable mapping rather than by string concatenation, so the
+ * parent relation survives and no two spans can collide.
+ */
+export function renumberTrace(
+  rows: readonly Record<string, unknown>[],
+  change: {
+    readonly traceId: string;
+    readonly runId: string;
+    readonly startedAtUtc: string;
+    /** Applied to the root span only, since the run duration is measured from the root. */
+    readonly rootDurationNano?: number;
+  },
+): readonly Record<string, unknown>[] {
+  const spanIds = [
+    ...new Set(rows.map((row) => String(row["span_id"] ?? "")).filter((id) => id.length > 0)),
+  ].sort();
+  const rewritten = new Map(
+    spanIds.map((spanId, index) => [
+      spanId,
+      `${change.traceId.slice(0, 8)}${String(index).padStart(8, "0")}`,
+    ]),
+  );
+  const baseMs = Date.parse(change.startedAtUtc);
+
+  const originalStart = Math.min(
+    ...rows.map((row) => {
+      const value = row["timestamp"];
+      return typeof value === "string" ? Date.parse(value) : Number.NaN;
+    }),
+  );
+
+  return rows.map((row) => {
+    const parent = String(row["parent_span_id"] ?? "");
+    const timestamp = row["timestamp"];
+    const offsetMs =
+      typeof timestamp === "string" && Number.isFinite(originalStart)
+        ? Date.parse(timestamp) - originalStart
+        : 0;
+
+    return {
+      ...row,
+      trace_id: change.traceId,
+      span_id: rewritten.get(String(row["span_id"])) ?? row["span_id"],
+      parent_span_id: parent.length === 0 ? "" : (rewritten.get(parent) ?? ""),
+      "agent.run.id": change.runId,
+      timestamp: new Date(baseMs + offsetMs).toISOString(),
+      ...(change.rootDurationNano === undefined || parent.length > 0
+        ? {}
+        : { duration_nano: change.rootDurationNano }),
+    };
+  });
+}
+
 /** A chain of `depth` spans, for depth and performance tests. */
 export function deepChainRows(
   depth: number,

@@ -1,0 +1,31 @@
+{
+  "name": "@flightrules/baseline-miner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "dependencies": {
+    "@flightrules/contract-schema": "workspace:*",
+    "@flightrules/domain": "workspace:*",
+    "@flightrules/normaliser": "workspace:*",
+    "@flightrules/signoz-mcp": "workspace:*",
+    "@flightrules/trace-graph": "workspace:*",
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@flightrules/contract-engine": "workspace:*",
+    "@flightrules/test-fixtures": "workspace:*",
+    "fast-check": "4.9.0"
+  }
+}

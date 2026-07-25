@@ -492,3 +492,60 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
 - Runtime confirmation: **Yes**, for the JavaScript half. The RE2 half is a specification claim; FlightRules implements it and asserts it.
 - Implementation consequence: PRD section 10.3 requires the `matches` operator to be RE2-compatible, so `packages/contract-schema/src/regex.ts` follows RE2 here and the divergence is asserted by a dedicated test rather than left as an accident. This is the only known divergence within the supported subset; a 2,000-run property test compares every other generated pattern against `RegExp` and requires agreement. The engine is a Thompson NFA simulated over a state set, so matching is linear in pattern × input and no input can cause backtracking — `(a+)+$` against 5,000 characters completes in about 2.5 ms rather than not returning at all.
 - Local file: `packages/contract-schema/src/regex.ts`, `packages/contract-schema/src/regex.test.ts`.
+
+## SL-050 — `nextCursor` is empty exactly when a Query Builder page is not full
+
+- Source: live `signoz_execute_builder_query` calls against the pinned `signoz-mcp-server v0.9.0` (tier 1, runtime)
+- Verified claim: for a `requestType: "raw"` trace query, each entry of `data.data.results` carries a
+  `nextCursor`. Its value is the empty string when the number of returned rows is **below** the
+  requested `limit`, and a non-empty opaque base64 token when the page is exactly full — including
+  when the page is full because the limit happens to equal the total row count. Probed against 11
+  `refund-agent-v1` root spans in a 24-hour window:
+
+  ```text
+  limit 1000, offset 0   -> 11 rows, nextCursor ""
+  limit   11, offset 0   -> 11 rows, nextCursor "MTc4NDk4OTkwNTkwNg=="
+  limit   10, offset 0   -> 10 rows, nextCursor "MTc4NDk4MzA4MzMxMA=="
+  ```
+
+  Offset paging under `order: [{key: {name: "timestamp"}, direction: "asc"}]` was verified consistent:
+  pages taken at offsets 0 and 3 with `limit: 3` returned disjoint rows that concatenated exactly to
+  the first six rows of the unpaged result.
+- Runtime confirmation: **Yes**, all three limit variants and the two-page walk observed directly.
+- Implementation consequence: this is the only truncation signal the pinned server offers, so
+  `discoverRuns` treats a **full page with a non-empty cursor** as "there may be more" and an **empty
+  cursor** as "there is definitively no more". Reaching the selection's `maxTraces` while a cursor is
+  still offered is recorded as truncation, the baseline's status becomes `dataset_truncated`, and both
+  review and proposal are refused — a dataset known to be incomplete cannot found a policy, because the
+  runs it omitted are exactly the ones nobody looked at. Note the asymmetry: a full page is *not*
+  evidence that more rows exist, so a dataset that ends on a full page and hits no limit is complete.
+- Local file: `packages/baseline-miner/src/retrieve.ts`, `packages/baseline-miner/src/retrieve.test.ts`.
+
+## SL-051 — The trace field catalogue reports a data type per field, and omits `timestamp` and every resource attribute
+
+- Source: live `signoz_get_field_keys` against the pinned `signoz-mcp-server v0.9.0` (tier 1, runtime)
+- Verified claim: called with `{signal: "traces"}` and no `searchText`, the tool returns the whole
+  catalogue in one response — 40 keys with `complete: true` against the demo's telemetry — and each
+  descriptor carries a `fieldDataType`. So the server itself can confirm the type a Query Builder
+  request should declare. Three qualifications, all observed:
+  - Custom span attributes are reported with `fieldContext: "attribute"`, while `selectFields` requires
+    `"tag"` for the same field. This is the asymmetry SL-022 records, seen from the other side.
+  - `timestamp` is **absent from the catalogue entirely**, although it is a real span column every
+    trace query returns.
+  - Resource attributes are absent too: `service.name` and `deployment.environment.name` are returned
+    by a query with `fieldContext: "resource"` but do not appear in the catalogue at any search text.
+  - Two keys are catalogued with an **empty** `fieldDataType` (`isEntryPoint`, `isRoot`).
+- Runtime confirmation: **Yes**. The full catalogue was captured, and each qualification was probed
+  individually with a targeted `searchText`.
+- Implementation consequence: `verifyFieldTypes` compares every declared `dataType` against the type
+  SigNoz reports before any mining query runs, which closes SL-046 by discovery rather than by a
+  hand-maintained list. A **mismatch** is a hard failure. An **absence** cannot be an error given the
+  three qualifications above, so it is recorded as `unverified` and permitted under two conditions that
+  together make a `null` return unambiguous: a span or resource field must be declared `string`, which
+  is the server's own default resolution; and a *tag* absent from the catalogue was emitted by no span
+  in the window, so `null` means "not emitted" rather than "wrongly typed". Returned values are then
+  re-checked against the declared type per row, so a shape change between discovery and query is
+  caught rather than absorbed. Against the live demo: 17 fields verified, 5 unverified
+  (`deployment.environment.name`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`,
+  `service.name`, `timestamp`), 0 mismatched.
+- Local file: `packages/baseline-miner/src/retrieve.ts`, `packages/baseline-miner/src/mining.signoz.integration.test.ts`.

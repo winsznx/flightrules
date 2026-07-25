@@ -6,7 +6,7 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 07, 2026-07-25.
+Last updated: Phase 08, 2026-07-25.
 
 ## Critical final assertions (PRD section 23)
 
@@ -42,8 +42,8 @@ Last updated: Phase 07, 2026-07-25.
 | 8 | Complete trace trees fetched and reconstructed | `packages/trace-graph` | `packages/trace-graph/src/graph.test.ts` | phase-06 — 12-span and 8-span traces reconstructed from live SigNoz | DONE |
 | 9 | Trace nodes deduplicated by span ID | `packages/trace-graph` | duplicate, conflicting-duplicate and completeness tests | phase-06 | DONE |
 | 10 | Dynamic identifiers normalised | `packages/normaliser` | `packages/normaliser/src/normalise.test.ts` including idempotence and volatile-ID invariance properties | phase-06 | DONE |
-| 11 | Baseline route families captured from range or release | `packages/baseline-miner` | mining tests | phase-08 | PENDING |
-| 12 | Versioned YAML contract proposed, reviewed, validated, stored, evaluated | `packages/contract-schema`, `packages/contract-engine` | `validate.test.ts`, `yaml.test.ts`, `cli-run.test.ts` | phase-07 — validated and evaluated; proposal is phase-08 and storage is phase-09 | IN PROGRESS |
+| 11 | Baseline route families captured from range or release | `packages/baseline-miner` | `families.test.ts`, `dataset.test.ts`, `mine.test.ts`, `mining.signoz.integration.test.ts` | phase-08 — 34 live `refund-agent-v1` runs mined into one family at fingerprint `43070aa4...`, which the committed contract already approves | DONE |
+| 12 | Versioned YAML contract proposed, reviewed, validated, stored, evaluated | `packages/baseline-miner`, `packages/contract-schema`, `packages/contract-engine` | `propose.test.ts`, `emit.test.ts`, `decisions.test.ts`, `validate.test.ts`, `cli-run.test.ts` | phase-08 — a 28-rule draft proposed from live telemetry, reviewed through the four route-family actions, validated by the published CLI, evaluated against both releases; storage is phase-09 | IN PROGRESS |
 | 13 | All P0 rule types work | `packages/contract-engine` | `packages/contract-engine/src/rules.test.ts` — all eleven types with passing, violating and empty-evidence cases; a test asserts the fixture set covers `RULE_TYPES` exactly | phase-07 | DONE |
 | 14 | Deterministic pass/fail decisions and typed violations | `packages/contract-engine` | `evaluate.test.ts` — byte-equality across repeated runs, span order, attribute order, rule order and contract key order, plus seven 300-run properties | phase-07 | DONE |
 | 15 | Evaluation telemetry emitted back to SigNoz | `packages/telemetry` | OTLP export test | phase-00 (path proven), phase-09 | IN PROGRESS |
@@ -68,8 +68,8 @@ Last updated: Phase 07, 2026-07-25.
 | FR-004 | Trace graph reconstruction | `packages/trace-graph` | reconstruction, orphan, cycle and duplicate tests | phase-06 | DONE |
 | FR-005 | Name and attribute normalisation | `packages/normaliser` | `normalise.test.ts` | phase-06 | DONE |
 | FR-006 | Canonical route fingerprint | `packages/trace-graph` | order, key-order and volatile-ID property tests plus sensitivity tests | phase-06 — a live run and the captured fixture share one fingerprint | DONE |
-| FR-007 | Baseline capture | `packages/baseline-miner` | mining tests | phase-08 | PENDING |
-| FR-008 | Contract proposal | `packages/baseline-miner` | proposal tests | phase-08 | PENDING |
+| FR-007 | Baseline capture | `packages/baseline-miner` | `mine.test.ts`, `families.test.ts`, `eligibility.test.ts`, `decisions.test.ts`, `mining.signoz.integration.test.ts` | phase-08 — minimum-run and truncation blocking, fifteen typed exclusion reasons, exact family grouping, frequency, representatives, rare marking, four review actions, all proven live | DONE |
+| FR-008 | Contract proposal | `packages/baseline-miner` | `propose.test.ts`, `aggregate.test.ts`, `emit.test.ts`, `mining.signoz.integration.test.ts` | phase-08 — nine rule types proposed from nine evidence bases, every rule carrying its basis and confidence; nothing activated | DONE |
 | FR-009 | Contract schema validation | `packages/contract-schema` | `validate.test.ts`, `yaml.test.ts` — every rejection reason asserted with its exact path and code | phase-07 | DONE |
 | FR-010 | Run evaluation | `packages/contract-engine` | `rules.test.ts`, `evaluate.test.ts`, `evaluate.signoz.integration.test.ts` | phase-07 — both live traces evaluated end to end | DONE |
 | FR-011 | Release evaluation | `packages/contract-engine` | aggregation tests | phase-11 | PENDING |

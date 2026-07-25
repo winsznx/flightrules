@@ -351,3 +351,92 @@ All notable changes to FlightRules are recorded here, one section per phase.
   decided against the agent it governs is a contract-authoring error, and run scope made the active
   contract unable to pass its own baseline. The insufficient-evidence path is proven by a dedicated
   fixture contract instead.
+
+## Phase 08 — Baseline mining and contract proposal (2026-07-25)
+
+### Added
+
+- `packages/baseline-miner` — turns known-good SigNoz traces into deterministic route families and a
+  reviewable contract proposal. Storage-independent, because PRD sections 14.7 and 14.8 are Phase 09.
+- Trace selection job with PRD section 8.7's controls validated, PRD section 8.7's five progress
+  states, a selection hash that doubles as the job's idempotency key, and a baseline identifier
+  derived from it rather than generated.
+- Bounded batch retrieval through the supported MCP Query Builder path: field types confirmed against
+  the live catalogue before any mining query runs, offset paging with truncation detected from
+  `nextCursor`, complete span-tree fetching with every non-string tag's `dataType` declared, and
+  returned values re-checked per row against the declared type.
+- Fifteen typed exclusion reasons, one for each way a retrieved trace can fail to qualify, with counts
+  that must reconcile exactly or mining fails.
+- Exact route-family grouping by fingerprint (PRD section 11.8), per-family statistics, representative
+  selection by proximity to the family's median duration, and rare marking against a configurable
+  threshold.
+- Integer statistics with nearest-rank percentiles and exact fractional ratios, so no floating-point
+  value reaches the mining output.
+- The four route-family review actions of PRD section 8.8, as pure state transitions that refuse a
+  baseline whose dataset was truncated or whose run count is below the minimum.
+- Rule proposal across nine rule types from nine distinct evidence bases, with an evidence basis,
+  support ratio, sample size, outlier list and human-confirmation flag on every proposed rule.
+- Deterministic draft YAML generation whose round trip through the public parser is proven by content
+  hash, carrying the evidence for every rule as a comment beside it.
+- `scripts/mine-demo-baseline.mjs` and `make mine-demo-baseline`, which reproduce the whole Phase 08
+  runtime validation in one command.
+- ADR-0007 recording the fifteen decisions behind the miner.
+- `renumberTrace` in `@flightrules/test-fixtures`, which rewrites a captured trace into a distinct
+  logical run by changing only what varies between two runs of identical behaviour.
+
+### Verified
+
+- 34 fresh `refund-agent-v1` runs retrieved live and mined into **one** route family at fingerprint
+  `43070aa4af4f6c2c912a8d7bcc724f1d199e0425dc8ad7256b528eec195cb037` — the fingerprint the committed
+  Phase 07 contract already approves, so neither is a stale constant.
+- The generated 28-rule draft contract is accepted by the Phase 07 validator through the published
+  `flightrules-contract` CLI and round-trips to the same content hash.
+- A freshly executed known-good run passes the generated contract with 0 violations; the canary fails
+  it with 10 violations including three critical zero-tolerance ones naming the missing policy check,
+  the missing fraud check and the duplicate refund.
+- The canary's aborted payment handler reports `insufficient_evidence` with reason
+  `unobservable_subtree` rather than a skipped step, and the duplicate refund still fails — one local
+  telemetry gap does not suppress a real finding.
+- Repeated mining over one window produces a byte-identical baseline identifier, content hash and YAML.
+- 953 tests pass (862 unit, 91 integration), 0 failed, 0 skipped. Phase 08 added 279.
+- `make verify`, `make signoz-verify` and `make contract-validate` all exit 0; 20 contract documents
+  valid, the twentieth being the one the miner generated.
+
+### Discovered
+
+- `nextCursor` is empty exactly when a Query Builder page is **not full**, and a non-empty opaque token
+  when it is — including when the requested limit happens to equal the total row count. That is the
+  only truncation signal the pinned server offers (SL-050).
+- `signoz_get_field_keys` returns the whole trace field catalogue in one response with a
+  `fieldDataType` per field, so the server can confirm the type a request should declare — which closes
+  SL-046 by discovery rather than by a hand-maintained list. It omits `timestamp`, omits every resource
+  attribute, and reports custom span attributes as `attribute` where `selectFields` needs `tag`
+  (SL-051).
+
+### Fixed
+
+- The proposal generator prefixed a route fingerprint with `sha256:` twice, so the generated document
+  carried `sha256:sha256:<hex>` and the validator rejected it. A proposed rule now holds the validated
+  bare form the evaluator compares against, and the prefix is added once by the document renderer.
+- A rule identifier was derived from the raw canonical label while its selector was derived from the
+  sanitised one. For a label carrying a control character the two disagreed, and two labels that
+  sanitise to one selector value would have produced two rules governing the same spans. Both now
+  derive from one sanitised name, and where two labels collide neither gets a rule — a selector can
+  only say `name: X`, so refusing and disclosing is the only answer that is not wrong.
+
+### Deliberate
+
+- A proposal is broader than a hand-written contract: 28 rules and 9 zero-tolerance identifiers against
+  the demo, where the Phase 07 contract has 15 and 4. Every rule is evidence-backed and a reviewer is
+  expected to prune. `order.lookup` becoming a critical prerequisite is the clearest case — every
+  approved run did look the order up before refunding.
+- A cardinality bound is the 95th percentile of the observed per-run counts when the maximum exceeds it,
+  so an outlying duplicate side effect is disclosed rather than encoded as permitted policy. Reading
+  PRD FR-008's "maximum observed cardinality" literally would have permitted the exact fault the
+  product exists to catch.
+- A step is proposed as required only when every observable approved run performed it. A step present in
+  some runs and provably absent in others is bounded and disclosed as optional, never required — a
+  proposal must not contain a rule its own baseline violates.
+- `forbidden_span` and `forbidden_path` are never proposed. Neither can be derived from observation:
+  naming a data domain the agent never touched would be an invention rather than a finding.
+- A retried side effect's allowance is never widened by a safety margin, whatever the margin is set to.
