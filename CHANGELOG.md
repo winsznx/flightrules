@@ -182,3 +182,49 @@ All notable changes to FlightRules are recorded here, one section per phase.
   the handler is still in flight and `onRequestAbort` does not fire for it. Duplicate detection is
   unaffected (both client-side write spans are present). Carried into Phase 06 as an explicit
   trace-quality requirement.
+
+## Phase 05 — SigNoz MCP client and capability layer (2026-07-25)
+
+### Added
+
+- `packages/signoz-mcp`, the single boundary between FlightRules and SigNoz. Nothing downstream
+  sees a raw MCP object.
+- Typed six-member result union — `SUCCESS_WITH_ROWS`, `SUCCESS_EMPTY`, `UNSUPPORTED_RESPONSE`,
+  `MALFORMED_RESPONSE`, `MCP_ERROR`, `TRANSPORT_ERROR` — each failure carrying a PRD section 19
+  error code, so "the query failed" can never be read as "the query found nothing".
+- Unconditional response normalisation: `structuredContent` first, then every content entry parsed
+  individually, with runtime schema validation per payload family.
+- Capability discovery against the 22 tools PRD section 16.4 requires, raising `MCP_TOOL_MISSING`
+  rather than degrading silently.
+- Bounded retry policy that never repeats a request the server already answered, a call timeout, a
+  circuit breaker, and redacting structured logging that never records tool arguments.
+- Typed wrappers for the trace, discovery, view, dashboard, alert and notification-channel tools,
+  and `createAndVerify`, a resource-agnostic implementation of the PRD section 16.5
+  list-create-read-back-compare flow.
+- 80 unit tests covering all seventeen required response shapes against an injected fixture, and
+  21 integration tests against the real pinned server.
+
+### Fixed
+
+- `docs/ACCEPTANCE_MATRIX.md` was never updated for Phase 04, breaching operating-contract rule 23.
+  A2, A14 and scope item 7 are now marked `DONE` against their Phase 04 evidence; item 6 is
+  `IN PROGRESS` because metrics and logs are declared but not yet emitted.
+- A connection race in the transport: capability discovery lists tools and resources concurrently,
+  and a boolean guard set after the await let both callers enter the handshake. Found by the
+  integration suite on its first run.
+
+### Discovered
+
+- `signoz_execute_builder_query` returns no `structuredContent` on the success path, and a declared
+  `outputSchema` does not predict which tools do — the text fallback is mandatory (SL-040).
+- A successful response may carry several content entries; the server appends a `[Decisions applied]`
+  advisory as a separate entry, and joining entries before parsing corrupts the JSON (SL-040).
+- The MCP SDK's own transport declarations are not assignable under `exactOptionalPropertyTypes`
+  (SL-041).
+- A saved view's `compositeQuery` requires both `queryType` and `panelType`, neither of which
+  appears in the tool's input schema, and the create returns the identifier as a bare string
+  (SL-042).
+- `signoz_get_field_keys`, `signoz_get_field_values` and the list tools use three different
+  response envelopes (SL-043).
+- Row order is not stable across requests. Phase 06 must sort canonically rather than trust arrival
+  order; an integration test guards this.
