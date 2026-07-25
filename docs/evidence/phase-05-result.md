@@ -226,7 +226,7 @@ response is persisted anywhere in the repository.
 PHASE: 05 SigNoz MCP client and capability layer
 STATUS: PASS
 BRANCH: phase/05-signoz-mcp-client
-COMMITS: see the phase commit and merge recorded in CHANGELOG.md
+COMMITS: 2d29bf6 (baseline acceptance-matrix repair), 074a35a (phase), 9eda536 (merge to main)
 SOURCES VERIFIED: 8 — the live MCP tool and resource surface re-snapshotted and diffed (docs/research/mcp-capabilities.json, 41 tools, 19 resources); the installed @modelcontextprotocol/sdk@1.29.0 declaration files; and six live probe sessions characterising execute_builder_query success, empty and error envelopes, multi-entry content, authentication and transport failure classification, saved-view create/read/list/delete, and the three discovery envelopes. Four new entries recorded: SL-040, SL-041, SL-042, SL-043
 IMPLEMENTED: packages/signoz-mcp with an injectable transport boundary, capability discovery against the 22 PRD-required tools, unconditional per-entry response normalisation with runtime schema validation, six-member typed result union mapped onto PRD section 19 error codes, bounded non-retrying-on-answer retry policy, timeout, circuit breaker, redacting structured logging, typed wrappers for the trace, discovery, view, dashboard, alert and notification-channel tools, and a resource-agnostic create-read-verify helper implementing PRD section 16.5
 TESTS RUN: pnpm run typecheck; make test; make test-integration; make verify; make signoz-verify; make demo-v1; make demo-v2
