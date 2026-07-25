@@ -1,9 +1,9 @@
-# FlightRules handoff — after Phase 06
+# FlightRules handoff — after Phase 07
 
 Written: 2026-07-25. `main` is green and the working tree is clean.
 
-This replaces the previous session's handoff. Verify every claim below against the repository
-before relying on it; the previous handoff contained one inaccuracy, described under "Corrections".
+This replaces the previous handoff. Verify every claim below against the repository before relying
+on it; corrections to the previous handoff are listed under "Corrections".
 
 ---
 
@@ -18,162 +18,176 @@ before relying on it; the previous handoff contained one inaccuracy, described u
 | 04 OpenTelemetry instrumentation | PASS | `4d392b0` | `a4101ca` |
 | 05 SigNoz MCP client and capability layer | PASS | `074a35a` | `9eda536` |
 | 06 Trace graph and normalisation engine | PASS | `7b8e2aa` | `5949148` |
-| 07–17 | NOT STARTED | — | — |
-
-Head of `main` is `55a4099`.
+| 07 Contract schema and deterministic evaluator | PASS | `ca4225b` | `12e133b` |
+| 08–17 | NOT STARTED | — | — |
 
 ## Verified state
 
-Every command below was run against the live stack on `main` at `55a4099`.
+Every command below was run against the live stack on `main` after the Phase 07 merge.
 
 ```text
 make verify              exit 0
 make signoz-verify       exit 0
-make signoz-reproducibility  exit 0
-make test                317 passed, 0 failed, 0 skipped
-make test-integration     67 passed, 0 failed, 0 skipped
+make contract-validate   exit 0, 19 contract documents valid
+make test                599 passed, 0 failed, 0 skipped   (25 files)
+make test-integration     75 passed, 0 failed, 0 skipped   ( 5 files)
                          ---
-                         384 tests passed
+                         674 tests passed
 ```
 
-Integration breakdown: 8 database, 59 SigNoz. All fail rather than skip when their dependency is
+Integration breakdown: 8 database, 67 SigNoz. All fail rather than skip when their dependency is
 absent.
 
 ## Corrections to the previous handoff
 
-The previous session reported "193 tests passed" and Phases 00–04 all PASS. Both were accurate.
-However, `docs/ACCEPTANCE_MATRIX.md` had **not** been updated for Phase 04, in breach of
-operating-contract rule 23: it read "Last updated: Phase 03" and still marked A2 and A14 as
-`PENDING` despite Phase 04 having produced their evidence. Corrected in `2d29bf6` before Phase 05
-began. Scope item 6 was set to `IN PROGRESS`, not `DONE`, because metrics and logs are declared
-but not yet emitted.
+One inaccuracy, corrected rather than propagated: the previous handoff described the known-good
+route as six steps "each with a `.handler` server span". `refund.calculate` has no handler — it is
+local agent work — so v1 is one root span, six client spans and **five** handlers, twelve in total.
+No Phase 06 code or test asserted otherwise, so nothing was broken by it.
 
-## What Phases 05 and 06 added
+## What Phase 07 added
 
-### Phase 05 — `packages/signoz-mcp`
+Two packages, exactly as PRD section 13 names them.
 
-The single boundary between FlightRules and SigNoz. Nothing downstream sees a raw MCP object.
-Callers receive a discriminated union — `SUCCESS_WITH_ROWS`, `SUCCESS_EMPTY`,
-`UNSUPPORTED_RESPONSE`, `MALFORMED_RESPONSE`, `MCP_ERROR`, `TRANSPORT_ERROR` — each failure
-carrying a PRD section 19 error code. Capability discovery, bounded retries that never repeat an
-answered request, timeouts, a circuit breaker, redacting logging that never records tool
-arguments, typed wrappers, and `createAndVerify` implementing the PRD section 16.5
-list-create-read-back-compare flow.
+### `packages/contract-schema`
 
-### Phase 06 — `packages/normaliser` and `packages/trace-graph`
+The versioned DSL of PRD section 10, with no dependency on a graph, a database or SigNoz — because
+`flightrules contract validate` has to run in a CI job that has none of them. TypeScript types, a
+published draft 2020-12 JSON Schema, safe YAML loading, static validation returning
+`{path, code, message}`, cross-rule contradiction detection, canonical serialisation, a SHA-256
+content hash, and a `flightrules-contract` command with PRD FR-012 exit codes.
 
-The ten ordered normalisation steps with a versioned, content-hashed configuration; span
-deduplication, root selection, orphan and cycle detection, canonical serialisation, SHA-256 route
-fingerprints, weighted feature sets, the twelve typed graph changes, and redacted JSON export.
+The `matches` operator is an RE2-compatible Thompson NFA, not a JavaScript `RegExp`.
 
-**The exit gate is proven live**: a v1 run executed minutes after the captured fixture, with
-entirely different trace IDs, span IDs, run IDs and timestamps, produces a byte-identical route
-fingerprint. v1 and v2 fingerprints differ, and the typed diff names `policy.retrieve` and
-`fraud.check` as removed and `payment.refund` as a side effect performed twice against once.
+### `packages/contract-engine`
+
+The deterministic run evaluator, storage-independent because persistence is Phase 09. `Map`-based
+indexes, the six selector operators, all eleven rule types, evidence carrying both span IDs and
+canonical node positions, stable violation identifiers, PRD section 11.11's evaluation order, and
+canonical evaluation JSON whose hash structurally cannot reach the completion timestamp.
+
+**The exit gate is proven live**: the committed contract at
+`contracts/demo-commerce/refund-agent/production/contract.yaml` passes the approved release and
+fails the canary with three critical zero-tolerance violations naming the missing fraud check, the
+missing policy check and the duplicate refund. No LLM participates in any decision.
 
 ## Important discoveries
 
-New source-lock entries this session: **SL-040 to SL-045**.
+New source-lock entries this session: **SL-046 to SL-049**.
 
 | ID | Finding |
 |---|---|
-| SL-040 | `signoz_execute_builder_query` returns **no** `structuredContent`; the declared `outputSchema` does not predict which tools do. A **successful** response may carry several content entries — the server appends a `[Decisions applied]` advisory — and joining them before parsing corrupts the JSON. Every FlightRules script written before Phase 05 had this bug. |
-| SL-041 | The MCP SDK's own `Transport` declarations are not assignable under `exactOptionalPropertyTypes`. Bridged with a typed assertion to the SDK's real `Transport`, not a suppression. |
-| SL-042 | A saved view's `compositeQuery` requires **both** `queryType` and `panelType`; neither appears in the tool's input schema. The create returns the identifier as a **bare string** under `data`, refining SL-023. |
-| SL-043 | `signoz_get_field_keys`, `signoz_get_field_values` and the list tools use three different response envelopes. `get_field_values` takes `name`, not `key`. `get_alert_history` requires `id`. |
-| SL-044 | The Query Builder serialises the nanosecond `timestamp` column as an ISO-8601 string at **millisecond** precision; `duration_nano` keeps full precision. |
-| SL-045 | `flightrules_uuid_v7` did not order within a millisecond. Fixed by migration `0002` per RFC 9562 Method 3. |
+| SL-046 | A non-string tag in Query Builder `selectFields` returns `null` unless its `dataType` is declared. The call **succeeds** — no error, no warning, every other column correct — so an attribute vanishes silently and per-column. Both `bool` and `number` are affected. Found because the evaluator reported insufficient evidence for the absent attribute instead of passing the rule. |
+| SL-047 | `yaml@2.9.0` resolves `!!binary` to a `Buffer` and `!!timestamp` to a `Date` with **no error and no warning**, and `customTags: []` does not prevent it. An unresolvable tag is only a warning. So the tag defence must walk the document AST, not read the options or the diagnostics. |
+| SL-048 | `ajv@8.20.0`'s default export cannot compile a draft 2020-12 schema; `ajv/dist/2020.js` can. |
+| SL-049 | `[]a]` is a two-member character class in RE2 and an empty class in JavaScript. FlightRules follows RE2, as PRD section 10.3 requires. |
 
 ## Defects found and fixed
 
-All six were found by tests, not by inspection.
+All three were found by tests or a runtime probe, not by inspection.
 
-1. **Transport connection race** (Phase 05). Capability discovery lists tools and resources
-   concurrently; a boolean guard set after the await let both enter the handshake. Fixed by
-   caching the in-flight promise, and by not caching a failed handshake.
-2. **Three envelopes assumed to be one** (Phase 05). Corrected from observed responses.
-3. **Quadratic subtree signatures** (Phase 06). A 10,000-span trace exceeded the maximum string
-   length. Signatures are now fixed-width digests.
-4. **Quadratic canonical paths** (Phase 06). Dotted paths grew with depth; the 10,000-span test
-   took 5.6 s. Replaced with a canonical order index — the graph suite now runs in 209 ms. A time
-   budget is asserted so this cannot regress silently.
-5. **Prototype-chain lookup** (Phase 06). A span named `toString` resolved to `Object.prototype`
-   and crashed the tokeniser. Span names are external input, so this was reachable from telemetry.
-   The same pattern was hardened in the Phase 05 `readPath` helper.
-6. **`flightrules_uuid_v7` sortability** (pre-existing since Phase 01). The test failed about one
-   run in five and had been passing by luck. Fixed in migration `0002`; the test now asserts
-   ordering over 200 identifiers rather than two.
+1. **A telemetry attribute key of `__proto__` replaced a normalised record's prototype** (Phase 06
+   code). An array value invoked the inherited setter, after which `evidence.length` returned `2` and
+   `evidence[0]` returned a value no span emitted. `Object.prototype` was untouched, so nothing
+   global broke, but any consumer reading without `Object.hasOwn` saw phantom data. Reproduced at
+   runtime before changing anything, then fixed with `Object.create(null)`; the attribute is now kept
+   as ordinary data. Every Phase 06 test still passes unmodified — this was a latent hardening gap
+   that Phase 07 newly depends on, not a Phase 06 gate failure.
+2. **`canonicalContract` depended on its caller having sorted the input.** True for a parsed
+   contract, but Phase 08's proposal generator and Phase 09's database rows are producers that do not
+   go through the YAML validator, and either would have hashed one policy two ways — which reads as a
+   policy change and forces a spurious re-approval. Canonicalisation now sorts its own input.
+3. **Ancestry undecidability was scoped too broadly**, conflating a chain truncated by unexported
+   spans with one that legitimately ends at a second parentless root. A detached side effect could
+   have escaped the rule by being detached.
 
 ## Unresolved limitations
 
 1. **The Phase 04 aborted server span is still unresolved, by design.** In the v2 trace the first
-   payment attempt's handler span is never exported: the client aborts while the handler is in
-   flight and Fastify 5.10.0's `onRequestAbort` does not fire for it. No attempt was made to
-   manufacture it. Phase 06 handles it as a `client_span_without_server_span` trace-quality
-   warning that does **not** downgrade the trace, because the duplicate-side-effect evidence lives
-   entirely in the two exported client write spans. Two tests hold this in place. Carried forward
-   as a Phase 16 investigation item.
-2. **The capability snapshot is exposed but not persisted.** PRD Phase 05 task 12 needs the
-   database layer from Phase 09.
-3. **`signoz_update_*` wrappers are not implemented**, and dashboard/alert read-back verification
-   is untested. Both are Phase 10 scope by PRD assignment. `createAndVerify` is resource-agnostic
-   and proven against a saved view.
-4. **Span links and explicit predecessors are modelled but never populated** — the demo emits
-   neither. `inferred_time_order` is deliberately not computed; SL-044's resolution would make it
-   unreliable at exactly the scale where it would matter.
-5. **Metrics and logs are declared but not emitted** (Phase 04 limitation, unchanged). Instruments
-   and their permitted dimension sets exist with a cardinality test; nothing is counted until the
-   evaluator exists.
-6. **Node timestamps are millisecond-accurate** (SL-044). Excluded from the fingerprint, so
-   determinism is unaffected, but Phase 08 latency percentiles inherit the resolution.
+   payment attempt's handler span is never exported. Phase 07 gives it a correct **evaluation
+   outcome** — `insufficient_evidence` with reason `unobservable_subtree` — rather than fixing the
+   cause. The duplicate-refund finding, whose evidence lives in the two exported client spans, still
+   fails the release. Carried forward as a Phase 16 investigation item.
+2. **Sibling temporal ordering is not expressible in P0.** In the real traces every step is a child
+   of `refund.request`, so `fraud.check` is a *sibling* of `payment.refund`, not an ancestor. The demo
+   emits no `explicit_predecessor` edges, and PRD section 11.3 forbids `inferred_time_order` from
+   satisfying a critical causal rule — SL-044 leaves timestamps at millisecond resolution, exactly
+   the scale where it would matter. `required_ancestry` is implemented in full and exercised on the
+   real parent-child pairs the traces do contain. The exit gate does not need ordering.
+3. **Release-scoped rules are `deferred`, not evaluated.** PRD section 11.11 assigns them to the
+   aggregation after run results are stored, which is Phase 11. Each still contributes its measured
+   metric sample, so Phase 11 aggregates rather than re-reading every trace.
+4. **`approved_routes` needs the approved families' canonical graphs to report similarity.** Without
+   them it still decides exact identity and violates correctly, and says similarity was unmeasurable
+   rather than implying a number. Phase 08 supplies the graphs.
+5. **Nothing from Phase 07 is persisted.** The evaluator is deliberately storage-independent.
+6. **The capability snapshot is exposed but not persisted** (Phase 05 limitation, unchanged; needs
+   the Phase 09 database layer).
+7. **`signoz_update_*` wrappers are not implemented**, and dashboard/alert read-back verification is
+   untested. Both are Phase 10 scope by PRD assignment.
+8. **Span links and explicit predecessors are modelled but never populated** — the demo emits
+   neither.
+9. **Metrics and logs are declared but not emitted** (Phase 04 limitation, unchanged). Acceptance
+   scope item 6 stays `IN PROGRESS`. The evaluator now exists, so the instruments have something to
+   count; emitting them is Phase 09 work.
+10. **Node timestamps are millisecond-accurate** (SL-044). Excluded from the fingerprint, so
+    determinism is unaffected, but Phase 08 latency percentiles inherit the resolution.
 
 ---
 
-## Next phase: 07 — Contract schema and deterministic evaluator
+## Next phase: 08 — Baseline mining and contract proposal
 
-PRD section: line 3092. Read it in full, together with section 10 (Contract DSL, lines 1239–1490)
-and section 11.11 (evaluation order, line 1665).
+PRD section: line 3128. Read it in full, together with section 11.8 (baseline route families,
+line 1596), 11.9 (similarity, line 1617), FR-007 and FR-008.
 
 ### Entry criteria — all SATISFIED
 
 | Criterion | Evidence |
 |---|---|
-| Phase 06 merged and green | `5949148`; `make verify` exit 0 |
-| Deterministic canonical graphs exist | `packages/trace-graph`, exit gate proven live |
-| Route fingerprints are stable across runs | Live v1 run matches captured fixture |
-| Typed graph diff exists | `packages/trace-graph/src/diff.ts`, twelve change kinds |
+| Phase 07 merged and green | `12e133b`; `make verify` exit 0 |
+| Deterministic canonical graphs and stable fingerprints | `packages/trace-graph`, proven live in Phases 06 and 07 |
+| A validated contract format exists | `packages/contract-schema`; 19 documents validate |
+| The evaluator can consume a proposed contract | `packages/contract-engine`; exit gate proven live |
+| Route fingerprints group exactly | PRD section 11.8 P0 grouping is exact by fingerprint |
 | Real fixtures available for both releases | `packages/test-fixtures/traces/` |
-| Error codes and severities defined | `packages/domain/src/errors.ts`, `trace.ts` |
+| MCP client can fetch traces in bounded batches | `packages/signoz-mcp`, `SigNozOperations` |
 
 ### Scope
 
-Branch `phase/07-contract-engine`. Create `packages/contract-schema` and
-`packages/contract-engine`. The PRD names eleven rule types (section 10.4): required span,
-required ancestry, required direct child, forbidden span, forbidden path, cardinality, allowed
-tools, attribute constraint, retry budget, approved routes, latency budget, token budget. Each
-needs a passing **and** a violating fixture — the two captured traces supply both for the
-safety-critical ones.
+Branch `phase/08-baseline-mining`. Create `packages/baseline-miner`. PRD Phase 08 lists twelve
+tasks: trace selection, bounded batch fetching, excluding incomplete traces **with reasons**, exact
+fingerprint grouping, route statistics, representative trace selection, marking rare families,
+approve and exclude actions, rule proposal from approved families, an evidence basis attached to
+every proposal, draft YAML generation, and preserving the baseline version and normaliser hash.
 
-Evaluation must follow PRD section 11.11's order exactly, and PRD section 11.12 requires
-byte-equivalent canonical evaluation JSON for the same graph, contract, normaliser and evaluator
-version. An LLM must never decide whether a rule passed.
+The exit gate: a user can turn a set of v1 traces into an approved contract without hand-writing the
+initial policy. **No rule may be activated automatically** — PRD Phase 08's test list says so
+explicitly, and PRD FR-018 puts activation behind human approval.
 
-Incomplete evidence must produce the PRD's insufficient-evidence outcome
-(`EVALUATION_STATUSES` already includes `insufficient_data`), never an automatic violation. This
-matters directly for the aborted server span: a rule that required the missing
-`payment.refund.handler` span must report insufficient evidence, while the duplicate-write rule
-driven by the two client spans must still fail v2.
+### Facts that will matter
 
-### Useful facts for the next session
-
+- The generated contract must pass `packages/contract-schema` validation, so the proposer should
+  build a `TrajectoryContract` and serialise it rather than emitting YAML text directly. Note that
+  `canonicalContract` now sorts its own input, so a proposer does not need to.
+- `packages/contract-engine` exports `ApprovedRoute` (`{fingerprint, canonical}`), which is the shape
+  the miner should produce for `approved_routes` rules and for similarity reporting.
+- `isBaselineEligible(graph)` in `@flightrules/trace-graph` already encodes "only a `complete` trace
+  may contribute to a baseline" (PRD section 16.6, FR-007).
+- **Declare `dataType` for every non-string tag** in any new `selectFields` (SL-046). A boolean or
+  numeric tag requested without it returns `null` on a successful call.
+- `packages/test-fixtures/src/spans.ts` builds span rows for topologies the demo does not emit;
+  `approvedRefundRows({remove, add, replace})` is the quickest way to make a route variant.
 - The demo agent runs at `http://localhost:4100`; `make demo-v1` and `make demo-v2` produce fresh
   traces. Integration tests need a run within the last six hours.
-- `scripts/capture-trace-fixtures.mjs` re-captures fixtures from the live stack.
 - Source `.env` before any integration test or script: `set -a && . ./.env && set +a`.
-- Root-level workspace deps `@flightrules/domain` and `@flightrules/signoz-mcp` exist so
-  `scripts/*.mjs` can import them; run `pnpm run build` after changing a package they use.
-- Biome forbids `console.*` except `error` and `warn`; scripts use `process.stdout.write`.
 - New packages must be added to `tsconfig.build.json` references.
+- Biome forbids `console.*` except `error` and `warn`; scripts use `process.stdout.write`.
+- Run `make contract-validate` after touching any contract document; it is part of `make verify`.
 - The known-good route is: `refund.request` → `policy.retrieve`, `order.lookup`, `fraud.check`,
-  `refund.calculate`, `payment.refund`, `customer.notify`, each with a `.handler` server span.
-  The unsafe route drops policy and fraud and emits `payment.refund` twice at retry 0 and 1.
+  `refund.calculate`, `payment.refund`, `customer.notify`. Five of the six have a `.handler` server
+  span; `refund.calculate` does not. The unsafe route drops policy and fraud and emits
+  `payment.refund` twice at retry 0 and 1.
+- The v1 route fingerprint is
+  `43070aa4af4f6c2c912a8d7bcc724f1d199e0425dc8ad7256b528eec195cb037`; v2 is
+  `22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466`. Their weighted Jaccard
+  similarity under the demo contract's critical-node weighting is 0.572815.
