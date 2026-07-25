@@ -15,7 +15,8 @@
       "!casting.yaml.lock",
       "!docs/research/mcp-capabilities.json",
       "!docs/evidence",
-      "!pnpm-lock.yaml"
+      "!pnpm-lock.yaml",
+      "!packages/ui/src/tokens.css"
     ]
   },
   "formatter": {

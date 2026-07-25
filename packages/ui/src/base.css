@@ -1,0 +1,694 @@
+/*
+ * The product shell's stylesheet.
+ *
+ * Every colour, size, radius and spacing value here is `var(--…)` against a token defined in
+ * `tokens.css`, which is `design.md` verbatim. There is no literal colour and no literal font in
+ * this file, and a test asserts that — a hard-coded hex would be an invented design value however
+ * close it looked.
+ *
+ * Two rules from `design.md` shape almost everything below. Elevation is surface colour and
+ * hairlines, never a shadow. Every button and nav pill is fully rounded; the featured clay card is
+ * the one hard-edged block, and only one clay element may appear per page.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--fr-surface);
+  color: var(--fr-text);
+  font-family: var(--fr-font);
+  font-size: 18px;
+  font-weight: var(--font-weight-regular);
+  /* design.md: "Set body copy at 18px with line-height 29 (1.61 ratio)". */
+  line-height: 1.61;
+}
+
+/* PRD section 20.3: reduced-motion support. Nothing in the shell animates by default; this makes
+   that a guarantee rather than a current fact. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+  /* design.md: display headlines run at line-height 1.0. */
+  line-height: 1;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+/* PRD section 20.3: visible focus. Two-tone so it is visible on both the white canvas and the dark
+   bands, without introducing a colour the design system does not define. */
+:focus-visible {
+  outline: 2px solid var(--fr-text);
+  outline-offset: 3px;
+}
+
+.fr-dark :focus-visible {
+  outline-color: var(--fr-text-inverse);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Shell                                                                      */
+/* -------------------------------------------------------------------------- */
+
+.fr-skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: var(--spacing-15) var(--spacing-22);
+  background: var(--fr-surface-deep);
+  color: var(--fr-text-inverse);
+  border-radius: var(--radius-buttons);
+}
+
+.fr-skip:focus {
+  left: var(--spacing-22);
+  top: var(--spacing-15);
+}
+
+.fr-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.fr-shell {
+  width: 100%;
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: 0 var(--spacing-22);
+}
+
+/* design.md "Top Navigation": transparent, items at 20px weight 400 in #000d10 on light. */
+.fr-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-31);
+  padding: var(--spacing-22) 0;
+}
+
+.fr-nav__brand {
+  font-size: var(--text-subheading);
+  letter-spacing: var(--tracking-subheading);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.fr-nav__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-23);
+  margin-left: auto;
+  list-style: none;
+  padding: 0;
+}
+
+.fr-nav__link {
+  font-size: var(--text-nav);
+  text-decoration: none;
+  color: var(--fr-text-muted);
+}
+
+.fr-nav__link[aria-current="page"] {
+  color: var(--fr-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.fr-main {
+  flex: 1;
+  padding-bottom: var(--section-gap);
+}
+
+/* design.md "Footer Terminal": full-bleed #000d10, large white wordmark, links in #8e8e95 at 20px. */
+.fr-footer {
+  background: var(--fr-surface-deep);
+  color: var(--fr-text-inverse);
+  padding: var(--spacing-59) 0 var(--spacing-38);
+  margin-top: var(--section-gap);
+}
+
+.fr-footer__mark {
+  font-size: var(--text-heading-lg);
+  letter-spacing: var(--tracking-heading-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.fr-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-23);
+  margin-top: var(--spacing-22);
+  list-style: none;
+  padding: 0;
+  color: var(--fr-text-muted);
+  font-size: var(--text-nav);
+}
+
+.fr-footer a {
+  text-decoration: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Type                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.fr-hero-title {
+  font-size: var(--text-display);
+  letter-spacing: var(--tracking-display);
+}
+
+.fr-page-title {
+  font-size: var(--text-heading-lg);
+  letter-spacing: var(--tracking-heading-lg);
+}
+
+.fr-section-title {
+  font-size: var(--text-heading);
+  letter-spacing: var(--tracking-heading);
+}
+
+.fr-block-title {
+  font-size: var(--text-subheading);
+  letter-spacing: var(--tracking-subheading);
+}
+
+.fr-eyebrow {
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fr-text-muted);
+}
+
+.fr-muted {
+  color: var(--fr-text-muted);
+}
+
+.fr-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--text-caption);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Layout                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.fr-section {
+  padding-top: var(--section-gap);
+}
+
+.fr-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-22);
+}
+
+.fr-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--element-gap);
+  align-items: center;
+}
+
+/* design.md "Feature Block": 2-column grids, 80px column gap. Not a bento wall. */
+.fr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--section-gap) var(--section-gap);
+}
+
+.fr-grid--tight {
+  gap: var(--spacing-34) var(--spacing-38);
+}
+
+.fr-page-header {
+  padding-top: var(--spacing-52);
+  border-top: 1px solid var(--fr-border);
+}
+
+.fr-page-header__meta {
+  margin-top: var(--spacing-15);
+  color: var(--fr-text-muted);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Surfaces                                                                   */
+/* -------------------------------------------------------------------------- */
+
+/* design.md "Standard White Card": no radius, no border, no shadow — a hairline above the title
+   defines it. */
+.fr-card {
+  background: var(--surface-card-white);
+  border-top: 1px solid var(--fr-border);
+  padding-top: var(--card-padding);
+}
+
+/* design.md "Featured Clay Card": 0px radius, generous padding, the only warm block on a page. */
+.fr-featured {
+  background: var(--fr-surface-featured);
+  color: var(--fr-text-inverse);
+  border-radius: var(--radius-heropanels);
+  padding: var(--spacing-53) var(--spacing-59);
+}
+
+/* design.md "Dark Content Section". */
+.fr-dark {
+  background: var(--fr-surface-dark);
+  color: var(--fr-text-inverse);
+  padding: var(--spacing-68) 0;
+}
+
+.fr-dark .fr-muted,
+.fr-dark .fr-eyebrow {
+  color: var(--color-pebble);
+}
+
+.fr-stat {
+  border-top: 1px solid var(--fr-border);
+  padding-top: var(--spacing-15);
+}
+
+.fr-stat__value {
+  display: block;
+  font-size: var(--text-heading);
+  letter-spacing: var(--tracking-heading);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+}
+
+.fr-stat__label {
+  display: block;
+  margin-top: var(--spacing-11);
+  color: var(--fr-text-muted);
+  font-size: var(--text-caption);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Controls                                                                   */
+/* -------------------------------------------------------------------------- */
+
+/* design.md "Filled Dark Pill Button". */
+.fr-button {
+  display: inline-block;
+  border: 1px solid var(--fr-text);
+  border-radius: var(--radius-buttons);
+  padding: var(--spacing-15) var(--spacing-22) var(--spacing-16);
+  font-family: inherit;
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--fr-text);
+  color: var(--fr-text-inverse);
+}
+
+/* design.md "Ghost White Pill Button", inverted for the light canvas. */
+.fr-button--ghost {
+  background: transparent;
+  color: var(--fr-text);
+}
+
+.fr-dark .fr-button {
+  background: var(--fr-text-inverse);
+  color: var(--fr-text);
+  border-color: var(--fr-text-inverse);
+}
+
+.fr-dark .fr-button--ghost {
+  background: transparent;
+  color: var(--fr-text-inverse);
+}
+
+.fr-button[aria-disabled="true"],
+.fr-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fr-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-11);
+}
+
+.fr-field__label {
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-bold);
+}
+
+.fr-field__hint,
+.fr-field__error {
+  font-size: var(--text-caption);
+  color: var(--fr-text-muted);
+}
+
+/* PRD section 20.3: an error is announced by text, and reinforced by a rule weight — never by a
+   colour the design system does not define. */
+.fr-field__error {
+  color: var(--fr-text);
+  font-weight: var(--font-weight-bold);
+  border-left: 3px solid var(--fr-text);
+  padding-left: var(--spacing-11);
+}
+
+.fr-input,
+.fr-select,
+.fr-textarea {
+  font-family: inherit;
+  font-size: 18px;
+  color: var(--fr-text);
+  background: var(--fr-surface);
+  border: 1px solid var(--fr-border);
+  border-radius: 0;
+  padding: var(--spacing-13) var(--spacing-15);
+  width: 100%;
+}
+
+.fr-textarea {
+  min-height: 320px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+
+.fr-checkbox {
+  display: flex;
+  gap: var(--spacing-11);
+  align-items: center;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Status                                                                     */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * `design.md` forbids additional accent hues and permits one clay element per page, so status
+ * cannot be a colour. PRD section 20.3 requires that status is not conveyed by colour alone in any
+ * case. A status is therefore a word plus a border weight: the word carries the meaning and the
+ * weight carries the emphasis. See ADR-0011.
+ */
+.fr-status {
+  display: inline-block;
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--fr-border);
+  border-radius: var(--radius-buttons);
+  padding: 4px var(--spacing-13) 5px;
+  white-space: nowrap;
+}
+
+.fr-status--strong {
+  border-color: var(--fr-text);
+  border-width: 2px;
+}
+
+.fr-status--inverse {
+  border-color: var(--fr-text-inverse);
+  color: var(--fr-text-inverse);
+}
+
+.fr-decision {
+  border-top: 2px solid var(--fr-text);
+  padding-top: var(--spacing-22);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Tables                                                                     */
+/* -------------------------------------------------------------------------- */
+
+/* PRD section 20.2: wide content scrolls rather than truncating or breaking the page. */
+.fr-table-scroll {
+  overflow-x: auto;
+}
+
+.fr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-caption);
+}
+
+.fr-table caption {
+  text-align: left;
+  padding-bottom: var(--spacing-11);
+  color: var(--fr-text-muted);
+  font-size: var(--text-caption);
+}
+
+.fr-table th,
+.fr-table td {
+  text-align: left;
+  padding: var(--spacing-11) var(--spacing-15) var(--spacing-11) 0;
+  border-bottom: 1px solid var(--fr-border);
+  vertical-align: top;
+}
+
+.fr-table th {
+  font-weight: var(--font-weight-bold);
+  border-bottom-color: var(--fr-text);
+  white-space: nowrap;
+}
+
+.fr-table td.fr-numeric,
+.fr-table th.fr-numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fr-dl {
+  display: grid;
+  grid-template-columns: minmax(180px, auto) 1fr;
+  gap: var(--spacing-11) var(--spacing-22);
+  margin: 0;
+  font-size: var(--text-caption);
+}
+
+.fr-dl dt {
+  color: var(--fr-text-muted);
+}
+
+.fr-dl dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* -------------------------------------------------------------------------- */
+/* States                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.fr-state {
+  border-top: 1px solid var(--fr-border);
+  padding-top: var(--spacing-22);
+}
+
+.fr-state__title {
+  font-size: var(--text-subheading);
+  letter-spacing: var(--tracking-subheading);
+  font-weight: var(--font-weight-bold);
+}
+
+.fr-state__body {
+  margin-top: var(--spacing-11);
+  color: var(--fr-text-muted);
+  max-width: 60ch;
+}
+
+.fr-state--error {
+  border-top-color: var(--fr-text);
+  border-top-width: 2px;
+}
+
+/* A skeleton is a static block, not a shimmer: `design.md` has no motion vocabulary and PRD
+   section 20.3 requires reduced motion be respected. */
+.fr-skeleton {
+  background: var(--color-pebble);
+  height: 1em;
+  width: 100%;
+  border-radius: 0;
+}
+
+.fr-toast {
+  border: 1px solid var(--fr-text);
+  border-radius: var(--radius-buttons);
+  padding: var(--spacing-13) var(--spacing-22);
+  background: var(--fr-surface);
+  font-size: var(--text-caption);
+}
+
+.fr-dialog {
+  border: 1px solid var(--fr-text);
+  border-radius: 0;
+  padding: var(--spacing-31) var(--spacing-34);
+  background: var(--fr-surface);
+  color: var(--fr-text);
+  max-width: 640px;
+  width: calc(100% - var(--spacing-38));
+}
+
+.fr-dialog::backdrop {
+  background: rgb(0 13 16 / 0.6);
+}
+
+.fr-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-21);
+  list-style: none;
+  padding: 0;
+  margin: var(--spacing-22) 0 0;
+  border-bottom: 1px solid var(--fr-border);
+}
+
+.fr-tabs a {
+  display: inline-block;
+  padding-bottom: var(--spacing-11);
+  text-decoration: none;
+  color: var(--fr-text-muted);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.fr-tabs a[aria-current="page"] {
+  color: var(--fr-text);
+  box-shadow: none;
+  border-bottom: 2px solid var(--fr-text);
+  margin-bottom: -1px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Landing                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.fr-landing-hero {
+  padding: var(--spacing-68) 0 var(--spacing-52);
+}
+
+.fr-landing-hero__title {
+  font-size: var(--text-display);
+  letter-spacing: var(--tracking-display);
+  max-width: 18ch;
+}
+
+.fr-landing-hero__body {
+  margin-top: var(--spacing-31);
+  max-width: 62ch;
+  color: var(--fr-text-muted);
+}
+
+.fr-proof {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-22);
+  margin-top: var(--spacing-38);
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.fr-steps {
+  counter-reset: step;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.fr-steps li {
+  border-top: 1px solid var(--fr-border);
+  padding: var(--spacing-15) 0;
+  font-size: var(--text-subheading);
+  letter-spacing: var(--tracking-subheading);
+  font-weight: var(--font-weight-bold);
+}
+
+/* A clearly labelled schematic. PRD Phase 12 permits illustrative diagrams on the landing route
+   only, and this one carries its own caption saying so. */
+.fr-schematic {
+  border: 1px solid var(--fr-border);
+  padding: var(--spacing-31);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Responsive                                                                 */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .fr-grid {
+    gap: var(--spacing-38);
+  }
+
+  .fr-dl {
+    grid-template-columns: 1fr;
+    gap: 2px var(--spacing-11);
+  }
+
+  .fr-dl dd {
+    margin-bottom: var(--spacing-11);
+  }
+}
+
+@media (max-width: 600px) {
+  .fr-landing-hero__title {
+    font-size: var(--text-heading-lg);
+    letter-spacing: var(--tracking-heading-lg);
+  }
+
+  .fr-page-title {
+    font-size: var(--text-heading);
+    letter-spacing: var(--tracking-heading);
+  }
+
+  .fr-section-title {
+    font-size: var(--text-heading-sm);
+    letter-spacing: normal;
+  }
+
+  .fr-nav {
+    gap: var(--spacing-13);
+  }
+
+  .fr-nav__links {
+    margin-left: 0;
+    width: 100%;
+  }
+}

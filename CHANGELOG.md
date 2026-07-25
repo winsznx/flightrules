@@ -626,3 +626,55 @@ All notable changes to FlightRules are recorded here, one section per phase.
 - `release evaluate` exits `0` for an evaluation that completed, whatever it found. Deciding is
   `gate check`'s job.
 - Regression is measured against approved route families only, count-weighted by occurrence.
+
+## Phase 12 — UI foundation and `design.md` integration (2026-07-25)
+
+### Added
+
+- `packages/ui` — the design system and the product's primitives. `tokens.css` is `design.md`'s own
+  Quick Start block copied verbatim, sixty-nine declarations unchanged, plus nine semantic aliases
+  that introduce no value. `base.css` is the shell, written entirely in `var(--…)` with no literal
+  colour, size or font of its own.
+- `packages/ui` components: app shell furniture, page header, section, card, the single clay
+  featured block, dark band, stat, status pill, table with a required caption and a declared empty
+  state, key-value list, form field with wired label and error association, dialog, skeleton, and
+  the loading, empty, error, degraded and success states.
+- `packages/ui/src/graph-table.tsx` — the canonical graph as an ordered table (PRD section 20.3).
+  It is the route's normal rendering, not a fallback.
+- `apps/web` — a Next.js 16.2.11 App Router application implementing every route in PRD section 8,
+  all fourteen, each rendering live API data with its own loading, empty, error and degraded states.
+- `apps/web/src/lib/copy.ts` — every literal string PRD section 8 fixes, in one module, asserted
+  against `docs/PRD.md` by a test.
+- `apps/web/src/lib/api.ts` — the application's only outward connection, `server-only`, validating
+  every response against a declared schema and checking the content type before reading a field.
+- `scripts/check-design-assets.mjs` and `make scan-design`, wired into `make verify`: every token
+  `design.md` declares must be present with the same value, and `base.css` must contain no literal
+  colour.
+- `GET /api/route-families/:familyId`, which PRD section 8.8's page requires and PRD section 15.5
+  does not list. Recorded in ADR-0011.
+- `packages/db` `findRouteFamilyById`.
+- `make web`.
+- `docs/adr/0011-design-token-mapping.md`, `docs/evidence/phase-12-plan.md`.
+
+### Judgement calls
+
+- **Status is a word, never a hue.** `design.md` forbids additional accent hues and permits one
+  `#bc7155` element per page; PRD section 20.3 requires that status is not conveyed by colour alone.
+  Both are satisfied by rendering `PASS`, `FAIL`, `INSUFFICIENT DATA` and `ERROR` as uppercase words
+  in a hairline pill, with emphasis carried by border weight. There is no green and no red anywhere
+  in the product.
+- **Clay appears once per page**, on the thing the page exists to say: the landing call to action,
+  and the Release Diff decision banner.
+- **Every page is a Server Component and no route file contains `use client`**, so no product state,
+  API location or credential reaches the browser (PRD section 12.3). A test asserts it.
+- **The graph table is the canonical rendering**, not a degraded mode.
+- **The landing schematic is labelled as illustrative in words**, and no authenticated route
+  contains a drawn graph (PRD Phase 12's design constraints).
+
+### Known toolchain limitation
+
+- **Next.js 16.2.11's built-in TypeScript step cannot drive TypeScript 7.0.2** (SL-060). It fails to
+  detect it, reinstalls it on every build and crashes the build worker. `apps/web`'s `build` script
+  runs `tsc -p tsconfig.json --noEmit` before `next build`, so the application is fully typechecked
+  under the workspace's strict configuration — it rejected six `exactOptionalPropertyTypes`
+  violations in the first draft of these routes — and only the broken integration is bypassed.

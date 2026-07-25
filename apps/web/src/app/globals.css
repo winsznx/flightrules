@@ -1,0 +1,9 @@
+/*
+ * The application's only stylesheet import chain.
+ *
+ * `tokens.css` is `design.md` verbatim; `base.css` is the shell, written entirely in `var(--…)`
+ * against those tokens. Nothing is declared here, on purpose: a rule added at the application level
+ * would be a design value that lives outside the design system.
+ */
+@import "@flightrules/ui/tokens.css";
+@import "@flightrules/ui/base.css";

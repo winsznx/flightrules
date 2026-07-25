@@ -35,6 +35,9 @@
       "path": "./packages/db"
     },
     {
+      "path": "./packages/ui"
+    },
+    {
       "path": "./apps/api"
     },
     {

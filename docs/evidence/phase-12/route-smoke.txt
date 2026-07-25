@@ -1,0 +1,29 @@
+# Phase 12 route smoke — captured 2026-07-25T22:53:40.880Z
+
+project    demo-commerce  019f9b74-601a-7267-8141-9e917ae7bfcb
+agent      refund-agent  019f9b74-6027-7111-85ef-5397fa92fb8e
+contract   refund-agent-local 0.1.0 (active)  019f9b7a-9961-729a-a28e-20135298d7fa
+
+HTTP  MARKER            EVIDENCE                       ROUTE
+200   landing           title+content+skip             /
+200   setup             title+content+skip             /setup
+200   projects          title+content+skip             /projects
+200   demo              title+content+skip             /demo
+200   overview          title+content+skip             /projects/:project/overview
+200   agents            title+content+skip             /projects/:project/agents
+200   agent             title+content+skip             /projects/:project/agents/:agent
+200   agent             title+content+skip             /projects/:project/agents/:agent?tab=routes
+200   agent             title+content+skip             /projects/:project/agents/:agent?tab=contracts
+200   agent             title+content+skip             /projects/:project/agents/:agent?tab=releases
+200   agent             title+content+skip             /projects/:project/agents/:agent?tab=violations
+200   agent             title+content+skip             /projects/:project/agents/:agent?tab=telemetry
+200   baseline-new      title+content+skip             /projects/:project/agents/:agent/baselines/new
+200   route-family      title+content+skip             /projects/:project/agents/:agent/routes/:family
+200   contract-studio   title+content+skip             /projects/:project/agents/:agent/contracts/:contract
+200   releases          title+content+skip             /projects/:project/agents/:agent/releases
+200   release-diff      title+content+skip             /projects/:project/agents/:agent/releases/:release
+200   release-diff      title+content+skip             /projects/:project/agents/:agent/releases/019f9b7a-1cea-734b-bd0a-f9e027f238f7
+200   violation         title+content+skip             /projects/:project/violations/:violation
+200   integration       title+content+skip             /projects/:project/integrations/signoz
+
+All 20 route responses rendered real content and leaked nothing.

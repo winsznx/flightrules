@@ -53,16 +53,24 @@ const DENIED = new Set([
   "Elastic-2.0",
 ]);
 
-/** Splits SPDX expressions such as "MIT OR Apache-2.0" and "(MIT AND BSD-3-Clause)". */
+/**
+ * Splits SPDX expressions such as "MIT OR Apache-2.0" and "(MIT AND BSD-3-Clause)".
+ *
+ * The operator is matched *with its surrounding whitespace*, not as a word boundary. `\bOR\b`
+ * matches the "or" inside `LGPL-3.0-or-later`, because a hyphen is a word boundary — and the split
+ * that followed then produced the same string, so this function recursed until the stack ran out.
+ * A security gate that crashes is a security gate that is not running, so the recursion also stops
+ * unless the split actually made progress.
+ */
 function expressionIsAllowed(expression) {
   const normalised = expression.replace(/[()]/g, " ").trim();
 
-  if (/\bOR\b/i.test(normalised)) {
-    return normalised.split(/\s+OR\s+/i).some((part) => expressionIsAllowed(part.trim()));
-  }
-  if (/\bAND\b/i.test(normalised)) {
-    return normalised.split(/\s+AND\s+/i).every((part) => expressionIsAllowed(part.trim()));
-  }
+  const or = normalised.split(/\s+OR\s+/i);
+  if (or.length > 1) return or.some((part) => expressionIsAllowed(part.trim()));
+
+  const and = normalised.split(/\s+AND\s+/i);
+  if (and.length > 1) return and.every((part) => expressionIsAllowed(part.trim()));
+
   const id = normalised.replace(/\s+WITH\s+.*$/i, "").trim();
   return ALLOWED.has(id) && !DENIED.has(id);
 }

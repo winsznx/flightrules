@@ -369,3 +369,42 @@ When `GITHUB_STEP_SUMMARY` is set, `gate check` appends a Markdown summary to it
 | `AGGREGATION_STALE` | The evaluation window closed more than `--max-age` ago (24 h by default) | Re-evaluate. A decision about old evidence is not a decision about the release now |
 | `CONTRACT_NOT_ACTIVE`, exit 4 | The contract those runs were judged against has been superseded | Re-evaluate against the current active contract |
 | A CI step passes while the canary is broken | Something is swallowing the exit code | The workflow asserts exit `2` explicitly. Never wrap `gate check` in `\|\| true` |
+
+---
+
+## 13. The web application (Phase 12)
+
+```bash
+make web            # Next.js on WEB_PORT (3000 by default)
+```
+
+It requires a running API (`make api`) and reads `FLIGHTRULES_API_URL`
+(`http://localhost:4000` by default). It talks to nothing else: PRD section 12.3 forbids SigNoz
+credentials and MCP calls in the browser, and `src/lib/api.ts` is `server-only`, so importing it
+from a client component is a build error.
+
+| Route | What it shows |
+|---|---|
+| `/` | The landing page |
+| `/setup` | The SigNoz connection, its six verification steps and the discovered MCP tools |
+| `/projects` | Projects |
+| `/projects/:projectId/overview` | Trajectory health: eight cards, release decisions, violations by rule |
+| `/projects/:projectId/agents` | Agents |
+| `/projects/:projectId/agents/:agentId` | Agent detail, six tabs (`?tab=routes`, `?tab=contracts`, …) |
+| `/projects/:projectId/agents/:agentId/baselines/new` | Baseline capture |
+| `/projects/:projectId/agents/:agentId/routes/:routeFamilyId` | Route family, canonical graph as a table |
+| `/projects/:projectId/agents/:agentId/contracts/:contractId` | Contract Studio |
+| `/projects/:projectId/agents/:agentId/releases` | Releases, with each one's gate decision |
+| `/projects/:projectId/agents/:agentId/releases/:releaseId` | Release Diff: the decision, its findings and its evidence |
+| `/projects/:projectId/violations/:violationId` | Violation Inspector |
+| `/projects/:projectId/integrations/signoz` | Managed dashboards, alerts, views and channels |
+| `/demo` | The demo |
+
+### Traps
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Every page shows "FlightRules could not reach its API." | The API is not running, or `FLIGHTRULES_API_URL` points elsewhere | `make api`, then reload. The web application never falls back to stale data |
+| `next build` reports it cannot find TypeScript and then crashes | Next.js 16.2.11 cannot drive TypeScript 7.0.2 (SL-060) | Already handled: `pnpm --filter @flightrules/web run build` runs `tsc -p` first and `next build` second. Do not re-enable Next's own TypeScript step |
+| A page renders but its table is empty | The API answered with no rows. That is the empty state, not a failure | Seed with `make demo-seed`, or evaluate a release |
+| `make verify` fails on `scan-design` | A colour, size or font entered the product that `design.md` does not define | Use a `var(--…)` token. `design.md` is authoritative (ADR-0011) |

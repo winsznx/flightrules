@@ -451,6 +451,23 @@ export async function findRouteFamily(
   return row ? toStoredFamily(row) : null;
 }
 
+/**
+ * A route family by its own identifier.
+ *
+ * PRD section 8.8 gives a route family its own bookmarkable page, so it has to be reachable without
+ * knowing which baseline it belongs to. The baseline identifier comes back on the row, so a caller
+ * can still scope what it renders.
+ */
+export async function findRouteFamilyById(
+  sql: Db,
+  familyId: string,
+): Promise<StoredRouteFamily | null> {
+  const rows = await sql<RouteFamilyRow[]>`
+    select ${sql(FAMILY_COLUMNS)} from route_families where id = ${familyId}`;
+  const row = rows[0];
+  return row ? toStoredFamily(row) : null;
+}
+
 export async function findRouteFamilyByFingerprint(
   sql: Db,
   baselineId: string,
