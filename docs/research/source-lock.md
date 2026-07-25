@@ -441,3 +441,54 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
 - Runtime confirmation: **Yes**, in both directions. Before the fix the two-identifier test failed 1 run in 5; after it, 200 identifiers generated in a single statement sort exactly in generation order, over six consecutive runs.
 - Implementation consequence: migration `0002_uuid_v7_submillisecond.sql` encodes the microsecond remainder. PRD section 14 requires a sortable identifier format, and one that only sorts across millisecond boundaries would silently break any id-ordered pagination in an intermittent and hard-to-attribute way. The test now asserts the property at a scale that can actually observe it.
 - Local file: `packages/db/migrations/0002_uuid_v7_submillisecond.sql`.
+
+## SL-046 — A non-string tag in Query Builder `selectFields` returns `null` unless its `dataType` is declared
+
+- Source: live `signoz_execute_builder_query` calls against the pinned `signoz-mcp-server v0.9.0` (tier 1, runtime)
+- Verified claim: requesting a boolean or numeric span tag without declaring its `dataType` returns the column as `null`. The call succeeds — `SUCCESS_WITH_ROWS`, no error, no warning, no validation notice — and every other requested column is correct. Probed on one span of a live `refund-agent-v1` trace, all five variants in the same session:
+
+  ```text
+  {name: "agent.idempotency.present", context: "tag"}                    -> null
+  {name: "agent.idempotency.present", context: "tag", dataType: "bool"}  -> true
+  {name: "agent.idempotency.present", context: "tag", dataType: "string"}-> null
+  {name: "agent.retry.number",        context: "tag"}                    -> null
+  {name: "agent.retry.number",        context: "tag", dataType: "number"}-> 0
+  ```
+
+  So the default resolution is the string column, and a tag stored under a different type simply is
+  not found. `dataType: "string"` on a boolean tag fails the same way, which rules out "omitted means
+  any type".
+- Runtime confirmation: **Yes**, all five variants observed directly. `scripts/capture-trace-fixtures.mjs` already declared `dataType: "bool"`, which is why the committed fixtures carry the attribute and the defect did not surface until a second query was written by hand.
+- Implementation consequence: every `selectFields` entry for a non-string tag must declare its `dataType`. This is the most dangerous shape of MCP defect FlightRules has hit: it degrades **silently and per-column**, so a contract rule keyed on `agent.idempotency.present` would read a missing attribute rather than a failed query. It was caught only because the evaluator reports `insufficient_evidence` for an absent attribute instead of passing the rule — a rule that defaulted absence to a pass would have reported a green release built on a query that returned nothing. Recorded as the concrete justification for that design choice.
+- Local file: `packages/contract-engine/src/evaluate.signoz.integration.test.ts`, `scripts/capture-trace-fixtures.mjs`.
+
+## SL-047 — `yaml@2.9.0` resolves `!!binary` and `!!timestamp` silently, and its options cannot disable them
+
+- Source: installed `yaml@2.9.0` (ISC), exercised directly (tier 1, runtime)
+- Verified claim:
+  - `customTags: []` and `schema: "core"` do **not** restrict tags. `a: !!binary aGk=` parses to a Node `Buffer` and `a: !!timestamp 2020-01-01` to a `Date`, each with `doc.errors` and `doc.warnings` both empty.
+  - An unresolvable tag is only a **warning**: `a: !!python/object:os.system "x"` yields `doc.warnings[0].code === "TAG_RESOLVE_FAILED"` and still parses to the plain string `"x"`.
+  - `maxAliasCount` defaults to a bound that rejects an amplification bomb with `ReferenceError: Excessive alias count indicates a resource exhaustion attack`; `maxAliasCount: 0` rejects **any** alias with `ReferenceError: Alias resolution is disabled`; `maxAliasCount: -1` disables the check entirely.
+  - `uniqueKeys` defaults to `true`, so duplicate map keys are a `YAMLParseError`. Tabs as indentation and multiple documents are both rejected by `parse`.
+  - Deep flow nesting fails as `YAMLParseError: Maximum call stack size exceeded` — caught, not fatal — at a depth that depends on the available stack. Block nesting 500 levels deep parses successfully.
+  - `.inf` and `.nan` parse to non-finite numbers. `99999999999999999999999` parses to `1e+23`, losing precision with no diagnostic.
+  - A literal `__proto__` map key becomes an own property; `Object.prototype` is **not** polluted.
+- Runtime confirmation: **Yes**, every claim observed directly against the installed package.
+- Implementation consequence: the tag defence cannot be an option or a warning check, because two of the three dangerous tags produce no diagnostic at all. `loadContractDocument` walks the document AST and rejects any node carrying an explicit tag, an anchor or an alias, then audits the converted value for non-plain prototypes and unsafe numerics. Depth is bounded explicitly before the parser's own stack limit, so rejection is deterministic rather than machine-dependent. `maxAliasCount: 0` is set even though the default is already bounded: a contract has no legitimate use for an alias, and "none" is a stronger and more auditable position than "not too many".
+- Local file: `packages/contract-schema/src/yaml.ts`, `packages/contract-schema/src/yaml.test.ts`.
+
+## SL-048 — `ajv@8.20.0`'s default export cannot compile a draft 2020-12 schema
+
+- Source: installed `ajv@8.20.0` (MIT), exercised directly (tier 1, runtime)
+- Verified claim: `new Ajv().compile(schema)` on a schema declaring `$schema: "https://json-schema.org/draft/2020-12/schema"` throws `Error: no schema with key or ref "https://json-schema.org/draft/2020-12/schema"`. The dialect-specific entry point `ajv/dist/2020.js` compiles the same schema without error. The package's `dist/` also ships a `2019.js`; neither is reachable through the package's main export.
+- Runtime confirmation: **Yes**, both directions.
+- Implementation consequence: the JSON Schema parity test imports `ajv/dist/2020.js`. Used as a **devDependency only** — the authoritative validator is the hand-written one in `packages/contract-schema/src/validate.ts`, because a JSON Schema cannot express the cross-field checks PRD FR-009 requires (duplicate rule identifiers, impossible ranges, contradictory rules, undefined route and rule references). The parity test exists so the published schema cannot drift into a comfortable fiction while the real validator moves on.
+- Local file: `packages/contract-schema/src/yaml.test.ts`, `packages/contract-schema/src/validate.test.ts`.
+
+## SL-049 — `[]a]` is a valid character class in RE2 and an empty class in JavaScript
+
+- Source: RE2 syntax reference and POSIX ERE, cross-checked against the installed V8 `RegExp` (tier 2 specification, tier 1 runtime)
+- Verified claim: RE2 and POSIX treat a `]` appearing as the first member of a character class as a literal, so `[]a]` is the class `{']', 'a'}`. JavaScript instead reads `[]` as an empty class that matches nothing, making `[]a]` an empty class followed by the literals `a` and `]`. `new RegExp("[]a]").test("]")` returns `false` on the installed runtime.
+- Runtime confirmation: **Yes**, for the JavaScript half. The RE2 half is a specification claim; FlightRules implements it and asserts it.
+- Implementation consequence: PRD section 10.3 requires the `matches` operator to be RE2-compatible, so `packages/contract-schema/src/regex.ts` follows RE2 here and the divergence is asserted by a dedicated test rather than left as an accident. This is the only known divergence within the supported subset; a 2,000-run property test compares every other generated pattern against `RegExp` and requires agreement. The engine is a Thompson NFA simulated over a state set, so matching is linear in pattern × input and no input can cause backtracking — `(a+)+$` against 5,000 characters completes in about 2.5 ms rather than not returning at all.
+- Local file: `packages/contract-schema/src/regex.ts`, `packages/contract-schema/src/regex.test.ts`.

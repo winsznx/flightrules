@@ -130,8 +130,13 @@ export function normaliseAttributes(
   const caseInsensitive = new Set(config.caseInsensitiveAttributes);
   const identity = new Set(config.fingerprintAttributes);
 
-  const fingerprint: Record<string, SafeAttributeValue> = {};
-  const evidence: Record<string, SafeAttributeValue> = {};
+  // Null-prototype records. Attribute keys are telemetry-derived and therefore untrusted: on a
+  // normal object, `record["__proto__"] = ["a","b"]` invokes the inherited setter and *replaces the
+  // record's prototype* instead of storing a key, after which `record.length` and `record[0]`
+  // return values no span ever emitted. With no prototype there is no setter, so the key is stored
+  // as ordinary data and the record cannot inherit anything.
+  const fingerprint: Record<string, SafeAttributeValue> = Object.create(null);
+  const evidence: Record<string, SafeAttributeValue> = Object.create(null);
 
   for (const key of Object.keys(attributes).sort()) {
     if (volatile.has(key)) continue;

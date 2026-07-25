@@ -1,8 +1,14 @@
 export type { BuildOptions, SpanRowData } from "./build.js";
 export { buildTraceGraph, SYNTHETIC_ROOT_SPAN_ID } from "./build.js";
-export type { CanonicalGraph, CanonicalNode, RouteFingerprint } from "./canonical.js";
+export type {
+  CanonicalGraph,
+  CanonicalNode,
+  CanonicalOrdering,
+  RouteFingerprint,
+} from "./canonical.js";
 export {
   canonicaliseGraph,
+  canonicalOrdering,
   fingerprintGraph,
   serialiseCanonicalGraph,
 } from "./canonical.js";

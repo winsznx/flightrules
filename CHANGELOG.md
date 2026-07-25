@@ -272,3 +272,82 @@ All notable changes to FlightRules are recorded here, one section per phase.
   unaffected because timestamps are excluded from the fingerprint, but it independently confirms
   why timestamp order is never treated as causal truth.
 
+
+## Phase 07 — Contract schema and deterministic evaluator (2026-07-25)
+
+### Added
+
+- `@flightrules/contract-schema` — the versioned contract DSL of PRD section 10. TypeScript types,
+  a published draft 2020-12 JSON Schema, safe YAML loading, static validation returning
+  `{path, code, message}`, cross-rule contradiction detection, canonical serialisation, a SHA-256
+  content hash, and a `flightrules-contract` validation command with PRD FR-012 exit codes.
+- An RE2-compatible regular-expression engine for the `matches` operator: a Thompson NFA simulated
+  over a state set, so matching is linear in pattern × input and no input can cause backtracking.
+  `(a+)+$` against 5,000 characters completes in about 2.5 ms. A 2,000-run property test asserts
+  agreement with `RegExp` across the supported subset.
+- `@flightrules/contract-engine` — the deterministic run evaluator. `Map`-based query indexes, the
+  six selector operators compiled once per run, all eleven PRD rule types, evidence references
+  carrying both span IDs and canonical node positions, stable violation identifiers, PRD section
+  11.11's evaluation order, canonical evaluation JSON with a SHA-256 hash, and evaluator versioning.
+- `contracts/demo-commerce/refund-agent/production/contract.yaml` — the active contract, 15 rules
+  covering all eleven rule types.
+- 18 per-rule fixture contracts and a span-row builder (`packages/test-fixtures/src/spans.ts`) for
+  topologies the demo legitimately never emits.
+- `scripts/validate-contracts.sh` and `make contract-validate`, wired into `make verify`.
+- ADR-0006 recording the DSL decisions, the determinism boundary and the insufficient-evidence scope.
+
+### Verified
+
+- The exit gate against live telemetry: the committed contract **passes** the approved release and
+  **fails** the canary with three critical zero-tolerance violations naming the missing fraud check,
+  the missing policy check and the duplicate refund. No LLM participates in any decision.
+- The canary's aborted payment handler reports `insufficient_evidence` with reason
+  `unobservable_subtree` rather than a violation, while the duplicate-refund finding — whose evidence
+  lives in the two exported client spans — still fails the release.
+- A run-scoped token budget reports `insufficient_evidence` / `metric_not_emitted` against both live
+  traces, because the demo makes no model call.
+- Byte-equivalent evaluation output across repeated runs, reordered spans, reordered attribute keys,
+  reordered rule declarations and reformatted contract documents. No non-integer number appears
+  anywhere in the canonical output.
+- Performance: 0.28 ms for the demo canary, 15.6 ms for 1,000 spans, 191 ms for 10,000 spans, and
+  15.3 ms for 1,000 spans against the 500-rule DSL ceiling — rule count is nearly free because the
+  indexes are built once.
+- 674 tests pass (599 unit, 75 integration), 0 failed, 0 skipped. Phase 07 added 290.
+
+### Fixed
+
+- **A telemetry attribute key of `__proto__` replaced a normalised record's prototype** (Phase 06
+  code). An array value invoked the inherited setter, after which `evidence.length` and `evidence[0]`
+  returned values no span emitted. Reproduced at runtime, then fixed with `Object.create(null)`; the
+  attribute is now preserved as ordinary data.
+- **`canonicalContract` depended on its caller having sorted the input.** For a parsed contract that
+  held, but Phase 08's proposal generator and Phase 09's database rows are producers that do not go
+  through the YAML validator, and either would have hashed one policy two ways. Canonicalisation now
+  sorts its own input.
+- **Ancestry undecidability was scoped too broadly**, conflating a chain truncated by unexported
+  spans with one that legitimately ends at a second parentless root. A detached side effect could
+  have escaped the rule by being detached.
+
+### Discovered
+
+- **A non-string tag in Query Builder `selectFields` returns `null` unless its `dataType` is
+  declared.** The call succeeds with no error, no warning and every other column correct, so an
+  attribute vanishes silently and per-column. Caught only because the evaluator reports insufficient
+  evidence for an absent attribute instead of passing the rule. (SL-046)
+- **`yaml@2.9.0` resolves `!!binary` to a `Buffer` and `!!timestamp` to a `Date` with no error and no
+  warning,** and `customTags: []` does not prevent it. An unresolvable tag is only a warning. The tag
+  defence therefore walks the document AST rather than reading options or diagnostics. (SL-047)
+- `ajv@8.20.0`'s default export cannot compile a draft 2020-12 schema; `ajv/dist/2020.js` can. Used
+  as a devDependency for the schema parity test only. (SL-048)
+- `[]a]` is a two-member character class in RE2 and an empty class in JavaScript. FlightRules follows
+  RE2, as PRD section 10.3 requires. (SL-049)
+
+### Changed
+
+- `@flightrules/trace-graph` now exports `canonicalOrdering`, so the evaluator can resolve a span to
+  its canonical node index without reimplementing the sibling ordering. Two copies of that traversal
+  would agree until one of them was changed, and then attach evidence to the wrong node.
+- The demo contract's token budget is release-scoped rather than run-scoped. A rule that can never be
+  decided against the agent it governs is a contract-authoring error, and run scope made the active
+  contract unable to pass its own baseline. The insufficient-evidence path is proven by a dedicated
+  fixture contract instead.

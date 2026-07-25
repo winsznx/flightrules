@@ -87,13 +87,37 @@ function subtreeDigest(label: string, childDigests: readonly string[]): string {
 }
 
 /**
- * Builds the canonical graph.
+ * The canonical ordering of a graph's spans.
  *
- * The traversal is iterative rather than recursive so a deep trace cannot overflow the stack, and
- * it computes each subtree's canonical content bottom-up so that a parent can order its children
- * by what they contain rather than by what they are called.
+ * `order` is the integer a span occupies in the canonical graph and `depth` is its distance from
+ * the root. Both are keyed by span ID, which the canonical graph itself deliberately does not
+ * carry — the fingerprint must not depend on identifiers. A consumer that needs to point at a
+ * canonical node from a real span, as the contract evaluator does when attaching evidence, needs
+ * exactly this mapping.
  */
-export function canonicaliseGraph(graph: TraceGraph): CanonicalGraph {
+export interface CanonicalOrdering {
+  readonly order: ReadonlyMap<string, number>;
+  readonly depth: ReadonlyMap<string, number>;
+  /** Post-order span IDs, the order `canonicaliseGraph` emits nodes in before sorting. */
+  readonly postOrder: readonly string[];
+}
+
+/**
+ * Computes the canonical ordering.
+ *
+ * Extracted so `canonicaliseGraph` and any consumer that needs span-to-order resolution share one
+ * implementation. Two copies of this traversal would agree until one of them was changed.
+ */
+export function canonicalOrdering(graph: TraceGraph): CanonicalOrdering {
+  const { order, depth, postOrder } = computeOrdering(graph);
+  return { order, depth, postOrder };
+}
+
+function computeOrdering(graph: TraceGraph): {
+  readonly order: ReadonlyMap<string, number>;
+  readonly depth: ReadonlyMap<string, number>;
+  readonly postOrder: readonly string[];
+} {
   const byId = nodeById(graph);
   const children = childrenOf(graph);
 
@@ -152,16 +176,46 @@ export function canonicaliseGraph(graph: TraceGraph): CanonicalGraph {
     nextOrder += 1;
     depth.set(frame.id, frame.depth);
 
-    const ordered = [...(children.get(frame.id) ?? [])].sort((a, b) => {
-      const left = signature.get(a) ?? "";
-      const right = signature.get(b) ?? "";
-      return left < right ? -1 : left > right ? 1 : 0;
-    });
+    const ordered = orderedChildren(children.get(frame.id) ?? [], signature);
     // Reversed on push so the stack pops them in ascending digest order.
     for (let index = ordered.length - 1; index >= 0; index -= 1) {
       walkStack.push({ id: ordered[index] as string, depth: frame.depth + 1 });
     }
   }
+
+  return { order, depth, postOrder };
+}
+
+/**
+ * Siblings in canonical order.
+ *
+ * The span ID breaks a tie between two siblings whose subtrees are genuinely identical. Without it
+ * the relative order of two indistinguishable siblings would come from the input order, which is
+ * unstable — and while that cannot change the fingerprint, it would change which canonical index a
+ * given span is reported under in evidence.
+ */
+function orderedChildren(
+  children: readonly string[],
+  signature: ReadonlyMap<string, string>,
+): readonly string[] {
+  return [...children].sort((a, b) => {
+    const left = signature.get(a) ?? "";
+    const right = signature.get(b) ?? "";
+    if (left !== right) return left < right ? -1 : 1;
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+}
+
+/**
+ * Builds the canonical graph.
+ *
+ * The traversal is iterative rather than recursive so a deep trace cannot overflow the stack, and
+ * it computes each subtree's canonical content bottom-up so that a parent can order its children
+ * by what they contain rather than by what they are called.
+ */
+export function canonicaliseGraph(graph: TraceGraph): CanonicalGraph {
+  const byId = nodeById(graph);
+  const { order, depth, postOrder } = computeOrdering(graph);
 
   const nodes: CanonicalNode[] = [];
   for (const id of postOrder) {

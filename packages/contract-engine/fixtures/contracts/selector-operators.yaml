@@ -1,0 +1,94 @@
+apiVersion: flightrules.dev/v1alpha1
+kind: TrajectoryContract
+metadata:
+  id: selector-operators
+  name: Every selector operator
+  version: 1.0.0
+  project: demo-commerce
+  agent: refund-agent
+  environment: production
+  createdAt: 2026-07-25T00:00:00Z
+spec:
+  selectors:
+    workflowName: refund-workflow
+    releaseAttribute: agent.release.id
+    environmentAttribute: deployment.environment.name
+    rootSpan: refund.request
+  approvedRoutes: []
+  rules:
+    - id: operator-equals
+      type: required_span
+      selector:
+        attributes:
+          - key: agent.side_effect
+            operator: equals
+            value: write
+      cardinality:
+        min: 1
+        max: 8
+      severity: low
+    - id: operator-not-equals
+      type: required_span
+      selector:
+        name: payment.refund
+        attributes:
+          - key: agent.data_domain
+            operator: not_equals
+            value: admin
+      cardinality:
+        min: 1
+        max: 8
+      severity: low
+    - id: operator-in
+      type: required_span
+      selector:
+        attributes:
+          - key: agent.step.category
+            operator: in
+            value:
+              - payment
+              - fraud
+      cardinality:
+        min: 1
+        max: 8
+      severity: low
+    - id: operator-not-in
+      type: required_span
+      selector:
+        name: fraud.check
+        attributes:
+          - key: agent.step.category
+            operator: not_in
+            value:
+              - payment
+              - customer
+      cardinality:
+        min: 1
+        max: 8
+      severity: low
+    - id: operator-exists
+      type: required_span
+      selector:
+        attributes:
+          - key: gen_ai.tool.name
+            operator: exists
+      cardinality:
+        min: 1
+        max: 20
+      severity: low
+    - id: operator-matches
+      type: required_span
+      selector:
+        namePattern: ^payment\.[a-z]+$
+      cardinality:
+        min: 1
+        max: 4
+      severity: low
+  gate:
+    minCompletedRuns: 1
+    evaluationTimeoutSeconds: 60
+    maxViolationPercent: 0
+    maxUnknownRoutePercent: 0
+    maxLatencyRegressionPercent: 10
+    maxTokenRegressionPercent: 10
+    zeroToleranceRuleIds: []

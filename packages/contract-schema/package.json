@@ -1,0 +1,35 @@
+{
+  "name": "@flightrules/contract-schema",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schema": "./schema/trajectory-contract.v1alpha1.schema.json"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "flightrules-contract": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "schema"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "validate": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@flightrules/domain": "workspace:*",
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "ajv": "8.20.0",
+    "fast-check": "4.9.0"
+  }
+}

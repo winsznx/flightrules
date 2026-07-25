@@ -1,0 +1,33 @@
+apiVersion: flightrules.dev/v1alpha1
+kind: TrajectoryContract
+metadata:
+  id: attribute-exists
+  name: Attribute exists constraint
+  version: 1.0.0
+  project: demo-commerce
+  agent: refund-agent
+  environment: production
+  createdAt: 2026-07-25T00:00:00Z
+spec:
+  selectors:
+    workflowName: refund-workflow
+    releaseAttribute: agent.release.id
+    environmentAttribute: deployment.environment.name
+    rootSpan: refund.request
+  approvedRoutes: []
+  rules:
+    - id: refund-declares-domain
+      type: attribute_constraint
+      selector:
+        name: payment.refund
+      field: agent.data_domain
+      operator: exists
+      severity: high
+  gate:
+    minCompletedRuns: 1
+    evaluationTimeoutSeconds: 60
+    maxViolationPercent: 0
+    maxUnknownRoutePercent: 0
+    maxLatencyRegressionPercent: 10
+    maxTokenRegressionPercent: 10
+    zeroToleranceRuleIds: []

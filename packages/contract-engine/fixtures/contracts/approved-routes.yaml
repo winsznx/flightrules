@@ -1,0 +1,36 @@
+apiVersion: flightrules.dev/v1alpha1
+kind: TrajectoryContract
+metadata:
+  id: approved-routes
+  name: Approved routes rule
+  version: 1.0.0
+  project: demo-commerce
+  agent: refund-agent
+  environment: production
+  createdAt: 2026-07-25T00:00:00Z
+spec:
+  selectors:
+    workflowName: refund-workflow
+    releaseAttribute: agent.release.id
+    environmentAttribute: deployment.environment.name
+    rootSpan: refund.request
+  # The real refund-agent-v1 route fingerprint, produced by @flightrules/trace-graph from the
+  # captured live trace. Asserted against a freshly computed fingerprint by the tests, so this file
+  # cannot drift from what the graph engine actually produces.
+  approvedRoutes:
+    - sha256:43070aa4af4f6c2c912a8d7bcc724f1d199e0425dc8ad7256b528eec195cb037
+  rules:
+    - id: approved-route-family
+      type: approved_routes
+      fingerprints:
+        - sha256:43070aa4af4f6c2c912a8d7bcc724f1d199e0425dc8ad7256b528eec195cb037
+      minSimilarity: 0.92
+      severity: high
+  gate:
+    minCompletedRuns: 1
+    evaluationTimeoutSeconds: 60
+    maxViolationPercent: 0
+    maxUnknownRoutePercent: 0
+    maxLatencyRegressionPercent: 10
+    maxTokenRegressionPercent: 10
+    zeroToleranceRuleIds: []

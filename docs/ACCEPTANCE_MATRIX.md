@@ -6,7 +6,7 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 06, 2026-07-25.
+Last updated: Phase 07, 2026-07-25.
 
 ## Critical final assertions (PRD section 23)
 
@@ -18,8 +18,8 @@ Last updated: Phase 06, 2026-07-25.
 | A4 | v1 includes policy and fraud checks | `apps/demo-agent` | `apps/demo-agent/src/orchestrator.test.ts` | `docs/evidence/phase-03-result.md` | DONE |
 | A5 | v2 omits those checks and duplicates payment | `apps/demo-agent`, `apps/demo-services/payment-service` | `apps/demo-agent/src/orchestrator.test.ts`, `apps/demo-services/payment-service/src/ledger.test.ts` | `docs/evidence/phase-03-result.md` | DONE |
 | A6 | FlightRules reconstructs both trace graphs from SigNoz | `packages/signoz-mcp`, `packages/trace-graph` | `packages/trace-graph/src/graph.test.ts`, `graph.signoz.integration.test.ts` | `docs/evidence/phase-06-result.md` — both live traces reconstructed; a live v1 run fingerprints identically to the captured fixture | DONE |
-| A7 | The active contract passes v1 | `packages/contract-engine` | v1 fixture evaluation test | `docs/evidence/phase-07-result.md` | PENDING |
-| A8 | The active contract fails v2 | `packages/contract-engine` | v2 fixture evaluation test | `docs/evidence/phase-07-result.md` | PENDING |
+| A7 | The active contract passes v1 | `packages/contract-engine` | `packages/contract-engine/src/evaluate.test.ts`, `evaluate.signoz.integration.test.ts` | `docs/evidence/phase-07-result.md` — the committed contract evaluated against a live v1 trace: pass, 13 rules passed, 2 deferred, 0 violations | DONE |
+| A8 | The active contract fails v2 | `packages/contract-engine` | `packages/contract-engine/src/evaluate.test.ts`, `evaluate.signoz.integration.test.ts` | `docs/evidence/phase-07-result.md` — live v2 trace: fail, 6 violations, 3 critical and zero-tolerance, naming the missing fraud check, the missing policy check and the duplicate refund | DONE |
 | A9 | The failure links to real SigNoz trace evidence | `packages/domain`, `apps/web` violation inspector | evidence linking test | `docs/evidence/phase-15-result.md` | PENDING |
 | A10 | FlightRules creates and verifies a real SigNoz dashboard | `packages/artifact-compiler` | dashboard create + read-back test | `docs/evidence/phase-10-result.md` | PENDING |
 | A11 | FlightRules creates and verifies real SigNoz views | `packages/artifact-compiler` | view create + read-back test | `docs/evidence/phase-10-result.md` | PENDING |
@@ -43,9 +43,9 @@ Last updated: Phase 06, 2026-07-25.
 | 9 | Trace nodes deduplicated by span ID | `packages/trace-graph` | duplicate, conflicting-duplicate and completeness tests | phase-06 | DONE |
 | 10 | Dynamic identifiers normalised | `packages/normaliser` | `packages/normaliser/src/normalise.test.ts` including idempotence and volatile-ID invariance properties | phase-06 | DONE |
 | 11 | Baseline route families captured from range or release | `packages/baseline-miner` | mining tests | phase-08 | PENDING |
-| 12 | Versioned YAML contract proposed, reviewed, validated, stored, evaluated | `packages/contract-schema`, `packages/contract-engine` | schema and lifecycle tests | phase-07, phase-09 | PENDING |
-| 13 | All P0 rule types work | `packages/contract-engine` | per-rule passing and failing fixtures | phase-07 | PENDING |
-| 14 | Deterministic pass/fail decisions and typed violations | `packages/contract-engine` | determinism property tests | phase-07 | PENDING |
+| 12 | Versioned YAML contract proposed, reviewed, validated, stored, evaluated | `packages/contract-schema`, `packages/contract-engine` | `validate.test.ts`, `yaml.test.ts`, `cli-run.test.ts` | phase-07 — validated and evaluated; proposal is phase-08 and storage is phase-09 | IN PROGRESS |
+| 13 | All P0 rule types work | `packages/contract-engine` | `packages/contract-engine/src/rules.test.ts` — all eleven types with passing, violating and empty-evidence cases; a test asserts the fixture set covers `RULE_TYPES` exactly | phase-07 | DONE |
+| 14 | Deterministic pass/fail decisions and typed violations | `packages/contract-engine` | `evaluate.test.ts` — byte-equality across repeated runs, span order, attribute order, rule order and contract key order, plus seven 300-run properties | phase-07 | DONE |
 | 15 | Evaluation telemetry emitted back to SigNoz | `packages/telemetry` | OTLP export test | phase-00 (path proven), phase-09 | IN PROGRESS |
 | 16 | SigNoz dashboard created through MCP with real data | `packages/artifact-compiler` | dashboard data test | phase-10 | PENDING |
 | 17 | At least one saved SigNoz trace view created through MCP | `packages/signoz-mcp` verify helper, `packages/artifact-compiler` | create-read-verify integration test | phase-05 (view created, read back, field-compared, deleted), phase-10 | IN PROGRESS |
@@ -70,8 +70,8 @@ Last updated: Phase 06, 2026-07-25.
 | FR-006 | Canonical route fingerprint | `packages/trace-graph` | order, key-order and volatile-ID property tests plus sensitivity tests | phase-06 — a live run and the captured fixture share one fingerprint | DONE |
 | FR-007 | Baseline capture | `packages/baseline-miner` | mining tests | phase-08 | PENDING |
 | FR-008 | Contract proposal | `packages/baseline-miner` | proposal tests | phase-08 | PENDING |
-| FR-009 | Contract schema validation | `packages/contract-schema` | schema rejection tests | phase-07 | PENDING |
-| FR-010 | Run evaluation | `packages/contract-engine` | evaluation tests | phase-07 | PENDING |
+| FR-009 | Contract schema validation | `packages/contract-schema` | `validate.test.ts`, `yaml.test.ts` — every rejection reason asserted with its exact path and code | phase-07 | DONE |
+| FR-010 | Run evaluation | `packages/contract-engine` | `rules.test.ts`, `evaluate.test.ts`, `evaluate.signoz.integration.test.ts` | phase-07 — both live traces evaluated end to end | DONE |
 | FR-011 | Release evaluation | `packages/contract-engine` | aggregation tests | phase-11 | PENDING |
 | FR-012 | Release gate | `apps/cli` | exit-code tests | phase-11 | PENDING |
 | FR-013 | SigNoz saved-view compiler | `packages/artifact-compiler` | view read-back tests | phase-10 | PENDING |
