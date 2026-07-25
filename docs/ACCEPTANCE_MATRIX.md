@@ -6,7 +6,7 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 04, 2026-07-25.
+Last updated: Phase 05, 2026-07-25.
 
 ## Critical final assertions (PRD section 23)
 
@@ -36,7 +36,7 @@ Last updated: Phase 04, 2026-07-25.
 | 2 | Repository contains `casting.yaml` and `casting.yaml.lock` | repository root | reproducibility check | phase-02 | DONE |
 | 3 | SigNoz MCP Server enabled and reachable | `casting.yaml` `spec.mcp` | `packages/test-fixtures/src/signoz.signoz.integration.test.ts` | phase-02 | DONE |
 | 4 | Claude Code can connect to the SigNoz MCP Server | `docs/RUNBOOK.md` section 3 | documented manual step; the same endpoint, transport and header are exercised by the SDK integration tests | phase-02 | DONE |
-| 5 | FlightRules backend connects using an official MCP client | `packages/signoz-mcp` | MCP client integration tests | phase-00 (proven), phase-05 | IN PROGRESS |
+| 5 | FlightRules backend connects using an official MCP client | `packages/signoz-mcp` | `packages/signoz-mcp/src/mcp-client.signoz.integration.test.ts` | phase-05 — 21 integration tests against the pinned v0.9.0 server | DONE |
 | 6 | Instrumented refund-agent demo emits traces, metrics and logs | `apps/demo-*`, `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` | phase-04 — traces emitted and retrieved; metric instruments declared but not yet emitted, logs land with the API in phase-09 | IN PROGRESS |
 | 7 | Baseline and canary releases distinguishable via attributes | `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` | phase-04 — `agent.release.id` retrieved as `refund-agent-v1` and `refund-agent-v2` from the two live traces | DONE |
 | 8 | Complete trace trees fetched and reconstructed | `packages/trace-graph` | reconstruction tests | phase-00 (proven), phase-06 | IN PROGRESS |
@@ -48,7 +48,7 @@ Last updated: Phase 04, 2026-07-25.
 | 14 | Deterministic pass/fail decisions and typed violations | `packages/contract-engine` | determinism property tests | phase-07 | PENDING |
 | 15 | Evaluation telemetry emitted back to SigNoz | `packages/telemetry` | OTLP export test | phase-00 (path proven), phase-09 | IN PROGRESS |
 | 16 | SigNoz dashboard created through MCP with real data | `packages/artifact-compiler` | dashboard data test | phase-10 | PENDING |
-| 17 | At least one saved SigNoz trace view created through MCP | `packages/artifact-compiler` | view read-back test | phase-00 (proven), phase-10 | IN PROGRESS |
+| 17 | At least one saved SigNoz trace view created through MCP | `packages/signoz-mcp` verify helper, `packages/artifact-compiler` | create-read-verify integration test | phase-05 (view created, read back, field-compared, deleted), phase-10 | IN PROGRESS |
 | 18 | At least one SigNoz alert created through MCP and proven to fire | `packages/artifact-compiler` | alert firing test | phase-10 | PENDING |
 | 19 | Release comparison shows baseline versus canary topology diff | `packages/trace-graph`, `apps/web` | diff tests | phase-14 | PENDING |
 | 20 | Violation inspector links to the original SigNoz trace | `apps/web` | inspector route tests | phase-15 | PENDING |
@@ -64,7 +64,7 @@ Last updated: Phase 04, 2026-07-25.
 |---|---|---|---|---|---|
 | FR-001 | Project creation | `apps/api` | API tests | phase-09 | PENDING |
 | FR-002 | Agent registration | `apps/api` | API tests | phase-09 | PENDING |
-| FR-003 | Trace discovery | `packages/signoz-mcp` | MCP integration tests | phase-05 | PENDING |
+| FR-003 | Trace discovery | `packages/signoz-mcp` | `mcp-client.signoz.integration.test.ts` | phase-05 — both demo traces retrieved with custom attributes and webUrl preserved | DONE |
 | FR-004 | Trace graph reconstruction | `packages/trace-graph` | reconstruction tests | phase-06 | PENDING |
 | FR-005 | Name and attribute normalisation | `packages/normaliser` | normalisation tests | phase-06 | PENDING |
 | FR-006 | Canonical route fingerprint | `packages/trace-graph` | fingerprint property tests | phase-06 | PENDING |

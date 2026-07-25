@@ -382,3 +382,45 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
 - Implementation consequence: used by `@flightrules/db` for migrations and by the integration test
   suite. Drizzle ORM (ADR-0001) sits on top of the same driver from Phase 09.
 - Local file: `packages/db`.
+
+## SL-040 — `signoz_execute_builder_query` returns no `structuredContent`, and a success may carry several content entries
+
+- Source: live MCP calls against the pinned `signoz-mcp-server v0.9.0` (tier 1, runtime)
+- Verified claim:
+  - On the success path `signoz_execute_builder_query` returns its payload **only** as text content. `structuredContent` is `undefined`. Confirmed for a matching query, a zero-row query and a large query.
+  - The declared `outputSchema` does **not** predict this. Only 5 of the 41 tools declare an output schema (`signoz_check_metric_usage`, `signoz_fetch_doc`, `signoz_list_alert_rules`, `signoz_list_alerts`, `signoz_search_docs`), yet `signoz_list_services`, `signoz_list_views`, `signoz_list_dashboards` and `signoz_list_notification_channels` all return `structuredContent` without declaring one.
+  - A successful response may carry **more than one** content entry. When the server substitutes a default the request omitted, it appends a second text entry beginning `[Decisions applied]`. Observed: entry 0 of 78,142 characters holding the JSON payload, entry 1 of 109 characters holding `[Decisions applied]\n  query "A": limit=100 (request-type default), order=timestamp desc (signal-safe default)`. Joining the entries and calling `JSON.parse` fails at position 78,143.
+  - A query that matched nothing returns `rows: null`, not `[]`.
+- Runtime confirmation: **Yes**, all four observations were made directly against the deployed server.
+- Implementation consequence: payload extraction is unconditional and ordered — `structuredContent` first, then **each content entry parsed on its own** — and can never be inferred from discovery metadata. Non-JSON entries are preserved as validation notices rather than discarded, satisfying PRD Phase 05 task 5. `rows: null` normalises to `SUCCESS_EMPTY`, never to a parse failure. Every FlightRules script written before Phase 05 joined content entries before parsing and would break on the multi-entry response.
+- Local file: `packages/signoz-mcp/src/parse.ts`, `packages/signoz-mcp/src/normalise.ts`.
+
+## SL-041 — MCP TypeScript SDK transport types are not assignable under `exactOptionalPropertyTypes`
+
+- Source: installed `@modelcontextprotocol/sdk@1.29.0` declaration files (tier 1)
+- Verified claim: `shared/transport.d.ts` declares `sessionId?: string` on the `Transport` interface, while `client/streamableHttp.d.ts` exposes `get sessionId(): string | undefined`. Under `exactOptionalPropertyTypes: true` a getter that is always present and may be `undefined` is not assignable to an optional property that must be a `string` when present. `tsc` reports TS2379 on `client.connect(transport)`.
+- Runtime confirmation: **Yes.** The strict build fails; the same call works correctly at runtime, and all 21 Phase 05 integration tests pass against the real server through it.
+- Implementation consequence: the call site asserts to the SDK's own `Transport` type. This is not a suppression — no `as any`, `@ts-ignore` or `@ts-expect-error` is used, and every member FlightRules calls remains fully typed. The alternative, relaxing `exactOptionalPropertyTypes` for the package, would weaken checking across all of its own code to work around one third-party declaration defect.
+- Local file: `packages/signoz-mcp/src/transport.ts`.
+
+## SL-042 — A saved view's `compositeQuery` requires both `queryType` and `panelType`
+
+- Source: live MCP calls against the pinned server (tier 1, runtime)
+- Verified claim: `signoz_create_view` rejects a `compositeQuery` that omits either field with HTTP 400 `failed to validate request body`, structured envelope `{"code":"VALIDATION_FAILED","status":400,"upstreamCode":"invalid_input"}`. All four combinations were tested; only `{queryType: "builder", panelType: "list", queries: [...]}` was accepted. Neither field appears in the MCP tool's input schema, which declares only `compositeQuery: object`.
+- The create response is `{"status":"success","data":"<uuid>"}` — the identifier is a **bare string** under `data`, refining SL-023, which recorded it as `{"data":{"id": uuid}}`.
+- `signoz_get_view` read back `name`, `sourcePage` and `compositeQuery.queries[0].spec.filter.expression` byte-identical to the submitted specification, and `signoz_delete_view` removed it.
+- Runtime confirmation: **Yes**, including all three rejected variants.
+- Implementation consequence: the artifact compiler must set both fields. The created-resource schema accepts the identifier as either a bare string or `{id}`, so a future change to either shape is handled. Failing to record this would have produced a Phase 10 compiler that reports a successful build and creates nothing.
+- Local file: `packages/signoz-mcp/src/schemas.ts`, `packages/artifact-compiler`.
+
+## SL-043 — Three discovery-adjacent tools use three different response envelopes
+
+- Source: live MCP calls against the pinned server (tier 1, runtime)
+- Verified claim:
+  - `signoz_get_field_keys` returns `{status, data: {keys: {"<field name>": [descriptor, ...]}, complete}}` — a map keyed by field name, not a list.
+  - `signoz_get_field_values` returns `{status, data: {values: {stringValues: [...]}, complete}}` — values grouped by data type. Its value parameter is `name`; passing `key` is rejected with `Parameter validation failed: "name" must be a non-empty string`.
+  - The list tools (`signoz_list_views`, `signoz_list_dashboards`, `signoz_list_services`, `signoz_list_notification_channels`, `signoz_list_alert_rules`) return `{data: [...], pagination: {...}}`.
+  - `signoz_get_alert_history` requires `id`; omitting it is rejected with `Parameter validation failed: "id" is required`.
+- Runtime confirmation: **Yes.** `agent.side_effect` returned exactly `["external","none","read","write"]`, matching the demo's four classifications.
+- Implementation consequence: each reader carries its own runtime schema rather than sharing one generic envelope. A single shared list schema would have silently classified two of these as `UNSUPPORTED_RESPONSE`, which is how the mismatch was caught.
+- Local file: `packages/signoz-mcp/src/schemas.ts`, `packages/signoz-mcp/src/readers.ts`.
