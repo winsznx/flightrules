@@ -322,3 +322,63 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
 - Runtime confirmation: the CLI is installed at version 2.1.206. The command is documented in the runbook for developer use; it is not executed automatically because it writes to developer-level configuration outside this repository.
 - Implementation consequence: documented in the runbook as an optional developer convenience. FlightRules itself never depends on Claude Code's MCP registration; the product connects through its own MCP client.
 - Local file: `docs/RUNBOOK.md`.
+
+## SL-036 — Biome
+
+- Source: npm registry `latest` metadata plus the installed binary (tier 1)
+- Pinned: `@biomejs/biome@2.5.5`, licence `MIT OR Apache-2.0`
+- Verified claim: a single tool provides both formatting and linting. `biome check` lints and
+  formats, `biome format` checks formatting alone, `biome migrate` upgrades a configuration file
+  to the installed schema. Since 2.2.0 a directory ignore pattern must be written `!path`, not
+  `!path/**`; the older form is reported as `lint/suspicious/useBiomeIgnoreFolder`. The rule key
+  for the recommended preset is `linter.rules.preset: "recommended"` in 2.5.5, which
+  `biome migrate` rewrote automatically from the older `recommended: true`.
+- Runtime confirmation: **Yes.** `pnpm run lint` and `pnpm run format:check` both exit 0 across 27
+  files, and `biome migrate --write` was executed to bring the configuration to the installed
+  schema.
+- Implementation consequence: replaces ESLint and Prettier entirely. Recorded in ADR-0005.
+- Local file: `biome.json`, `package.json`.
+
+## SL-037 — secretlint
+
+- Source: npm registry `latest` metadata plus a real scan (tier 1)
+- Pinned: `secretlint@13.0.4` and `@secretlint/secretlint-rule-preset-recommend@13.0.4`, MIT,
+  `engines.node >=22.0.0` (satisfied by Node 24.14.1)
+- Verified claim: `secretlint --secretlintignore .gitignore "**/*"` scans the working tree and
+  exits non-zero on a finding. The recommended preset detects database connection strings through
+  `@secretlint/secretlint-rule-database-connection-string`.
+- Runtime confirmation: **Yes**, in both directions. It failed the build on a PostgreSQL
+  connection string in a test fixture, and passed after the fixture was rewritten. A scanner
+  verified only in the passing direction proves nothing.
+- Implementation consequence: chosen over gitleaks so the scanner is pinned in the same lockfile
+  as everything else and a clean clone needs no extra binary.
+- Local file: `.secretlintrc.json`, `package.json`.
+
+## SL-038 — pnpm built-in licence and audit commands
+
+- Source: installed `pnpm@10.33.0` command help and real output (tier 1)
+- Verified claim: `pnpm licenses list --json` emits an object keyed by SPDX licence expression,
+  each value an array of `{name, versions, ...}` for packages in the **installed** tree, so
+  transitive dependencies are covered. `pnpm audit --audit-level high` fails only on advisories at
+  or above the given severity.
+- Runtime confirmation: **Yes.** The licence command reported 136 installed packages across 15
+  licence expressions; the audit reported no known vulnerabilities.
+- Implementation consequence: no extra licence-checking dependency. `scripts/check-licences.mjs`
+  parses the output, handles SPDX `OR`, `AND` and `WITH` expressions, and fails on anything
+  outside the allowlist. Six transitive devDependencies under `Artistic-2.0` and `CC-BY-3.0` were
+  found and allowlisted with recorded reasoning.
+- Local file: `scripts/check-licences.mjs`, `docs/adr/0005-quality-tooling-selection.md`.
+
+## SL-039 — PostgreSQL client
+
+- Source: npm registry (tier 1) plus real queries against PostgreSQL 16
+- Pinned: `postgres@3.4.9`, licence `Unlicense`
+- Verified claim: the npm `latest` tag resolves to `3.4.9`, not a 3.5.x line. The tagged-template
+  API, `sql.unsafe()` for DDL, `sql.begin()` for transactions and `sql.end({timeout})` all behave
+  as used by the migrator.
+- Runtime confirmation: **Yes.** All eight database integration tests passed against PostgreSQL 16
+  started from `compose.app.yaml`, covering migration apply, idempotent re-apply, rollback,
+  re-apply, trigger behaviour, unique and check constraints, and cascade delete.
+- Implementation consequence: used by `@flightrules/db` for migrations and by the integration test
+  suite. Drizzle ORM (ADR-0001) sits on top of the same driver from Phase 09.
+- Local file: `packages/db`.

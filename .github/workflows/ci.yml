@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "phase/**"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24.14.1"
+  PNPM_VERSION: "10.33.0"
+
+jobs:
+  static:
+    name: Format, lint, typecheck, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: pnpm run format:check
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Build
+        run: pnpm run build
+
+  unit:
+    name: Unit and property tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests
+        run: pnpm run test
+
+  database:
+    name: Database integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: flightrules
+          POSTGRES_PASSWORD: flightrules
+          POSTGRES_DB: flightrules
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U flightrules -d flightrules"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgres://flightrules:flightrules@localhost:5433/flightrules
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations
+        run: pnpm --filter @flightrules/db run migrate
+
+      - name: Revert most recent migration
+        run: pnpm --filter @flightrules/db run rollback
+
+      - name: Reapply migrations
+        run: pnpm --filter @flightrules/db run migrate
+
+      - name: Integration tests
+        run: pnpm run test:integration
+
+  security:
+    name: Secret, licence and dependency scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Secret scan
+        run: pnpm run scan:secrets
+
+      - name: Dependency licence check
+        run: pnpm run scan:licences
+
+      - name: Dependency vulnerability audit
+        run: pnpm run scan:deps
+
+  clean-install:
+    name: Clean install from committed manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install with no cache, lockfile only
+        run: pnpm install --frozen-lockfile --prefer-offline=false
+
+      - name: Verify the lockfile was not modified by installing
+        run: git diff --exit-code -- pnpm-lock.yaml
+
+      - name: Build from a clean tree
+        run: pnpm run build

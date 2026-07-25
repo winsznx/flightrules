@@ -1,0 +1,24 @@
+{
+  "name": "@flightrules/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "migrate": "tsx src/cli.ts up",
+    "rollback": "tsx src/cli.ts down",
+    "migrate:status": "tsx src/cli.ts status"
+  },
+  "dependencies": {
+    "postgres": "3.4.9"
+  }
+}
