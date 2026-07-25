@@ -174,3 +174,86 @@ The exit gate: **a new user can move from v1 traces to an active contract entire
   specifically.
 - Integration tests drop the schema. Re-run `make demo-full` before recording anything.
 - Start order: `make up`, `make db-migrate`, `make api`, `make worker`, `make web`.
+
+---
+
+## Release and deployment authorisation (recorded 2026-07-26, for Phase 16 and Phase 17)
+
+The repository owner has granted standing authorisation for the public release actions below. A
+later session must **not** re-ask whether they are permitted. It must still not perform any of them
+before Phases 13 to 16 are complete, merged and green — partial phase work is never published.
+
+### Granted authorisations
+
+| Capability | State |
+|---|---|
+| `gh` GitHub CLI | Already authenticated on this machine |
+| Railway CLI and account | Already authenticated on this machine |
+| Create the final **public** GitHub repository and set its metadata | Authorised |
+| Push `main`, create tags, create GitHub releases | Authorised |
+| Deploy the completed application through Railway | Authorised |
+
+### GitHub release requirements (Phase 17)
+
+1. Inspect whether a GitHub remote or repository already exists; never create a duplicate.
+2. If none exists, create a **public** repository under the PRD's final product name.
+3. Set a precise description derived from the PRD section 3.6 product claim.
+4. Add suitable topics.
+5. Use the licence the repository already establishes — `Apache-2.0`, declared in `package.json`
+   and enforced by `make scan-licences`. It is a deliberate decision, already documented; do not
+   re-decide it without an ADR.
+6. Finalise the README, architecture document, threat model, contribution instructions, security
+   policy, third-party notices and AI-assistant disclosure that PRD section 26 requires.
+7. Push complete `main`, then the release tag, then create the release with factual notes.
+8. **Run the real GitHub Actions workflows after pushing.** The 14 local shape tests over
+   `.github/workflows/release-gate.yml` are not the final proof — the handoff's unresolved
+   limitation 2 stands until a real run exists.
+9. Inspect every workflow result and fix every failure before declaring release readiness.
+10. Record the public repository URL and every workflow run URL in the final evidence.
+
+### Railway deployment requirements (Phase 17)
+
+1. Inspect the existing Railway account, projects and services first; never duplicate.
+2. Deploy through the repository's supported production architecture (`compose.app.yaml` names the
+   services: postgres, api, worker, web, and the demo topology).
+3. **Foundry and `casting.yaml` remain the authoritative, judge-reproducible SigNoz deployment.**
+   Railway is the hosted public demo path and must not replace that requirement.
+4. Decide explicitly whether SigNoz is deployed on Railway or FlightRules connects to another
+   publicly reachable SigNoz. Never deploy against an address reachable only from this machine —
+   `http://localhost:8080` and `http://localhost:8090` are local-only.
+5. All secrets go through Railway's secret configuration. Never into source, images, build args,
+   logs, screenshots or evidence files.
+6. Run migrations through the documented process (`make db-migrate`, `@flightrules/db run migrate`).
+7. Verify API, worker, web, database, SigNoz, MCP and OTLP connectivity **from the deployed
+   environment**, functionally. A successful Railway build is not deployment success, and an open
+   port is not readiness — SL-010 and SL-012 both apply.
+8. Run the real public demo: approved release passes, unsafe release fails with the deterministic
+   gate result, the UI shows the real diff and violation evidence, public SigNoz links resolve.
+9. Save public deployment URLs and redacted deployment evidence.
+
+### SigNoz credential audit (do before asking for any key)
+
+A valid local credential already exists — Phase 10's live MCP writes and read-backs prove it. Find
+and document its source rather than requesting a new one. The audit to perform and record in
+`docs/RUNBOOK.md`:
+
+1. The environment schema and setup scripts: `.env.example`, `scripts/bootstrap-signoz.sh`.
+2. How the local SigNoz first user was bootstrapped, and how the API key was minted.
+3. The exact server-side variable names FlightRules reads. Use the repository's existing names —
+   do not add aliases.
+4. That the key is not committed (`make scan-secrets`), not exposed to the browser
+   (`apps/web/src/lib/api.ts` is `server-only`), and redacted from logs and evidence
+   (`packages/domain/src/redaction.ts`).
+5. That `.env.example` names the variable and carries no value.
+6. That `POST /api/setup/signoz/verify` validates a supplied key through a read-only MCP call, and
+   that an incorrect key produces the expected authentication failure.
+
+For the hosted environment, mint a **separate** deployment credential through the supported SigNoz
+process and store it only in Railway secrets.
+
+### Final outputs the release session must return
+
+Public repository URL; final commit; release tag and release URL; GitHub Actions run results;
+public web URL; public API URL; public SigNoz URL where appropriate; Railway project and service
+names; final exact test counts; approved gate result; unsafe gate result; the exact demo commands;
+the exact reset command; remaining honest limitations; submission-ready status.
