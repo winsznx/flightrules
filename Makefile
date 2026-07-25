@@ -3,7 +3,8 @@ SHELL := /usr/bin/env bash
 .PHONY: help verify-env install lint lint-fix format format-check typecheck test test-integration \
         test-integration-db test-integration-signoz test-e2e build up down db-migrate db-rollback db-status scan-secrets scan-licences \
         scan-deps verify clean contract-validate demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
-        signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility mine-demo-baseline
+        signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility mine-demo-baseline \
+        api worker
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -68,6 +69,12 @@ mine-demo-baseline: ## Mine a baseline from live v1 telemetry and write the prop
 
 down: ## Stop FlightRules application services
 	docker compose -f compose.app.yaml down
+
+api: ## Run the FlightRules API (requires make up and make db-migrate)
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/api run dev
+
+worker: ## Run the FlightRules job worker (requires make up and make db-migrate)
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/worker run dev
 
 db-migrate: ## Apply database migrations
 	pnpm --filter @flightrules/db run migrate

@@ -15,5 +15,11 @@
   "scripts": {
     "build": "tsc --build"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@flightrules/api": "workspace:*",
+    "@flightrules/contract-schema": "workspace:*",
+    "@flightrules/db": "workspace:*",
+    "@flightrules/worker": "workspace:*",
+    "fastify": "5.10.0"
+  }
 }

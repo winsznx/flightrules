@@ -11,6 +11,8 @@ export {
 export { bootstrapFromEnv } from "./bootstrap.js";
 export type { ServiceSpanDescription, ServiceSpanOptions } from "./fastify.js";
 export { activeServiceSpan, registerServiceSpans } from "./fastify.js";
+export type { EvaluationDimensions } from "./instruments.js";
+export { FlightRulesMetrics, filterDimensions } from "./instruments.js";
 export type { MetricSpec } from "./metrics.js";
 export { highCardinalityDimensions, METRIC_SPECS } from "./metrics.js";
 export type { TelemetryHandle, TelemetryOptions } from "./sdk.js";

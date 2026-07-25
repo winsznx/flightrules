@@ -6,7 +6,7 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 08, 2026-07-25.
+Last updated: Phase 09, 2026-07-25.
 
 ## Critical final assertions (PRD section 23)
 
@@ -37,16 +37,16 @@ Last updated: Phase 08, 2026-07-25.
 | 3 | SigNoz MCP Server enabled and reachable | `casting.yaml` `spec.mcp` | `packages/test-fixtures/src/signoz.signoz.integration.test.ts` | phase-02 | DONE |
 | 4 | Claude Code can connect to the SigNoz MCP Server | `docs/RUNBOOK.md` section 3 | documented manual step; the same endpoint, transport and header are exercised by the SDK integration tests | phase-02 | DONE |
 | 5 | FlightRules backend connects using an official MCP client | `packages/signoz-mcp` | `packages/signoz-mcp/src/mcp-client.signoz.integration.test.ts` | phase-05 — 21 integration tests against the pinned v0.9.0 server | DONE |
-| 6 | Instrumented refund-agent demo emits traces, metrics and logs | `apps/demo-*`, `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` | phase-04 — traces emitted and retrieved; metric instruments declared but not yet emitted, logs land with the API in phase-09 | IN PROGRESS |
+| 6 | Instrumented refund-agent demo emits traces, metrics and logs | `apps/demo-*`, `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts`, `packages/telemetry/src/instruments.ts` | phase-04 traces; phase-09 — a meter provider and OTLP metric exporter emit the declared instruments, and both applications write structured JSON logs carrying request, job and evaluation identifiers | DONE |
 | 7 | Baseline and canary releases distinguishable via attributes | `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` | phase-04 — `agent.release.id` retrieved as `refund-agent-v1` and `refund-agent-v2` from the two live traces | DONE |
 | 8 | Complete trace trees fetched and reconstructed | `packages/trace-graph` | `packages/trace-graph/src/graph.test.ts` | phase-06 — 12-span and 8-span traces reconstructed from live SigNoz | DONE |
 | 9 | Trace nodes deduplicated by span ID | `packages/trace-graph` | duplicate, conflicting-duplicate and completeness tests | phase-06 | DONE |
 | 10 | Dynamic identifiers normalised | `packages/normaliser` | `packages/normaliser/src/normalise.test.ts` including idempotence and volatile-ID invariance properties | phase-06 | DONE |
 | 11 | Baseline route families captured from range or release | `packages/baseline-miner` | `families.test.ts`, `dataset.test.ts`, `mine.test.ts`, `mining.signoz.integration.test.ts` | phase-08 — 34 live `refund-agent-v1` runs mined into one family at fingerprint `43070aa4...`, which the committed contract already approves | DONE |
-| 12 | Versioned YAML contract proposed, reviewed, validated, stored, evaluated | `packages/baseline-miner`, `packages/contract-schema`, `packages/contract-engine` | `propose.test.ts`, `emit.test.ts`, `decisions.test.ts`, `validate.test.ts`, `cli-run.test.ts` | phase-08 — a 28-rule draft proposed from live telemetry, reviewed through the four route-family actions, validated by the published CLI, evaluated against both releases; storage is phase-09 | IN PROGRESS |
+| 12 | Versioned YAML contract proposed, reviewed, validated, stored, evaluated | `packages/baseline-miner`, `packages/contract-schema`, `packages/contract-engine`, `packages/db`, `apps/api` | `propose.test.ts`, `emit.test.ts`, `decisions.test.ts`, `validate.test.ts`, `lifecycle.integration.test.ts`, `api.integration.test.ts` | phase-09 — a 28-rule draft proposed from 76 live runs through the job system, stored with every rule's evidence basis, approved and activated through the API, and evaluated against both releases | DONE |
 | 13 | All P0 rule types work | `packages/contract-engine` | `packages/contract-engine/src/rules.test.ts` — all eleven types with passing, violating and empty-evidence cases; a test asserts the fixture set covers `RULE_TYPES` exactly | phase-07 | DONE |
 | 14 | Deterministic pass/fail decisions and typed violations | `packages/contract-engine` | `evaluate.test.ts` — byte-equality across repeated runs, span order, attribute order, rule order and contract key order, plus seven 300-run properties | phase-07 | DONE |
-| 15 | Evaluation telemetry emitted back to SigNoz | `packages/telemetry` | OTLP export test | phase-00 (path proven), phase-09 | IN PROGRESS |
+| 15 | Evaluation telemetry emitted back to SigNoz | `packages/telemetry`, `apps/worker` | `packages/telemetry/src/telemetry.test.ts`, `apps/worker/src/handlers.ts` | phase-09 — the worker records evaluation, violation, unknown-route, duplicate-side-effect and similarity metrics through the typed instrument surface, exported over OTLP | DONE |
 | 16 | SigNoz dashboard created through MCP with real data | `packages/artifact-compiler` | dashboard data test | phase-10 | PENDING |
 | 17 | At least one saved SigNoz trace view created through MCP | `packages/signoz-mcp` verify helper, `packages/artifact-compiler` | create-read-verify integration test | phase-05 (view created, read back, field-compared, deleted), phase-10 | IN PROGRESS |
 | 18 | At least one SigNoz alert created through MCP and proven to fire | `packages/artifact-compiler` | alert firing test | phase-10 | PENDING |
@@ -62,8 +62,8 @@ Last updated: Phase 08, 2026-07-25.
 
 | FR | Description | Implementation | Test | Evidence | Status |
 |---|---|---|---|---|---|
-| FR-001 | Project creation | `apps/api` | API tests | phase-09 | PENDING |
-| FR-002 | Agent registration | `apps/api` | API tests | phase-09 | PENDING |
+| FR-001 | Project creation | `apps/api`, `packages/db` | `api.integration.test.ts` — duplicate slug rejected, server-side validation, persisted, listed | phase-09 | DONE |
+| FR-002 | Agent registration | `apps/api`, `packages/db` | `api.integration.test.ts` — field discovery against the connected tenant, preview query, registration refused without a release discriminator | phase-09 | DONE |
 | FR-003 | Trace discovery | `packages/signoz-mcp` | `mcp-client.signoz.integration.test.ts` | phase-05 — both demo traces retrieved with custom attributes and webUrl preserved | DONE |
 | FR-004 | Trace graph reconstruction | `packages/trace-graph` | reconstruction, orphan, cycle and duplicate tests | phase-06 | DONE |
 | FR-005 | Name and attribute normalisation | `packages/normaliser` | `normalise.test.ts` | phase-06 | DONE |
@@ -77,11 +77,11 @@ Last updated: Phase 08, 2026-07-25.
 | FR-013 | SigNoz saved-view compiler | `packages/artifact-compiler` | view read-back tests | phase-10 | PENDING |
 | FR-014 | SigNoz dashboard compiler | `packages/artifact-compiler` | dashboard tests | phase-10 | PENDING |
 | FR-015 | SigNoz alert compiler | `packages/artifact-compiler` | alert tests | phase-10 | PENDING |
-| FR-016 | Violation telemetry | `packages/telemetry` | telemetry tests | phase-09 | PENDING |
-| FR-017 | Evidence linking | `packages/domain` | evidence tests | phase-09 | PENDING |
-| FR-018 | Contract lifecycle | `apps/api` | lifecycle tests | phase-09 | PENDING |
-| FR-019 | Audit history | `apps/api` | audit tests | phase-09 | PENDING |
-| FR-020 | Demo reset | `apps/api`, `scripts/reset-demo.sh` | reset tests | phase-03, phase-09 | PENDING |
+| FR-016 | Violation telemetry | `packages/telemetry`, `apps/worker` | `telemetry.test.ts`, live evaluation | phase-09 | DONE |
+| FR-017 | Evidence linking | `packages/db`, `apps/api` | `api.integration.test.ts`, live `GET /api/violations/:id/evidence` | phase-09 | DONE |
+| FR-018 | Contract lifecycle | `apps/api`, `packages/db` | `lifecycle.integration.test.ts`, `api.integration.test.ts` — every transition, every refusal, one active per agent and environment enforced by a partial unique index | phase-09 | DONE |
+| FR-019 | Audit history | `apps/api`, `packages/db` | `api.integration.test.ts`, `lifecycle.integration.test.ts` — an audit row per lifecycle event, written by the transaction that made the change | phase-09 | DONE |
+| FR-020 | Demo reset | `apps/api`, `scripts/reset-demo.sh` | `api.integration.test.ts` — reset, reseed, demo-mode guard | phase-03, phase-09 | IN PROGRESS |
 
 ## Routes (PRD section 8)
 

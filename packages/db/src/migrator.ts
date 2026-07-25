@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { Sql } from "postgres";
+import type { Db } from "./sql.js";
 
 export interface MigrationFile {
   readonly id: string;
@@ -82,7 +83,7 @@ export interface AppliedMigration {
   readonly checksum: string;
 }
 
-export async function readApplied(sql: Sql): Promise<readonly AppliedMigration[]> {
+export async function readApplied(sql: Db): Promise<readonly AppliedMigration[]> {
   await sql.unsafe(LEDGER_DDL);
   const rows = await sql<
     { id: string; name: string; checksum: string }[]

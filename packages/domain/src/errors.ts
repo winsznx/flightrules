@@ -1,7 +1,12 @@
 /**
- * The complete error code set defined by PRD section 19. Codes are part of the public API
- * contract: they appear in the typed error envelope, in CLI JSON output, and in evidence files.
- * Adding a code requires a PRD change.
+ * The error code set. Codes are part of the public API contract: they appear in the typed error
+ * envelope, in CLI JSON output, and in evidence files.
+ *
+ * The first block is PRD section 19 verbatim. PRD section 19 opens with "Required error codes
+ * **include**", so the list is a floor rather than a ceiling; the second block holds the three
+ * additions Phase 09 needed to distinguish the outcomes PRD section 19's own guidance names —
+ * "not found", "validation failure" and "illegal transition" — none of which any PRD code covers.
+ * Every addition is recorded in ADR-0008. Adding a further code requires an ADR.
  */
 export const ERROR_CODES = [
   "CONFIG_INVALID",
@@ -27,6 +32,11 @@ export const ERROR_CODES = [
   "ALERT_DID_NOT_FIRE",
   "JOB_ALREADY_RUNNING",
   "DEMO_DISABLED",
+
+  // Phase 09 additions. See ADR-0008.
+  "NOT_FOUND",
+  "VALIDATION_FAILED",
+  "STATE_TRANSITION_INVALID",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -62,6 +72,9 @@ const DEFAULT_MESSAGES: Readonly<Record<ErrorCode, string>> = {
   ALERT_DID_NOT_FIRE: "The alert did not reach a firing state within the observation window.",
   JOB_ALREADY_RUNNING: "An equivalent job is already running for this entity.",
   DEMO_DISABLED: "Demo endpoints are disabled because DEMO_MODE is not enabled.",
+  NOT_FOUND: "The requested resource does not exist.",
+  VALIDATION_FAILED: "The request failed validation. Review the reported fields and retry.",
+  STATE_TRANSITION_INVALID: "That transition is not permitted from the resource's current state.",
 };
 
 export interface ErrorEnvelope {

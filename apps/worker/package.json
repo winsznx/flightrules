@@ -1,0 +1,45 @@
+{
+  "name": "@flightrules/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@flightrules/baseline-miner": "workspace:*",
+    "@flightrules/config": "workspace:*",
+    "@flightrules/contract-engine": "workspace:*",
+    "@flightrules/contract-schema": "workspace:*",
+    "@flightrules/db": "workspace:*",
+    "@flightrules/domain": "workspace:*",
+    "@flightrules/normaliser": "workspace:*",
+    "@flightrules/signoz-mcp": "workspace:*",
+    "@flightrules/telemetry": "workspace:*",
+    "@flightrules/trace-graph": "workspace:*",
+    "zod": "4.4.3"
+  },
+  "exports": {
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "default": "./dist/config.js"
+    },
+    "./handlers": {
+      "types": "./dist/handlers.d.ts",
+      "default": "./dist/handlers.js"
+    },
+    "./runner": {
+      "types": "./dist/runner.d.ts",
+      "default": "./dist/runner.js"
+    },
+    "./signoz": {
+      "types": "./dist/signoz.d.ts",
+      "default": "./dist/signoz.js"
+    }
+  }
+}
