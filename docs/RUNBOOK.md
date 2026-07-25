@@ -244,7 +244,9 @@ Activating a contract does not touch SigNoz by itself. Synchronisation is an exp
 returns a job.
 
 ```bash
-# one contract
+PROJECT=demo-commerce make signoz-sync   # every agent of a project, waits for the jobs
+
+# or, one contract at a time
 curl -s -X POST localhost:4000/api/contracts/<contractId>/sync-signoz \
   -H 'content-type: application/json' -d '{}'
 
@@ -303,3 +305,4 @@ SigNoz UI under Alerts, or through MCP with `signoz_list_alert_rules` and `signo
 | `signoz_list_views` returns HTTP 500 `error in unmarshalling explorer query data` | Something called `signoz_update_view`, which corrupts the stored query for the **whole tenant** (SL-057) | FlightRules never calls it. To recover: `docker exec signoz-metastore-postgres-0 psql -U signoz -d signoz -c "delete from saved_views where data like '\\x%';"` |
 | A dashboard is stored but a panel is empty or wrong | The server accepts an incomplete widget "best-effort" and only warns (SL-059) | Supply every field the input schema declares, even when empty |
 | A dashboard panel shows a rising line that never falls | A cumulative counter charted with `sum` (SL-054) | Use `increase` |
+| Every artefact reports `conflict` on a fresh sync | The FlightRules database was rebuilt while SigNoz kept its resources, so the register no longer records creating them — which is the ownership rule working, not a bug | `PROJECT=demo-commerce make signoz-purge`, then `make signoz-sync` |

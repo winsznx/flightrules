@@ -4,7 +4,7 @@ SHELL := /usr/bin/env bash
         test-integration-db test-integration-signoz test-e2e build up down db-migrate db-rollback db-status scan-secrets scan-licences \
         scan-deps verify clean contract-validate demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
         signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility mine-demo-baseline \
-        api worker
+        signoz-sync signoz-purge api worker
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -123,6 +123,13 @@ signoz-capabilities: ## Refresh docs/research/mcp-capabilities.json from the liv
 
 signoz-reproducibility: ## Prove the casting reproduces and every image is pinned
 	@bash scripts/verify-reproducibility.sh
+
+signoz-sync: ## Compile the active contract of every agent in PROJECT into SigNoz artefacts
+	@bash scripts/sync-signoz-artifacts.sh
+
+signoz-purge: ## Delete the managed SigNoz artefacts of PROJECT (default demo-commerce)
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+		node scripts/purge-managed-artifacts.mjs "$${PROJECT:-demo-commerce}"
 
 verify: ## Complete validation suite
 	@$(MAKE) verify-env
