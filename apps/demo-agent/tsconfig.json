@@ -1,0 +1,30 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.integration.test.ts"],
+  "references": [
+    {
+      "path": "../../packages/domain"
+    },
+    {
+      "path": "../demo-services/policy-service"
+    },
+    {
+      "path": "../demo-services/order-service"
+    },
+    {
+      "path": "../demo-services/fraud-service"
+    },
+    {
+      "path": "../demo-services/payment-service"
+    },
+    {
+      "path": "../demo-services/notification-service"
+    }
+  ]
+}

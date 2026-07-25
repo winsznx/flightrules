@@ -1,0 +1,33 @@
+# Shared build for every demo service and the agent orchestrator.
+#
+# One multi-stage image, parameterised by the workspace package to run. Building once and
+# selecting the entrypoint keeps the six demo containers on identical, pinned layers.
+FROM node:24.14.1-alpine AS build
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json tsconfig.build.json ./
+COPY packages ./packages
+COPY apps ./apps
+
+RUN pnpm install --frozen-lockfile
+RUN pnpm run build
+
+FROM node:24.14.1-alpine AS runtime
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+
+ARG SERVICE_PATH
+ENV NODE_ENV=production
+
+COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
+COPY --from=build /app/packages ./packages
+COPY --from=build /app/apps ./apps
+
+RUN pnpm install --frozen-lockfile --prod
+
+# Runs unprivileged. The node image ships a `node` user; nothing here needs root.
+USER node
+
+ENV SERVICE_PATH=${SERVICE_PATH}
+CMD ["sh", "-c", "node ${SERVICE_PATH}/dist/index.js"]

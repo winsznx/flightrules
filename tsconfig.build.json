@@ -12,6 +12,24 @@
     },
     {
       "path": "./packages/test-fixtures"
+    },
+    {
+      "path": "./apps/demo-services/policy-service"
+    },
+    {
+      "path": "./apps/demo-services/order-service"
+    },
+    {
+      "path": "./apps/demo-services/fraud-service"
+    },
+    {
+      "path": "./apps/demo-services/payment-service"
+    },
+    {
+      "path": "./apps/demo-services/notification-service"
+    },
+    {
+      "path": "./apps/demo-agent"
     }
   ]
 }

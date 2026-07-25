@@ -2,7 +2,7 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 .PHONY: help verify-env install lint lint-fix format format-check typecheck test test-integration \
         test-integration-db test-integration-signoz test-e2e build up down db-migrate db-rollback db-status scan-secrets scan-licences \
-        scan-deps verify clean signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
+        scan-deps verify clean demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
         signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility
 
 help: ## Show available targets
@@ -50,6 +50,18 @@ build: ## Build every package and application
 
 up: ## Start FlightRules application services and wait for health
 	docker compose -f compose.app.yaml up -d --wait
+
+demo-up: ## Build and start the demo topology and wait for health
+	docker compose -f compose.app.yaml up -d --build --wait
+
+demo-v1: ## Run the approved refund-agent-v1 release
+	@bash scripts/run-demo-v1.sh
+
+demo-v2: ## Run the unsafe refund-agent-v2 release
+	@bash scripts/run-demo-v2.sh
+
+demo-reset: ## Reset demo state without touching the SigNoz installation
+	@bash scripts/reset-demo.sh
 
 down: ## Stop FlightRules application services
 	docker compose -f compose.app.yaml down

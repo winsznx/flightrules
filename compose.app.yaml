@@ -39,3 +39,152 @@ services:
       retries: 12
       start_period: 10s
     restart: unless-stopped
+
+  policy-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+      args:
+        SERVICE_PATH: apps/demo-services/policy-service
+    container_name: flightrules-policy-service
+    environment:
+      PORT: "4101"
+      NODE_ENV: production
+    ports:
+      - "4101:4101"
+    networks:
+      - flightrules-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4101/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+      args:
+        SERVICE_PATH: apps/demo-services/order-service
+    container_name: flightrules-order-service
+    environment:
+      PORT: "4102"
+      NODE_ENV: production
+    ports:
+      - "4102:4102"
+    networks:
+      - flightrules-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4102/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  fraud-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+      args:
+        SERVICE_PATH: apps/demo-services/fraud-service
+    container_name: flightrules-fraud-service
+    environment:
+      PORT: "4103"
+      NODE_ENV: production
+    ports:
+      - "4103:4103"
+    networks:
+      - flightrules-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4103/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+      args:
+        SERVICE_PATH: apps/demo-services/payment-service
+    container_name: flightrules-payment-service
+    environment:
+      PORT: "4104"
+      NODE_ENV: production
+      DEMO_MODE: "${DEMO_MODE:-true}"
+      IDEMPOTENCY_HASH_SALT: "${IDEMPOTENCY_HASH_SALT:?IDEMPOTENCY_HASH_SALT must be set in .env}"
+      PAYMENT_SLOW_RESPONSE_MS: "${PAYMENT_SLOW_RESPONSE_MS:-2500}"
+    ports:
+      - "4104:4104"
+    networks:
+      - flightrules-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4104/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+      args:
+        SERVICE_PATH: apps/demo-services/notification-service
+    container_name: flightrules-notification-service
+    environment:
+      PORT: "4105"
+      NODE_ENV: production
+      DEMO_MODE: "${DEMO_MODE:-true}"
+    ports:
+      - "4105:4105"
+    networks:
+      - flightrules-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4105/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  demo-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+      args:
+        SERVICE_PATH: apps/demo-agent
+    container_name: flightrules-demo-agent
+    environment:
+      PORT: "4100"
+      NODE_ENV: production
+      DEMO_MODE: "${DEMO_MODE:-true}"
+      POLICY_SERVICE_URL: http://policy-service:4101
+      ORDER_SERVICE_URL: http://order-service:4102
+      FRAUD_SERVICE_URL: http://fraud-service:4103
+      PAYMENT_SERVICE_URL: http://payment-service:4104
+      NOTIFICATION_SERVICE_URL: http://notification-service:4105
+      PAYMENT_TIMEOUT_MS: "${PAYMENT_TIMEOUT_MS:-800}"
+    ports:
+      - "4100:4100"
+    networks:
+      - flightrules-network
+    depends_on:
+      policy-service: { condition: service_healthy }
+      order-service: { condition: service_healthy }
+      fraud-service: { condition: service_healthy }
+      payment-service: { condition: service_healthy }
+      notification-service: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4100/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
