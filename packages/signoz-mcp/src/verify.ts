@@ -51,6 +51,9 @@ export function readPath(resource: unknown, path: string): unknown {
       current = current[index];
       continue;
     }
+    // Own properties only. A field path naming `constructor` or `toString` would otherwise read
+    // off the prototype chain and compare a stored resource against a built-in function.
+    if (!Object.hasOwn(current, segment)) return undefined;
     current = (current as Record<string, unknown>)[segment];
   }
   return current;

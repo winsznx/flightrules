@@ -424,3 +424,20 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
 - Runtime confirmation: **Yes.** `agent.side_effect` returned exactly `["external","none","read","write"]`, matching the demo's four classifications.
 - Implementation consequence: each reader carries its own runtime schema rather than sharing one generic envelope. A single shared list schema would have silently classified two of these as `UNSUPPORTED_RESPONSE`, which is how the mismatch was caught.
 - Local file: `packages/signoz-mcp/src/schemas.ts`, `packages/signoz-mcp/src/readers.ts`.
+
+## SL-044 — The Query Builder returns `timestamp` as an ISO-8601 string at millisecond precision
+
+- Source: live `signoz_execute_builder_query` responses from the pinned stack (tier 1, runtime)
+- Verified claim: the `timestamp` column, which ClickHouse stores in nanoseconds, is serialised by the Query Builder as an ISO-8601 string such as `2026-07-25T10:37:54.59Z`. `duration_nano` **is** returned at full nanosecond precision as an integer.
+- Runtime confirmation: **Yes**, observed across every captured demo trace.
+- Implementation consequence: `TraceNode.startTimeUnixNano` is reconstructed from the ISO string and is therefore accurate to a millisecond; `endTimeUnixNano` is derived as start plus `duration_nano`. This does not affect determinism, because PRD section 11.7 excludes timestamps from the fingerprint entirely. It does mean two spans starting inside the same millisecond cannot be ordered from this evidence, which independently confirms PRD section 11.1: timestamp order is weak evidence and must never be treated as causal truth. Recovering full precision would require a direct ClickHouse read, which PRD section 12.4 prohibits in P0.
+- Local file: `packages/trace-graph/src/build.ts`.
+
+## SL-045 — SigNoz `signoz_create_view` and the `flightrules_uuid_v7` sortability defect
+
+- Source: PostgreSQL 16 runtime plus RFC 9562 (tier 1 runtime, tier 2 specification)
+- Verified claim: the Phase 01 `flightrules_uuid_v7` encoded 48-bit Unix milliseconds followed by 74 random bits. Two identifiers generated inside the same millisecond therefore ordered randomly. The Phase 01 integration test compared only two identifiers and passed roughly four runs in five, which is why the defect survived to Phase 06.
+- RFC 9562 section 6.2 Method 3, "Replace Leftmost Random Bits with Increased Clock Precision", allocates the 12 bits of `rand_a` to sub-millisecond precision. `clock_timestamp()` is microsecond resolution, so the remainder is 0..999 and fits in those 12 bits.
+- Runtime confirmation: **Yes**, in both directions. Before the fix the two-identifier test failed 1 run in 5; after it, 200 identifiers generated in a single statement sort exactly in generation order, over six consecutive runs.
+- Implementation consequence: migration `0002_uuid_v7_submillisecond.sql` encodes the microsecond remainder. PRD section 14 requires a sortable identifier format, and one that only sorts across millisecond boundaries would silently break any id-ordered pagination in an intermittent and hard-to-attribute way. The test now asserts the property at a scale that can actually observe it.
+- Local file: `packages/db/migrations/0002_uuid_v7_submillisecond.sql`.

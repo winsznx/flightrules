@@ -228,3 +228,47 @@ All notable changes to FlightRules are recorded here, one section per phase.
   response envelopes (SL-043).
 - Row order is not stable across requests. Phase 06 must sort canonically rather than trust arrival
   order; an integration test guards this.
+
+## Phase 06 — Trace graph and normalisation engine (2026-07-25)
+
+### Added
+
+- `packages/normaliser`: the ten ordered normalisation steps of PRD section 11.6, with a versioned,
+  content-hashed configuration. Every fingerprint records the normaliser that produced it, so two
+  fingerprints computed under different rules can never be compared silently.
+- `packages/trace-graph`: span deduplication by `(trace_id, span_id)`, PRD section 11.4 root
+  selection with a synthetic root for orphans, cycle detection, trace-quality classification,
+  canonical serialisation, SHA-256 route fingerprints, weighted feature sets with Jaccard
+  similarity, the twelve typed graph changes, and a redacted deterministic JSON export.
+- `scripts/capture-trace-fixtures.mjs` and `packages/test-fixtures/traces/`: the v1 and v2 demo
+  traces captured verbatim from the live deployment through the Phase 05 client, so graph tests run
+  against telemetry the instrumented system actually emitted.
+- Explicit handling for the Phase 04 aborted server span: a client span with no server span raises
+  a `client_span_without_server_span` warning and does **not** downgrade the trace, because the
+  duplicate-side-effect evidence lives entirely in the two exported client write spans.
+- 84 unit tests including six `fast-check` properties, a 1,000-span performance benchmark and a
+  10,000-deep trace, plus 6 integration tests that reconstruct graphs from live SigNoz.
+
+### Fixed
+
+- Canonicalisation nested each child's subtree signature verbatim, so signature length grew with
+  subtree size and a 10,000-span trace exceeded the maximum string length. Signatures are now
+  fixed-width digests.
+- Canonical structural paths were dotted strings whose length grew with depth, making
+  canonicalisation quadratic: the 10,000-span test took 5.6 seconds. Replaced with a canonical
+  order index; the graph suite now runs in 209 ms.
+- `normaliseName` resolved a span named `toString` or `valueOf` through `Object.prototype`. Span
+  names are external input, so this was reachable from telemetry. The same pattern was hardened in
+  the Phase 05 `readPath` helper.
+- The tokeniser split on `-` and `_`, breaking apart the very identifiers it needed to recognise.
+- `flightrules_uuid_v7` did not order within a millisecond, so its Phase 01 test failed about one
+  run in five and had been passing by luck. Migration `0002` encodes the microsecond remainder per
+  RFC 9562 Method 3, and the test now asserts ordering over 200 identifiers rather than two.
+
+### Discovered
+
+- The Query Builder serialises the nanosecond `timestamp` column as an ISO-8601 string at
+  millisecond precision, while `duration_nano` keeps full precision (SL-044). Determinism is
+  unaffected because timestamps are excluded from the fingerprint, but it independently confirms
+  why timestamp order is never treated as causal truth.
+

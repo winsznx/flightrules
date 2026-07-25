@@ -1,5 +1,5 @@
 {
-  "name": "@flightrules/test-fixtures",
+  "name": "@flightrules/trace-graph",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,5 +15,13 @@
   "scripts": {
     "build": "tsc --build"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@flightrules/domain": "workspace:*",
+    "@flightrules/normaliser": "workspace:*"
+  },
+  "devDependencies": {
+    "@flightrules/signoz-mcp": "workspace:*",
+    "@flightrules/test-fixtures": "workspace:*",
+    "fast-check": "4.9.0"
+  }
 }

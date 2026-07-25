@@ -57,14 +57,23 @@ describe("migrations against a real PostgreSQL database", () => {
   });
 
   it("generates sortable time-ordered identifiers", async () => {
-    const rows = await sql<{ a: string; b: string }[]>`
-      select flightrules_uuid_v7()::text as a, flightrules_uuid_v7()::text as b`;
-    const row = rows[0];
-    expect(row).toBeDefined();
-    // Version 7 nibble sits at the start of the third group.
-    expect(row?.a[14]).toBe("7");
-    expect(row?.a).not.toBe(row?.b);
-    expect((row?.a ?? "") < (row?.b ?? "")).toBe(true);
+    // #given many identifiers generated as fast as the database can produce them, so most land
+    // inside the same millisecond. Two calls alone passed by luck about four times in five, which
+    // is how the original sub-millisecond ordering defect stayed hidden.
+    const rows = await sql<{ id: string }[]>`
+      select flightrules_uuid_v7()::text as id from generate_series(1, 200)`;
+    const ids = rows.map((row) => row.id);
+
+    // #then every one is a version 7 UUID
+    expect(ids).toHaveLength(200);
+    for (const id of ids) expect(id[14]).toBe("7");
+
+    // #and they are unique
+    expect(new Set(ids).size).toBe(200);
+
+    // #and they sort in generation order, which is the property PRD section 14 requires and the
+    // reason the sub-millisecond remainder is encoded (migration 0002)
+    expect([...ids].sort()).toEqual(ids);
   });
 
   it("maintains updated_at through the touch trigger", async () => {

@@ -1,5 +1,5 @@
 {
-  "name": "@flightrules/test-fixtures",
+  "name": "@flightrules/normaliser",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,5 +15,10 @@
   "scripts": {
     "build": "tsc --build"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@flightrules/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "fast-check": "4.9.0"
+  }
 }

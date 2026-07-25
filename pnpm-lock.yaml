@@ -11,6 +11,12 @@ importers:
       '@biomejs/biome':
         specifier: 2.5.5
         version: 2.5.5
+      '@flightrules/domain':
+        specifier: workspace:*
+        version: link:packages/domain
+      '@flightrules/signoz-mcp':
+        specifier: workspace:*
+        version: link:packages/signoz-mcp
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
         version: 1.29.0(zod@4.4.3)
@@ -155,6 +161,16 @@ importers:
 
   packages/domain: {}
 
+  packages/normaliser:
+    dependencies:
+      '@flightrules/domain':
+        specifier: workspace:*
+        version: link:../domain
+    devDependencies:
+      fast-check:
+        specifier: 4.9.0
+        version: 4.9.0
+
   packages/signoz-mcp:
     dependencies:
       '@flightrules/domain':
@@ -216,6 +232,25 @@ importers:
         version: 5.10.0
 
   packages/test-fixtures: {}
+
+  packages/trace-graph:
+    dependencies:
+      '@flightrules/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@flightrules/normaliser':
+        specifier: workspace:*
+        version: link:../normaliser
+    devDependencies:
+      '@flightrules/signoz-mcp':
+        specifier: workspace:*
+        version: link:../signoz-mcp
+      '@flightrules/test-fixtures':
+        specifier: workspace:*
+        version: link:../test-fixtures
+      fast-check:
+        specifier: 4.9.0
+        version: 4.9.0
 
 packages:
 
@@ -1158,6 +1193,10 @@ packages:
     resolution: {integrity: sha512-hIS4idWWai69NezIdRt2xFVofaF4j+6INOpJlVOLDO8zXGpUVEVzIYk12UUi2JzjEzWL3IOAxcTubgz9Po0yXw==}
     engines: {node: '>= 18'}
 
+  fast-check@4.9.0:
+    resolution: {integrity: sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==}
+    engines: {node: '>=12.17.0'}
+
   fast-decode-uri-component@1.0.1:
     resolution: {integrity: sha512-WKgKWg5eUxvRZGwW8FvfbaH7AXSh2cL+3j5fMGzUMCxWBJ3dV3a7Wz8y2f/uQ0e3B6WmodD3oS54jTQ9HVTIIg==}
 
@@ -1546,6 +1585,9 @@ packages:
   proxy-addr@2.0.7:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
     engines: {node: '>= 0.10'}
+
+  pure-rand@8.4.2:
+    resolution: {integrity: sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==}
 
   qs@6.15.3:
     resolution: {integrity: sha512-O9gl3zCl5h5blw1KGUzQKhA5oUXSl8rwUIM5o0S3nCXMliSvy5Dzx7/DJcI+SwgICv+IneSZwhBh1oSyEHA71A==}
@@ -2770,6 +2812,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  fast-check@4.9.0:
+    dependencies:
+      pure-rand: 8.4.2
+
   fast-decode-uri-component@1.0.1: {}
 
   fast-deep-equal@3.1.3: {}
@@ -3110,6 +3156,8 @@ snapshots:
     dependencies:
       forwarded: 0.2.0
       ipaddr.js: 1.9.1
+
+  pure-rand@8.4.2: {}
 
   qs@6.15.3:
     dependencies:

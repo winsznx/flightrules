@@ -8,3 +8,5 @@ export {
   readGeneratedCompose,
   readRepoFile,
 } from "./deployment.js";
+export type { TraceFixture } from "./traces.js";
+export { knownGoodTrace, rowsOf, unsafeTrace } from "./traces.js";
