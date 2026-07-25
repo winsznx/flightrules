@@ -4,7 +4,7 @@ SHELL := /usr/bin/env bash
         test-integration-db test-integration-signoz test-e2e build up down db-migrate db-rollback db-status scan-secrets scan-licences \
         scan-deps verify clean contract-validate demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
         signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility mine-demo-baseline \
-        signoz-sync signoz-purge api worker cli demo-seed demo-full gate gate-json evidence
+        signoz-sync signoz-purge api worker web cli demo-seed demo-full gate gate-json evidence scan-design
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -171,9 +171,16 @@ verify: ## Complete validation suite
 	@$(MAKE) test
 	@$(MAKE) build
 	@$(MAKE) contract-validate
+	@$(MAKE) scan-design
 	@$(MAKE) scan-secrets
 	@$(MAKE) scan-licences
 
 clean: ## Remove build output
 	find . -type d -name dist -not -path './node_modules/*' -prune -exec rm -rf {} +
 	rm -rf .vitest
+
+web: ## Run the FlightRules web application (requires make api)
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/web run dev
+
+scan-design: ## Check design tokens and assets against design.md
+	@node scripts/check-design-assets.mjs

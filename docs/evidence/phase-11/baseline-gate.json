@@ -1,27 +1,27 @@
 {
   "schemaVersion": "flightrules.dev/release-gate/v1",
-  "exportedAt": "2026-07-25T22:06:36.091Z",
+  "exportedAt": "2026-07-25T22:52:35.760Z",
   "decision": "pass",
-  "decisionHash": "6d91e3869aa93ff4d20f21fe0c50720d8083f835d9dee0fb88fb3c02bcfef420",
+  "decisionHash": "bcd6b7ca1b611f5ee80947f53876ac1840eb59801ad03f1df287fe01f08485a1",
   "release": {
-    "id": "019f9b46-5d42-7026-a3db-7973d48c52bf",
+    "id": "019f9b7a-1cea-734b-bd0a-f9e027f238f7",
     "key": "refund-agent-v1",
     "environment": "local"
   },
   "contract": {
-    "id": "019f9b46-8158-70c8-a618-12db57d733e0",
+    "id": "019f9b7a-9961-729a-a28e-20135298d7fa",
     "key": "refund-agent-local",
     "version": "0.1.0",
-    "contentHash": "42c4e1a39b36010398345c33f6a8f0bb1238c85a6c8498fb162a4b16d6e76514",
+    "contentHash": "bcc49c38b2b52da68b79468d925cb9082e6e8c38c856be68340ad023362df7db",
     "state": "active"
   },
   "evaluation": {
-    "id": "019f9b48-d754-70ab-9cf8-dbe8abd2b4f7",
+    "id": "019f9b7a-a566-7329-a66a-db4386ed48e8",
     "status": "pass"
   },
   "counts": {
-    "evaluatedRuns": 106,
-    "passedRuns": 106,
+    "evaluatedRuns": 156,
+    "passedRuns": 156,
     "failedRuns": 0,
     "erroredRuns": 0,
     "insufficientRuns": 0,
@@ -45,25 +45,25 @@
   "rates": {
     "violation": {
       "numerator": 0,
-      "denominator": 106,
+      "denominator": 156,
       "decimal": "0.000000",
       "percent": "0.000000"
     },
     "unknownRoute": {
       "numerator": 0,
-      "denominator": 106,
+      "denominator": 156,
       "decimal": "0.000000",
       "percent": "0.000000"
     },
     "duplicateSideEffect": {
       "numerator": 0,
-      "denominator": 106,
+      "denominator": 156,
       "decimal": "0.000000",
       "percent": "0.000000"
     },
     "missingPrerequisite": {
       "numerator": 0,
-      "denominator": 106,
+      "denominator": 156,
       "decimal": "0.000000",
       "percent": "0.000000"
     }
@@ -72,8 +72,8 @@
     "latency": {
       "metric": "run.duration_ms",
       "baseline": 32,
-      "candidate": 32,
-      "changePercent": "0.000000",
+      "candidate": 26,
+      "changePercent": "-18.750000",
       "measured": true
     },
     "tokens": {
@@ -99,10 +99,10 @@
       "outcome": "pass",
       "aggregation": "p95",
       "metric": "run.duration_ms",
-      "observed": 32,
-      "limit": 39,
-      "runsReporting": 106,
-      "summary": "p95 of run.duration_ms was 32, within 39."
+      "observed": 26,
+      "limit": 32,
+      "runsReporting": 156,
+      "summary": "p95 of run.duration_ms was 26, within 32."
     }
   ],
   "findings": [],
@@ -124,8 +124,8 @@
       "01e19a07062b702515ecd224b324a741",
       "026c0203dfbcab52ac660ce3fc22891f",
       "080ef70d2ed64beff9b907bee6b47263",
-      "0a818ff7ae184a789ef45274d7b6bbce",
-      "0b126556842a2a2012c7b53b9d6cce17"
+      "0a7e66a611b0d31f4c55e0afab3385ed",
+      "0a818ff7ae184a789ef45274d7b6bbce"
     ],
     "zeroToleranceRuleIds": [],
     "violatedRuleIds": [],

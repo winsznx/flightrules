@@ -6,7 +6,7 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 11, 2026-07-25.
+Last updated: Phase 12, 2026-07-25.
 
 ## Critical final assertions (PRD section 23)
 
@@ -54,7 +54,7 @@ Last updated: Phase 11, 2026-07-25.
 | 20 | Violation inspector links to the original SigNoz trace | `apps/web` | inspector route tests | phase-15 | PENDING |
 | 21 | CLI or GitHub Action gate exits non-zero when thresholds fail | `apps/cli`, `.github/workflows/release-gate.yml`, `packages/contract-engine/src/release.ts`, `apps/api/src/routes/gate.ts` | `exit-codes.test.ts`, `release.test.ts` (35), `cli.test.ts` (49), `gate.integration.test.ts` (17), `release-gate-workflow.test.ts` (14), `phase-11.signoz.integration.test.ts` (8) | phase-11 — live: `refund-agent-v1` exit `0` over 106 evaluated runs; `refund-agent-v2` exit `2` with 80 violations and 24 zero-tolerance; the same decision served after an API restart | DONE |
 | 22 | Seeded v1 passes and seeded v2 fails | end to end | e2e scenario | phase-17 | PENDING |
-| 23 | UI uses `design.md` without changing product copy or route purposes | `apps/web`, `packages/ui` | route and copy tests | phase-12 | PENDING |
+| 23 | UI uses `design.md` without changing product copy or route purposes | `apps/web`, `packages/ui`, `scripts/check-design-assets.mjs` | `apps/web/src/web.test.ts` — 26 tests: every PRD section 8 literal asserted against `docs/PRD.md`, no page the PRD does not describe, no invented colour or size, no shadow or gradient, exactly the seven `design.md` colours | phase-12 — all fourteen routes render live API data; `make scan-design` re-reads `design.md` on every `make verify` | DONE |
 | 24 | Unit, property, integration, e2e, security and reproducibility tests pass | whole repository | `make verify` | phase-16, phase-17 | PENDING |
 | 25 | README, architecture, runbook, demo script and submission docs complete | `docs/*`, `README.md` | docs link check | phase-17 | PENDING |
 
@@ -87,20 +87,20 @@ Last updated: Phase 11, 2026-07-25.
 
 | Route | Purpose | Implementation | Test | Status |
 |---|---|---|---|---|
-| `/` | Public landing | `apps/web` | route test | PENDING |
-| `/setup` | Connect FlightRules to SigNoz | `apps/web` | route test | PENDING |
-| `/projects` | Projects list | `apps/web` | route test | PENDING |
-| `/projects/[projectId]/overview` | Project trajectory health | `apps/web` | route test | PENDING |
-| `/projects/[projectId]/agents` | Agents list | `apps/web` | route test | PENDING |
-| `/projects/[projectId]/agents/[agentId]` | Agent detail | `apps/web` | route test | PENDING |
-| `/projects/[projectId]/agents/[agentId]/baselines/new` | Baseline capture | `apps/web` | route test | PENDING |
-| `/projects/[projectId]/agents/[agentId]/routes/[routeFamilyId]` | Route family detail | `apps/web` | route test | PENDING |
-| `/projects/[projectId]/agents/[agentId]/contracts/[contractId]` | Contract Studio | `apps/web` | route test | PENDING |
-| `/projects/[projectId]/agents/[agentId]/releases` | Releases list | `apps/web` | route test | PENDING |
-| `/projects/[projectId]/agents/[agentId]/releases/[releaseId]` | Release Diff | `apps/web` | route test | PENDING |
-| `/projects/[projectId]/violations/[violationId]` | Violation Inspector | `apps/web` | route test | PENDING |
-| `/projects/[projectId]/integrations/signoz` | SigNoz integration | `apps/web` | route test | PENDING |
-| `/demo` | Demo | `apps/web` | route test | PENDING |
+| `/` | Public landing | `apps/web/src/app/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/setup` | Connect FlightRules to SigNoz | `apps/web/src/app/setup/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/projects` | Projects list | `apps/web/src/app/projects/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/projects/[projectId]/overview` | Project trajectory health | `apps/web/src/app/projects/[projectId]/overview/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/projects/[projectId]/agents` | Agents list | `apps/web/src/app/projects/[projectId]/agents/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/projects/[projectId]/agents/[agentId]` | Agent detail | `apps/web/src/app/projects/[projectId]/agents/[agentId]/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/projects/[projectId]/agents/[agentId]/baselines/new` | Baseline capture | `apps/web/src/app/projects/[projectId]/agents/[agentId]/baselines/new/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/projects/[projectId]/agents/[agentId]/routes/[routeFamilyId]` | Route family detail | `apps/web/src/app/projects/[projectId]/agents/[agentId]/routes/[routeFamilyId]/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/projects/[projectId]/agents/[agentId]/contracts/[contractId]` | Contract Studio | `apps/web/src/app/projects/[projectId]/agents/[agentId]/contracts/[contractId]/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/projects/[projectId]/agents/[agentId]/releases` | Releases list | `apps/web/src/app/projects/[projectId]/agents/[agentId]/releases/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/projects/[projectId]/agents/[agentId]/releases/[releaseId]` | Release Diff | `apps/web/src/app/projects/[projectId]/agents/[agentId]/releases/[releaseId]/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/projects/[projectId]/violations/[violationId]` | Violation Inspector | `apps/web/src/app/projects/[projectId]/violations/[violationId]/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/projects/[projectId]/integrations/signoz` | SigNoz integration | `apps/web/src/app/projects/[projectId]/integrations/signoz/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/demo` | Demo | `apps/web/src/app/demo/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
 
 ## Phase 00 exit-gate chain
 

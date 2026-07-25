@@ -681,3 +681,29 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
   every field the input schema declares is supplied even when its value is empty. The server also
   assigns its own `query.id` UUID to each widget, so a read-back must not compare the whole query.
 - Local file: `packages/artifact-compiler/src/dashboard.ts`.
+
+## SL-060 — Next.js 16.2.11's built-in TypeScript step cannot drive TypeScript 7.0.2
+
+- Source: the installed toolchain, run (tier 1)
+- Verified claim: with `typescript@7.0.2` present and resolvable from `apps/web/node_modules`,
+  `next build` reports "It looks like you're trying to use TypeScript but do not have the required
+  package(s) installed", installs `typescript` again on every invocation, and then exits with
+  `The "id" argument must be of type string. Received undefined` and
+  `Next.js build worker exited with code: 1`. The failure is in Next's TypeScript **detection**, not
+  in the project's types: `tsc -p apps/web/tsconfig.json --noEmit` over the same sources exits 0
+  under the workspace's full strict configuration, including `exactOptionalPropertyTypes`,
+  `noUncheckedIndexedAccess` and `verbatimModuleSyntax`.
+- Runtime confirmation: **Yes**. Both commands were executed. `next build` fails identically on
+  three consecutive runs; `tsc -p` exits 0 and does catch real errors (it rejected six
+  `exactOptionalPropertyTypes` violations in the first draft of the route files, which were then
+  fixed).
+- Implementation consequence: `next.config.ts` sets `typescript.ignoreBuildErrors: true` so
+  `next build` skips its own step, and `apps/web`'s `build` script runs
+  `tsc -p tsconfig.json --noEmit` **before** `next build`. The application is therefore typechecked
+  on every build and in `make typecheck`, by the tool SL-033 verified. This is a workaround for a
+  defect in one pinned tool's integration with another, not a relaxation: no type error can reach a
+  build.
+- Alternative considered and rejected: downgrading TypeScript to a 5.x line. TypeScript 7.0.2 is
+  pinned workspace-wide by ADR-0001 and every other package compiles with it; changing it to work
+  around one tool's detection would be a far larger change than routing around the detection.
+- Local file: `apps/web/next.config.ts`, `apps/web/package.json`, `docs/adr/0011-*.md`.

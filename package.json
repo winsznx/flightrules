@@ -38,6 +38,10 @@
     "vitest": "4.1.10"
   },
   "pnpm": {
+    "ignoredOptionalDependencies": [
+      "@img/sharp-libvips-darwin-arm64",
+      "sharp"
+    ],
     "onlyBuiltDependencies": [
       "esbuild"
     ]

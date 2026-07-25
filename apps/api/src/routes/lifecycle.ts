@@ -26,6 +26,7 @@ import {
   findProject,
   findRelease,
   findRouteFamily,
+  findRouteFamilyById,
   findViolation,
   listBaselines,
   listContractRules,
@@ -445,6 +446,33 @@ export function registerLifecycleRoutes(
     family: RouteFamilyResponse,
     baselineStatus: z.string(),
   });
+
+  /**
+   * One route family, by its own identifier.
+   *
+   * PRD section 15.5 does not list this route, and PRD section 8.8 requires a bookmarkable page for
+   * a single route family. The web application may call the FlightRules API and nothing else
+   * (PRD section 12.3), so the page cannot exist without it. Read-only, and scoped by nothing the
+   * caller supplies — the identifier is the whole authorisation model P0 has (PRD section 6.1).
+   * Recorded in ADR-0011.
+   */
+  registry.add(
+    server,
+    {
+      method: "GET",
+      url: "/api/route-families/:familyId",
+      summary: "One route family, by identifier. Backs PRD section 8.8's route family page.",
+      tag: "baselines",
+      response: RouteFamilyResponse.extend({ baselineVersionId: z.string() }),
+      errors: [],
+    },
+    async ({ params }) => {
+      const familyId = requireUuid(params["familyId"] ?? "", "route family");
+      const family = await findRouteFamilyById(sql, familyId);
+      if (!family) throw notFound("route family", familyId);
+      return { ...familyDto(family), baselineVersionId: family.baselineVersionId };
+    },
+  );
 
   registry.add(
     server,
