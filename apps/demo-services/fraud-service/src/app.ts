@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { registerServiceSpans } from "@flightrules/telemetry";
 import Fastify, { type FastifyInstance } from "fastify";
 import { z } from "zod";
 
@@ -41,6 +42,20 @@ export function assessFraud(
 
 export function buildFraudService(options: { readonly logger?: boolean } = {}): FastifyInstance {
   const server = Fastify({ logger: options.logger ?? false });
+
+  registerServiceSpans(server, {
+    serviceName: "flightrules-fraud-service",
+    tracerName: "flightrules.demo.fraud-service",
+    describe: (request) =>
+      request.url.startsWith("/fraud/check")
+        ? {
+            name: "fraud.check.handler",
+            sideEffect: "read",
+            dataDomain: "risk",
+            stepCategory: "fraud",
+          }
+        : null,
+  });
 
   server.get("/health", async () => ({ status: "ok", service: "fraud-service" }));
 

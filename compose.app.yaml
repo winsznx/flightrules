@@ -32,6 +32,8 @@ services:
       - flightrules-postgres-data:/var/lib/postgresql/data
     networks:
       - flightrules-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U flightrules -d flightrules"]
       interval: 5s
@@ -49,11 +51,15 @@ services:
     container_name: flightrules-policy-service
     environment:
       PORT: "4101"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT_INTERNAL:-http://host.docker.internal:4318}"
+      DEPLOYMENT_ENVIRONMENT_NAME: "${DEPLOYMENT_ENVIRONMENT_NAME:-local}"
       NODE_ENV: production
     ports:
       - "4101:4101"
     networks:
       - flightrules-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:4101/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 5s
@@ -71,11 +77,15 @@ services:
     container_name: flightrules-order-service
     environment:
       PORT: "4102"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT_INTERNAL:-http://host.docker.internal:4318}"
+      DEPLOYMENT_ENVIRONMENT_NAME: "${DEPLOYMENT_ENVIRONMENT_NAME:-local}"
       NODE_ENV: production
     ports:
       - "4102:4102"
     networks:
       - flightrules-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:4102/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 5s
@@ -93,11 +103,15 @@ services:
     container_name: flightrules-fraud-service
     environment:
       PORT: "4103"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT_INTERNAL:-http://host.docker.internal:4318}"
+      DEPLOYMENT_ENVIRONMENT_NAME: "${DEPLOYMENT_ENVIRONMENT_NAME:-local}"
       NODE_ENV: production
     ports:
       - "4103:4103"
     networks:
       - flightrules-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:4103/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 5s
@@ -115,6 +129,8 @@ services:
     container_name: flightrules-payment-service
     environment:
       PORT: "4104"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT_INTERNAL:-http://host.docker.internal:4318}"
+      DEPLOYMENT_ENVIRONMENT_NAME: "${DEPLOYMENT_ENVIRONMENT_NAME:-local}"
       NODE_ENV: production
       DEMO_MODE: "${DEMO_MODE:-true}"
       IDEMPOTENCY_HASH_SALT: "${IDEMPOTENCY_HASH_SALT:?IDEMPOTENCY_HASH_SALT must be set in .env}"
@@ -123,6 +139,8 @@ services:
       - "4104:4104"
     networks:
       - flightrules-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:4104/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 5s
@@ -140,12 +158,16 @@ services:
     container_name: flightrules-notification-service
     environment:
       PORT: "4105"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT_INTERNAL:-http://host.docker.internal:4318}"
+      DEPLOYMENT_ENVIRONMENT_NAME: "${DEPLOYMENT_ENVIRONMENT_NAME:-local}"
       NODE_ENV: production
       DEMO_MODE: "${DEMO_MODE:-true}"
     ports:
       - "4105:4105"
     networks:
       - flightrules-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:4105/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 5s
@@ -163,6 +185,8 @@ services:
     container_name: flightrules-demo-agent
     environment:
       PORT: "4100"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT_INTERNAL:-http://host.docker.internal:4318}"
+      DEPLOYMENT_ENVIRONMENT_NAME: "${DEPLOYMENT_ENVIRONMENT_NAME:-local}"
       NODE_ENV: production
       DEMO_MODE: "${DEMO_MODE:-true}"
       POLICY_SERVICE_URL: http://policy-service:4101

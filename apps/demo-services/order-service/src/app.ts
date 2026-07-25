@@ -1,3 +1,4 @@
+import { registerServiceSpans } from "@flightrules/telemetry";
 import Fastify, { type FastifyInstance } from "fastify";
 import { z } from "zod";
 
@@ -58,6 +59,20 @@ export function findOrder(orderId: string): Order | undefined {
 
 export function buildOrderService(options: { readonly logger?: boolean } = {}): FastifyInstance {
   const server = Fastify({ logger: options.logger ?? false });
+
+  registerServiceSpans(server, {
+    serviceName: "flightrules-order-service",
+    tracerName: "flightrules.demo.order-service",
+    describe: (request) =>
+      request.url.startsWith("/orders/lookup")
+        ? {
+            name: "order.lookup.handler",
+            sideEffect: "read",
+            dataDomain: "orders",
+            stepCategory: "order",
+          }
+        : null,
+  });
 
   server.get("/health", async () => ({ status: "ok", service: "order-service" }));
 

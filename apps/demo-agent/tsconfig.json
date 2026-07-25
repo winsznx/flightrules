@@ -12,6 +12,9 @@
       "path": "../../packages/domain"
     },
     {
+      "path": "../../packages/telemetry"
+    },
+    {
       "path": "../demo-services/policy-service"
     },
     {
