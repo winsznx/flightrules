@@ -14,6 +14,12 @@
       "path": "./packages/signoz-mcp"
     },
     {
+      "path": "./packages/normaliser"
+    },
+    {
+      "path": "./packages/trace-graph"
+    },
+    {
       "path": "./packages/db"
     },
     {

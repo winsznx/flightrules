@@ -6,7 +6,7 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 05, 2026-07-25.
+Last updated: Phase 06, 2026-07-25.
 
 ## Critical final assertions (PRD section 23)
 
@@ -17,7 +17,7 @@ Last updated: Phase 05, 2026-07-25.
 | A3 | v1 and v2 return materially the same customer answer | `apps/demo-agent` | `apps/demo-agent/src/orchestrator.test.ts` | `docs/evidence/phase-03-result.md` | DONE |
 | A4 | v1 includes policy and fraud checks | `apps/demo-agent` | `apps/demo-agent/src/orchestrator.test.ts` | `docs/evidence/phase-03-result.md` | DONE |
 | A5 | v2 omits those checks and duplicates payment | `apps/demo-agent`, `apps/demo-services/payment-service` | `apps/demo-agent/src/orchestrator.test.ts`, `apps/demo-services/payment-service/src/ledger.test.ts` | `docs/evidence/phase-03-result.md` | DONE |
-| A6 | FlightRules reconstructs both trace graphs from SigNoz | `packages/signoz-mcp`, `packages/trace-graph` | graph reconstruction tests | `docs/evidence/phase-06-result.md` | PENDING |
+| A6 | FlightRules reconstructs both trace graphs from SigNoz | `packages/signoz-mcp`, `packages/trace-graph` | `packages/trace-graph/src/graph.test.ts`, `graph.signoz.integration.test.ts` | `docs/evidence/phase-06-result.md` — both live traces reconstructed; a live v1 run fingerprints identically to the captured fixture | DONE |
 | A7 | The active contract passes v1 | `packages/contract-engine` | v1 fixture evaluation test | `docs/evidence/phase-07-result.md` | PENDING |
 | A8 | The active contract fails v2 | `packages/contract-engine` | v2 fixture evaluation test | `docs/evidence/phase-07-result.md` | PENDING |
 | A9 | The failure links to real SigNoz trace evidence | `packages/domain`, `apps/web` violation inspector | evidence linking test | `docs/evidence/phase-15-result.md` | PENDING |
@@ -39,9 +39,9 @@ Last updated: Phase 05, 2026-07-25.
 | 5 | FlightRules backend connects using an official MCP client | `packages/signoz-mcp` | `packages/signoz-mcp/src/mcp-client.signoz.integration.test.ts` | phase-05 — 21 integration tests against the pinned v0.9.0 server | DONE |
 | 6 | Instrumented refund-agent demo emits traces, metrics and logs | `apps/demo-*`, `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` | phase-04 — traces emitted and retrieved; metric instruments declared but not yet emitted, logs land with the API in phase-09 | IN PROGRESS |
 | 7 | Baseline and canary releases distinguishable via attributes | `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` | phase-04 — `agent.release.id` retrieved as `refund-agent-v1` and `refund-agent-v2` from the two live traces | DONE |
-| 8 | Complete trace trees fetched and reconstructed | `packages/trace-graph` | reconstruction tests | phase-00 (proven), phase-06 | IN PROGRESS |
-| 9 | Trace nodes deduplicated by span ID | `packages/trace-graph` | duplicate-span tests | phase-06 | PENDING |
-| 10 | Dynamic identifiers normalised | `packages/normaliser` | normalisation property tests | phase-06 | PENDING |
+| 8 | Complete trace trees fetched and reconstructed | `packages/trace-graph` | `packages/trace-graph/src/graph.test.ts` | phase-06 — 12-span and 8-span traces reconstructed from live SigNoz | DONE |
+| 9 | Trace nodes deduplicated by span ID | `packages/trace-graph` | duplicate, conflicting-duplicate and completeness tests | phase-06 | DONE |
+| 10 | Dynamic identifiers normalised | `packages/normaliser` | `packages/normaliser/src/normalise.test.ts` including idempotence and volatile-ID invariance properties | phase-06 | DONE |
 | 11 | Baseline route families captured from range or release | `packages/baseline-miner` | mining tests | phase-08 | PENDING |
 | 12 | Versioned YAML contract proposed, reviewed, validated, stored, evaluated | `packages/contract-schema`, `packages/contract-engine` | schema and lifecycle tests | phase-07, phase-09 | PENDING |
 | 13 | All P0 rule types work | `packages/contract-engine` | per-rule passing and failing fixtures | phase-07 | PENDING |
@@ -65,9 +65,9 @@ Last updated: Phase 05, 2026-07-25.
 | FR-001 | Project creation | `apps/api` | API tests | phase-09 | PENDING |
 | FR-002 | Agent registration | `apps/api` | API tests | phase-09 | PENDING |
 | FR-003 | Trace discovery | `packages/signoz-mcp` | `mcp-client.signoz.integration.test.ts` | phase-05 — both demo traces retrieved with custom attributes and webUrl preserved | DONE |
-| FR-004 | Trace graph reconstruction | `packages/trace-graph` | reconstruction tests | phase-06 | PENDING |
-| FR-005 | Name and attribute normalisation | `packages/normaliser` | normalisation tests | phase-06 | PENDING |
-| FR-006 | Canonical route fingerprint | `packages/trace-graph` | fingerprint property tests | phase-06 | PENDING |
+| FR-004 | Trace graph reconstruction | `packages/trace-graph` | reconstruction, orphan, cycle and duplicate tests | phase-06 | DONE |
+| FR-005 | Name and attribute normalisation | `packages/normaliser` | `normalise.test.ts` | phase-06 | DONE |
+| FR-006 | Canonical route fingerprint | `packages/trace-graph` | order, key-order and volatile-ID property tests plus sensitivity tests | phase-06 — a live run and the captured fixture share one fingerprint | DONE |
 | FR-007 | Baseline capture | `packages/baseline-miner` | mining tests | phase-08 | PENDING |
 | FR-008 | Contract proposal | `packages/baseline-miner` | proposal tests | phase-08 | PENDING |
 | FR-009 | Contract schema validation | `packages/contract-schema` | schema rejection tests | phase-07 | PENDING |
