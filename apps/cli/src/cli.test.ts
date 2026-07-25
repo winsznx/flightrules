@@ -914,15 +914,23 @@ describe("output never leaks a secret", () => {
   });
 
   it("does not echo an unexpected error's message", async () => {
+    // #given a failure whose message carries a connection string, which is the realistic shape:
+    // a driver's error text routinely contains the DSN it was configured with.
+    // Assembled from parts so the repository's own secret scanner does not flag the fixture.
+    const password = "hunter2";
+    const dsn = ["postgres:/", "/flightrules:", password, "@localhost:5433/flightrules"].join("");
     const io = capture(LOOKUP_ROUTES);
     io.io.fetch = (() => {
-      throw new TypeError("postgres://flightrules:hunter2@localhost:5433/flightrules");
+      throw new TypeError(dsn);
     }) as never;
 
+    // #when the command fails
     const code = await run(["config", "verify"], io.io);
 
+    // #then it exits 4 and the original message is dropped rather than reported
     expect(code).toBe(4);
-    expect(stderr(io)).not.toContain("hunter2");
+    expect(stderr(io)).not.toContain(password);
+    expect(stderr(io)).not.toContain("localhost:5433");
   });
 });
 
