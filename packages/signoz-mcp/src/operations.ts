@@ -3,7 +3,9 @@ import type { SigNozMcpClient } from "./client.js";
 import type { McpResult } from "./outcome.js";
 import {
   builderQueryReader,
+  createdChannelReader,
   createdResourceReader,
+  deletedResourceReader,
   fieldKeysReader,
   fieldValuesReader,
   listReader,
@@ -12,7 +14,9 @@ import {
 } from "./readers.js";
 import type {
   BuilderQueryPayload,
+  CreatedChannelPayload,
   createdResourceSchema,
+  DeletedResourcePayload,
   FieldKeysPayload,
   FieldValuesPayload,
   ListPayload,
@@ -288,14 +292,35 @@ export class SigNozOperations {
     });
   }
 
-  async deleteView(
+  /**
+   * Replaces a saved view.
+   *
+   * The discovered schema takes `{id, view}` — a **nested** body, unlike every create tool and
+   * unlike `signoz_update_alert`, which is flat. The asymmetry is real and is why each update has
+   * its own wrapper rather than one generic one. `view` must be the complete resource: this is an
+   * HTTP PUT upstream, so an omitted field is an erased field.
+   */
+  async updateView(
     id: string,
+    view: Readonly<Record<string, unknown>>,
     context: OperationContext,
   ): Promise<McpResult<z.infer<typeof singleResourceSchema>>> {
     return this.#client.call({
+      tool: "signoz_update_view",
+      arguments: { id, view: { ...view } },
+      reader: singleResourceReader,
+      searchContext: context.searchContext,
+    });
+  }
+
+  async deleteView(
+    id: string,
+    context: OperationContext,
+  ): Promise<McpResult<DeletedResourcePayload>> {
+    return this.#client.call({
       tool: "signoz_delete_view",
       arguments: { id },
-      reader: singleResourceReader,
+      reader: deletedResourceReader,
       searchContext: context.searchContext,
     });
   }
@@ -331,6 +356,32 @@ export class SigNozOperations {
       tool: "signoz_create_dashboard",
       arguments: { ...spec },
       reader: createdResourceReader,
+      searchContext: context.searchContext,
+    });
+  }
+
+  /** Nested, like `signoz_update_view`. Full replacement: send the complete dashboard. */
+  async updateDashboard(
+    id: string,
+    dashboard: Readonly<Record<string, unknown>>,
+    context: OperationContext,
+  ): Promise<McpResult<z.infer<typeof singleResourceSchema>>> {
+    return this.#client.call({
+      tool: "signoz_update_dashboard",
+      arguments: { id, dashboard: { ...dashboard } },
+      reader: singleResourceReader,
+      searchContext: context.searchContext,
+    });
+  }
+
+  async deleteDashboard(
+    id: string,
+    context: OperationContext,
+  ): Promise<McpResult<DeletedResourcePayload>> {
+    return this.#client.call({
+      tool: "signoz_delete_dashboard",
+      arguments: { id },
+      reader: deletedResourceReader,
       searchContext: context.searchContext,
     });
   }
@@ -371,6 +422,37 @@ export class SigNozOperations {
   }
 
   /**
+   * Replaces an alert rule.
+   *
+   * Flat, with `id` alongside the fields — the opposite of `signoz_update_view` and
+   * `signoz_update_dashboard`. Still a full replacement, so the complete rule is submitted.
+   */
+  async updateAlert(
+    id: string,
+    spec: Readonly<Record<string, unknown>>,
+    context: OperationContext,
+  ): Promise<McpResult<z.infer<typeof singleResourceSchema>>> {
+    return this.#client.call({
+      tool: "signoz_update_alert",
+      arguments: { id, ...spec },
+      reader: singleResourceReader,
+      searchContext: context.searchContext,
+    });
+  }
+
+  async deleteAlert(
+    id: string,
+    context: OperationContext,
+  ): Promise<McpResult<DeletedResourcePayload>> {
+    return this.#client.call({
+      tool: "signoz_delete_alert",
+      arguments: { id },
+      reader: deletedResourceReader,
+      searchContext: context.searchContext,
+    });
+  }
+
+  /**
    * Alert history carries the firing and recovery states PRD section 16 requires proving. The
    * alert `id` is mandatory; the server rejects a call that omits it.
    */
@@ -405,6 +487,50 @@ export class SigNozOperations {
     return this.#client.call({
       tool: "signoz_get_notification_channel",
       arguments: { id },
+      reader: singleResourceReader,
+      searchContext: context.searchContext,
+    });
+  }
+
+  /**
+   * Flat, like every create tool. `type` and `name` are the only universally required fields.
+   *
+   * The response is *not* the create envelope: the server sends a real test notification during
+   * creation and returns its outcome alongside the channel, so this call has its own reader.
+   */
+  async createNotificationChannel(
+    spec: Readonly<Record<string, unknown>>,
+    context: OperationContext,
+  ): Promise<McpResult<CreatedChannelPayload>> {
+    return this.#client.call({
+      tool: "signoz_create_notification_channel",
+      arguments: { ...spec },
+      reader: createdChannelReader,
+      searchContext: context.searchContext,
+    });
+  }
+
+  async deleteNotificationChannel(
+    id: string,
+    context: OperationContext,
+  ): Promise<McpResult<DeletedResourcePayload>> {
+    return this.#client.call({
+      tool: "signoz_delete_notification_channel",
+      arguments: { id },
+      reader: deletedResourceReader,
+      searchContext: context.searchContext,
+    });
+  }
+
+  /** Flat with `id`, and a full replacement: `type` and `name` are required on every update. */
+  async updateNotificationChannel(
+    id: string,
+    spec: Readonly<Record<string, unknown>>,
+    context: OperationContext,
+  ): Promise<McpResult<z.infer<typeof singleResourceSchema>>> {
+    return this.#client.call({
+      tool: "signoz_update_notification_channel",
+      arguments: { id, ...spec },
       reader: singleResourceReader,
       searchContext: context.searchContext,
     });

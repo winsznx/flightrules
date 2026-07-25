@@ -9,7 +9,23 @@ import { startTelemetry, type TelemetryHandle } from "./sdk.js";
  * Must be imported before anything that issues HTTP, so the HTTP instrumentation can patch the
  * module. The service entrypoints do this with a bare side-effect import on the first line.
  */
-export function bootstrapFromEnv(serviceName: string): TelemetryHandle {
+export interface BootstrapOptions {
+  /**
+   * Open the metric pipeline as well as the trace pipeline (PRD section 17.4, FR-016).
+   *
+   * A demo service produces traces only, so it leaves this off. The API and the worker turn it on:
+   * without a global `MeterProvider`, `FlightRulesMetrics` records into the API's no-op meter and
+   * every `flight_rules.*` instrument is silently discarded, which leaves the Phase 10 dashboard
+   * with nothing to plot.
+   */
+  readonly metrics?: boolean;
+  readonly metricIntervalMs?: number;
+}
+
+export function bootstrapFromEnv(
+  serviceName: string,
+  options: BootstrapOptions = {},
+): TelemetryHandle {
   const handle = startTelemetry({
     serviceName,
     serviceVersion: process.env["SERVICE_VERSION"] ?? "0.1.0",
@@ -17,6 +33,10 @@ export function bootstrapFromEnv(serviceName: string): TelemetryHandle {
     otlpEndpoint: process.env["OTEL_EXPORTER_OTLP_ENDPOINT"] ?? "http://localhost:4318",
     commitSha: process.env["VCS_COMMIT_SHA"],
     serviceInstanceId: process.env["SERVICE_INSTANCE_ID"],
+    metrics: options.metrics ?? false,
+    ...(options.metricIntervalMs === undefined
+      ? {}
+      : { metricIntervalMs: options.metricIntervalMs }),
   });
 
   registerInstrumentations({

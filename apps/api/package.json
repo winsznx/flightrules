@@ -12,6 +12,7 @@
     "dev": "tsx src/index.ts"
   },
   "dependencies": {
+    "@flightrules/artifact-compiler": "workspace:*",
     "@flightrules/baseline-miner": "workspace:*",
     "@flightrules/config": "workspace:*",
     "@flightrules/contract-engine": "workspace:*",

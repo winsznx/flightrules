@@ -88,6 +88,15 @@ export const FLIGHT_RULES = {
   evaluationStatus: "flight_rules.evaluation.status",
   violationCount: "flight_rules.violation.count",
   routeFingerprint: "flight_rules.route.fingerprint",
+  /**
+   * The trace the evaluator judged, carried on `flight_rules.evaluate_run`.
+   *
+   * PRD section 17.3 does not name it because the section lists the minimum. Without it the
+   * FR-013 "violating runs" saved view cannot pivot from a violation to the run that caused it,
+   * which is the whole point of the view. High cardinality by construction, so it is registered as
+   * such and can never become a metric dimension.
+   */
+  evaluatedTraceId: "flight_rules.evaluated.trace_id",
   routeSimilarity: "flight_rules.route.similarity",
   gateDecision: "flight_rules.gate.decision",
   ruleId: "flight_rules.rule.id",
@@ -133,6 +142,7 @@ export const HIGH_CARDINALITY_ATTRIBUTES: readonly string[] = [
   AGENT.idempotencyKeyHash,
   FLIGHT_RULES.evaluationId,
   FLIGHT_RULES.routeFingerprint,
+  FLIGHT_RULES.evaluatedTraceId,
 ];
 
 const HIGH_CARDINALITY_SET: ReadonlySet<string> = new Set(HIGH_CARDINALITY_ATTRIBUTES);

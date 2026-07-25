@@ -1,0 +1,39 @@
+FlightRules Phase 10 — live state captured 2026-07-25T20:52:56Z
+
+== migrations ==
+0001
+0002
+0003
+0004
+
+== managed SigNoz artefacts in SigNoz ==
+saved_view   019f9aef-0820-7658-90db-bd97041c9bb9 FlightRules / demo-commerce / refund-agent / Violating Runs
+saved_view   019f9aef-083f-7e12-a6d1-5b98f2b8b11a FlightRules / demo-commerce / refund-agent / Duplicate Side Effects
+saved_view   019f9aef-0860-7797-a132-6fa469c86d0e FlightRules / demo-commerce / refund-agent / Unknown Routes
+saved_view   019f9aef-087f-7774-a651-51fbdadcc532 FlightRules / demo-commerce / refund-agent / Release Comparison
+dashboard    019f9aef-08a5-7345-acfb-b1854b915b30 FlightRules / demo-commerce / refund-agent / Contract Health
+alert        019f9aef-08ee-77e0-abe5-85d62b848480 firing   FlightRules / demo-commerce / refund-agent / Violation Rate Alert
+alert        019f9aef-0935-731d-bc86-00d780a4f962 firing   FlightRules / demo-commerce / refund-agent / Duplicate Side Effect Alert
+alert        019f9aef-096d-71cb-95a2-649c1433aa39 inactive FlightRules / demo-commerce / refund-agent / Release Evaluation Error Alert
+alert        019f9aef-09a8-7864-9c6b-ca8669704090 firing   FlightRules / demo-commerce / refund-agent / No Evaluation Data Alert
+channel      019f9aef-07d0-7cb1-861f-f6aba11d7bc4 webhook FlightRules / demo-commerce / Notifications
+
+== FlightRules metrics present in SigNoz ==
+flight_rules.duplicate_side_effects                  sum        cumulative
+flight_rules.evaluation.duration.bucket              histogram  cumulative
+flight_rules.evaluation.duration.count               sum        cumulative
+flight_rules.evaluation.duration.max                 gauge      unspecified
+flight_rules.evaluation.duration.min                 gauge      unspecified
+flight_rules.evaluation.duration.sum                 sum        cumulative
+flight_rules.evaluations                             sum        cumulative
+flight_rules.route.similarity.bucket                 histogram  cumulative
+flight_rules.route.similarity.count                  sum        cumulative
+flight_rules.route.similarity.max                    gauge      unspecified
+flight_rules.route.similarity.min                    gauge      unspecified
+flight_rules.route.similarity.sum                    sum        cumulative
+flight_rules.signoz_artifact_sync                    sum        cumulative
+flight_rules.unknown_routes                          sum        cumulative
+flight_rules.violations                              sum        cumulative
+
+== violation rate alert history ==
+1785012666492 firing stateChanged=True value=80

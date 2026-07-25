@@ -34,6 +34,7 @@ export const AUDIT_EVENT_TYPES = [
   "evaluation.requested",
   "evaluation.completed",
   "gate.decided",
+  "artifact.sync.requested",
   "artifact.synced",
   "demo.reset",
   "demo.run.requested",

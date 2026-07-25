@@ -39,4 +39,5 @@ export {
   ZERO_SIMILARITY,
 } from "./rule-context.js";
 export { CompiledSelector, scalarKey, sortByCanonicalOrder } from "./selector.js";
+export { countDuplicateSideEffects, sideEffectingRuleIds } from "./side-effects.js";
 export { EVALUATOR_VERSION } from "./version.js";

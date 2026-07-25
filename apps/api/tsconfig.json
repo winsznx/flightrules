@@ -16,6 +16,7 @@
     { "path": "../../packages/trace-graph" },
     { "path": "../../packages/contract-schema" },
     { "path": "../../packages/contract-engine" },
+    { "path": "../../packages/artifact-compiler" },
     { "path": "../../packages/baseline-miner" },
     { "path": "../../packages/db" }
   ]

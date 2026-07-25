@@ -3,7 +3,10 @@ import {
   type BuilderQueryPayload,
   type BuilderRow,
   builderQueryPayloadSchema,
+  type CreatedChannelPayload,
+  createdChannelSchema,
   createdResourceSchema,
+  deletedResourceSchema,
   type FieldKeysPayload,
   type FieldValuesPayload,
   fieldKeysPayloadSchema,
@@ -70,6 +73,32 @@ export const createdResourceReader: PayloadReader<typeof createdResourceSchema> 
   schema: createdResourceSchema,
   // A create call returns exactly one resource; treating it as one row keeps a successful create
   // out of SUCCESS_EMPTY, which callers read as "nothing was returned".
+  countRows: () => 1,
+};
+
+export const createdChannelReader: PayloadReader<typeof createdChannelSchema> = {
+  schema: createdChannelSchema,
+  countRows: () => 1,
+};
+
+/**
+ * Whether the server's own test notification reached the destination.
+ *
+ * `undefined` means the server did not report a test at all, which is not the same as a failure
+ * and must not be recorded as one.
+ */
+export function channelDeliveryOf(payload: CreatedChannelPayload): {
+  readonly tested: boolean;
+  readonly delivered: boolean | undefined;
+} {
+  const test = payload.test_notification;
+  if (test === undefined) return { tested: false, delivered: undefined };
+  return { tested: true, delivered: test.success ?? false };
+}
+
+export const deletedResourceReader: PayloadReader<typeof deletedResourceSchema> = {
+  schema: deletedResourceSchema,
+  // A delete that returned anything at all is one row; the payload carries nothing to count.
   countRows: () => 1,
 };
 

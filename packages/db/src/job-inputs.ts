@@ -81,6 +81,27 @@ export const EvaluationInputSchema = z.object({
 });
 export type EvaluationInput = z.infer<typeof EvaluationInputSchema>;
 
+/**
+ * A SigNoz artefact sync (Phase 10).
+ *
+ * The contract's content hash is carried in the input as well as its id, so a sync submitted
+ * against one version of a contract and a sync submitted after the contract changed are different
+ * jobs. Without it a queued sync would compile whatever the contract happened to say when the
+ * worker got to it, which is not what the submitter asked for.
+ */
+export const SignozSyncInputSchema = z.object({
+  projectId: z.string(),
+  agentId: z.string(),
+  contractId: z.string(),
+  projectSlug: z.string().min(1).max(64),
+  agentKey: z.string().min(1).max(64),
+  contractVersion: z.string().min(1).max(40),
+  contractContentHash: z.string().regex(/^[0-9a-f]{64}$/),
+  rootSpanName: z.string().min(1).max(200),
+  violationThreshold: z.number().int().min(0).max(1_000_000),
+});
+export type SignozSyncInput = z.infer<typeof SignozSyncInputSchema>;
+
 export const DemoRunInputSchema = z.object({
   releaseKey: z.enum(["refund-agent-v1", "refund-agent-v2"]),
   orderId: z.string().min(1).max(64),

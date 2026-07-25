@@ -235,3 +235,71 @@ The local deployment is not a production configuration.
 - **`DEMO_MODE=true` enables demo mutation endpoints.** It must be false outside the demo.
 - **`DEPLOYMENT_MODE=hosted`** activates the control that rejects loopback, link-local and private
   SigNoz URLs, closing the server-side request forgery path in multi-user deployments.
+
+---
+
+## 11. Compile the SigNoz operational surface (Phase 10)
+
+Activating a contract does not touch SigNoz by itself. Synchronisation is an explicit request that
+returns a job.
+
+```bash
+# one contract
+curl -s -X POST localhost:4000/api/contracts/<contractId>/sync-signoz \
+  -H 'content-type: application/json' -d '{}'
+
+# every agent of a project holding an active contract
+curl -s -X POST localhost:4000/api/setup/signoz/sync-artifacts \
+  -H 'content-type: application/json' -d '{"projectId":"<projectId>"}'
+
+# what exists, and whether it still matches
+curl -s "localhost:4000/api/setup/signoz/artifacts?projectId=<projectId>" | jq .summary
+```
+
+Ten resources are created per agent, named exactly as PRD section 16.8 prescribes:
+
+```text
+FlightRules / <project> / Notifications                            (webhook channel)
+FlightRules / <project> / <agent> / Violating Runs                 (saved view)
+FlightRules / <project> / <agent> / Duplicate Side Effects         (saved view)
+FlightRules / <project> / <agent> / Unknown Routes                 (saved view)
+FlightRules / <project> / <agent> / Release Comparison             (saved view)
+FlightRules / <project> / <agent> / Contract Health                (dashboard, 10 panels)
+FlightRules / <project> / <agent> / Violation Rate Alert           (alert)
+FlightRules / <project> / <agent> / Duplicate Side Effect Alert    (alert)
+FlightRules / <project> / <agent> / Release Evaluation Error Alert (alert)
+FlightRules / <project> / <agent> / No Evaluation Data Alert       (alert)
+```
+
+Every write is followed by a read-back and a field comparison. A mismatch fails the job and the
+mismatch is recorded on the artefact row, so `GET /api/setup/signoz/artifacts` tells you which
+artefact disagreed and on which field.
+
+### Making the alerts fire
+
+The alerts read FlightRules' own metrics, so they need a real evaluation, not just telemetry:
+
+```bash
+DEMO_RUNS=8 make demo-v2                    # seed the unsafe canary
+curl -s -X POST localhost:4000/api/demo/evaluate-v2 \
+  -H 'content-type: application/json' -d '{"lookbackMinutes":30}'
+```
+
+The alerts evaluate every minute over a five-minute window, so allow two cycles. Confirm with the
+SigNoz UI under Alerts, or through MCP with `signoz_list_alert_rules` and `signoz_get_alert_history`.
+
+### Configuration
+
+| Variable | Default | Effect |
+|---|---|---|
+| `FLIGHTRULES_ALERT_WEBHOOK_URL` | `http://host.docker.internal:4000/internal/alert-sink` | Where SigNoz posts a fired alert. The default points at nothing on purpose: SigNoz sends a real test notification when the channel is created, and the recorded failure is honest. Set a routable destination to make delivery real. |
+| `FLIGHTRULES_VIOLATION_ALERT_THRESHOLD` | `0` | Violations in one evaluation window above which the rate alert fires. |
+
+### Traps
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| A second sync creates duplicate dashboards or alerts | List tools return the identifier under `id`, `uuid` or `ruleId` depending on the resource type (SL-056) | Use `LIST_FIELDS` in `apps/worker/src/artifact-sync.ts`; never assume `id` |
+| `signoz_list_views` returns HTTP 500 `error in unmarshalling explorer query data` | Something called `signoz_update_view`, which corrupts the stored query for the **whole tenant** (SL-057) | FlightRules never calls it. To recover: `docker exec signoz-metastore-postgres-0 psql -U signoz -d signoz -c "delete from saved_views where data like '\\x%';"` |
+| A dashboard is stored but a panel is empty or wrong | The server accepts an incomplete widget "best-effort" and only warns (SL-059) | Supply every field the input schema declares, even when empty |
+| A dashboard panel shows a rising line that never falls | A cumulative counter charted with `sum` (SL-054) | Use `increase` |

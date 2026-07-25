@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@flightrules/api": "workspace:*",
+    "@flightrules/artifact-compiler": "workspace:*",
     "@flightrules/contract-schema": "workspace:*",
     "@flightrules/db": "workspace:*",
     "@flightrules/worker": "workspace:*",
