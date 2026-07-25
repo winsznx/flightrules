@@ -1,0 +1,45 @@
+# FlightRules SigNoz deployment.
+#
+# Deployed with Foundry v0.2.16:
+#
+#   foundryctl gauge -f casting.yaml    # check required tools are available
+#   foundryctl forge -f casting.yaml    # generate casting.yaml.lock and pours/
+#   foundryctl cast  -f casting.yaml    # deploy
+#
+# Both `image` and `version` are set on every molding FlightRules pins. `version` alone is
+# recorded in casting.yaml.lock but does NOT change the image tag in the generated Compose file,
+# which would leave the deployment floating on `latest`. Verified directly against foundryctl
+# v0.2.16; see docs/adr/0002-signoz-deployment-and-pinning.md and source-lock entry SL-006.
+#
+# ClickHouse (25.12.5), ClickHouse Keeper (25.12.5) and PostgreSQL (16) are pinned by Foundry's
+# own defaults and are deliberately not overridden, so a Foundry upgrade brings coordinated
+# infrastructure versions rather than hand-maintained drift.
+#
+# The SigNoz API key is deliberately absent. Foundry configures the MCP server with SIGNOZ_URL
+# only; the client supplies a SIGNOZ-API-KEY header per request. No secret belongs in this file.
+# scripts/bootstrap.sh mints one into your local .env.
+
+apiVersion: v1alpha1
+kind: Installation
+metadata:
+  name: signoz
+spec:
+  deployment:
+    mode: docker
+    flavor: compose
+
+  signoz:
+    spec:
+      image: signoz/signoz:v0.134.0
+      version: v0.134.0
+
+  ingester:
+    spec:
+      image: signoz/signoz-otel-collector:v0.144.6
+      version: v0.144.6
+
+  mcp:
+    spec:
+      enabled: true
+      image: signoz/signoz-mcp-server:v0.9.0
+      version: v0.9.0

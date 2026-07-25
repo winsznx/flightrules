@@ -17,14 +17,17 @@
     "typecheck": "tsc --build --force tsconfig.build.json",
     "test": "vitest run --project unit",
     "test:watch": "vitest --project unit",
-    "test:integration": "vitest run --project integration",
+    "test:integration": "vitest run --project integration-db --project integration-signoz",
     "build": "pnpm -r --if-present run build",
     "scan:secrets": "secretlint --secretlintignore .gitignore \"**/*\"",
     "scan:licences": "node scripts/check-licences.mjs",
-    "scan:deps": "pnpm audit --audit-level high"
+    "scan:deps": "pnpm audit --audit-level high",
+    "test:integration:db": "vitest run --project integration-db",
+    "test:integration:signoz": "vitest run --project integration-signoz"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.5",
+    "@modelcontextprotocol/sdk": "1.29.0",
     "@secretlint/secretlint-rule-preset-recommend": "13.0.4",
     "@types/node": "24.13.3",
     "secretlint": "13.0.4",

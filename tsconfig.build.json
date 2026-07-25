@@ -1,8 +1,17 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/config" },
-    { "path": "./packages/domain" },
-    { "path": "./packages/db" }
+    {
+      "path": "./packages/config"
+    },
+    {
+      "path": "./packages/domain"
+    },
+    {
+      "path": "./packages/db"
+    },
+    {
+      "path": "./packages/test-fixtures"
+    }
   ]
 }

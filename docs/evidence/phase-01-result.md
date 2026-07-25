@@ -123,11 +123,12 @@ protection globally.
 
 ### 3. Secret scanner flagged a test fixture — correctly
 
-`secretlint` failed the build on
-`new Error("connection to postgres://user:hunter2@db:5432 refused")` in
-`packages/domain/src/errors.test.ts`. The fixture existed to prove that an unrecognised error's
-message is not echoed into the envelope, but it was a credential-shaped literal in committed
-source.
+`secretlint` failed the build on a fixture in `packages/domain/src/errors.test.ts` that embedded a
+PostgreSQL connection string with inline credentials inside an `Error` message. The fixture
+existed to prove that an unrecognised error's message is not echoed into the envelope, but it was
+a credential-shaped literal in committed source. The literal is deliberately not reproduced here:
+the same rule would flag this evidence file, and evidence must not contain credential-shaped
+strings.
 
 Rewritten to use a header-shaped secret instead. The test still asserts the same behaviour. This
 is recorded because it is evidence the scanner does something: a scanner that has never failed

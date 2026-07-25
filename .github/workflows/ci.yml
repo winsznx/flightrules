@@ -112,8 +112,59 @@ jobs:
       - name: Reapply migrations
         run: pnpm --filter @flightrules/db run migrate
 
-      - name: Integration tests
-        run: pnpm run test:integration
+      - name: Database integration tests
+        run: pnpm run test:integration:db
+
+  signoz:
+    name: SigNoz deployment and MCP integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install foundryctl
+        run: |
+          curl -fsSL https://signoz.io/foundry.sh | FOUNDRY_VERSION=v0.2.16 bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Verify the casting reproduces and every image is pinned
+        run: bash scripts/verify-reproducibility.sh
+
+      - name: Deploy the pinned SigNoz stack
+        run: foundryctl cast -f casting.yaml --format text --no-ledger --no-updater
+
+      - name: Bootstrap SigNoz and mint an API key
+        run: bash scripts/bootstrap-signoz.sh
+        env:
+          SIGNOZ_ADMIN_PASSWORD: ${{ format('ci-{0}', github.run_id) }}
+
+      - name: Verify every SigNoz surface
+        run: bash scripts/verify-signoz.sh
+
+      - name: Refresh the MCP capability snapshot and assert every required tool exists
+        run: |
+          set -a; . ./.env; set +a
+          node scripts/snapshot-mcp-capabilities.mjs "$RUNNER_TEMP/mcp-capabilities.json"
+
+      - name: SigNoz integration tests
+        run: |
+          set -a; . ./.env; set +a
+          pnpm run test:integration:signoz
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f pours/deployment/compose.yaml -p signoz down -v
 
   security:
     name: Secret, licence and dependency scanning
