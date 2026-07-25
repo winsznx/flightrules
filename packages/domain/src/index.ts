@@ -17,3 +17,23 @@ export {
   redactString,
   registerSecretValue,
 } from "./redaction.js";
+export type {
+  CausalEdgeType,
+  EdgeType,
+  EvaluationStatus,
+  Severity,
+  SideEffect,
+  TraceQuality,
+} from "./trace.js";
+export {
+  CAUSAL_EDGE_TYPES,
+  EDGE_TYPES,
+  EVALUATION_STATUSES,
+  isCausalEdgeType,
+  isSideEffect,
+  SEVERITIES,
+  SIDE_EFFECTS,
+  severityRank,
+  TRACE_QUALITY,
+  toSideEffect,
+} from "./trace.js";
