@@ -6,14 +6,14 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 03, 2026-07-25.
+Last updated: Phase 04, 2026-07-25.
 
 ## Critical final assertions (PRD section 23)
 
 | ID | Assertion | Implementation | Test | Runtime evidence | Status |
 |---|---|---|---|---|---|
 | A1 | Foundry reproduces SigNoz and MCP from casting files | `casting.yaml`, `casting.yaml.lock`, `pours/` | `scripts/verify-reproducibility.sh`, `packages/test-fixtures/src/deployment.test.ts` | `docs/evidence/phase-02-result.md` | DONE |
-| A2 | v1 and v2 emit real distributed telemetry | `apps/demo-agent`, `apps/demo-services/*`, `packages/telemetry` | telemetry integration tests | `docs/evidence/phase-04-result.md` | PENDING |
+| A2 | v1 and v2 emit real distributed telemetry | `apps/demo-agent`, `apps/demo-services/*`, `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` | `docs/evidence/phase-04-result.md` — v1 retrieved from SigNoz as 12 spans over 6 services, v2 as 8 spans over 4 services | DONE |
 | A3 | v1 and v2 return materially the same customer answer | `apps/demo-agent` | `apps/demo-agent/src/orchestrator.test.ts` | `docs/evidence/phase-03-result.md` | DONE |
 | A4 | v1 includes policy and fraud checks | `apps/demo-agent` | `apps/demo-agent/src/orchestrator.test.ts` | `docs/evidence/phase-03-result.md` | DONE |
 | A5 | v2 omits those checks and duplicates payment | `apps/demo-agent`, `apps/demo-services/payment-service` | `apps/demo-agent/src/orchestrator.test.ts`, `apps/demo-services/payment-service/src/ledger.test.ts` | `docs/evidence/phase-03-result.md` | DONE |
@@ -25,7 +25,7 @@ Last updated: Phase 03, 2026-07-25.
 | A11 | FlightRules creates and verifies real SigNoz views | `packages/artifact-compiler` | view create + read-back test | `docs/evidence/phase-10-result.md` | PENDING |
 | A12 | FlightRules creates an alert that fires from the v2 violation | `packages/artifact-compiler` | alert firing test via alert history | `docs/evidence/phase-10-result.md` | PENDING |
 | A13 | The CLI gate returns exit code 2 for v2 | `apps/cli` | gate exit-code tests | `docs/evidence/phase-11-result.md` | PENDING |
-| A14 | No raw prompts or chain-of-thought are required | `packages/telemetry` | redaction assertion test | `docs/evidence/phase-04-result.md` | PENDING |
+| A14 | No raw prompts or chain-of-thought are required | `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` forbidden-attribute redactor tests | `docs/evidence/phase-04-result.md` — both traces evaluated end to end with no prompt or reasoning attribute present | DONE |
 | A15 | A clean clone can reproduce the system | `scripts/*`, `README.md` | `scripts/verify-reproducibility.sh` | `docs/evidence/phase-17-result.md` | PENDING |
 
 ## P0 scope items (PRD section 6.1)
@@ -37,8 +37,8 @@ Last updated: Phase 03, 2026-07-25.
 | 3 | SigNoz MCP Server enabled and reachable | `casting.yaml` `spec.mcp` | `packages/test-fixtures/src/signoz.signoz.integration.test.ts` | phase-02 | DONE |
 | 4 | Claude Code can connect to the SigNoz MCP Server | `docs/RUNBOOK.md` section 3 | documented manual step; the same endpoint, transport and header are exercised by the SDK integration tests | phase-02 | DONE |
 | 5 | FlightRules backend connects using an official MCP client | `packages/signoz-mcp` | MCP client integration tests | phase-00 (proven), phase-05 | IN PROGRESS |
-| 6 | Instrumented refund-agent demo emits traces, metrics and logs | `apps/demo-*`, `packages/telemetry` | telemetry integration tests | phase-04 | PENDING |
-| 7 | Baseline and canary releases distinguishable via attributes | `packages/telemetry` | field discovery test | phase-04 | PENDING |
+| 6 | Instrumented refund-agent demo emits traces, metrics and logs | `apps/demo-*`, `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` | phase-04 — traces emitted and retrieved; metric instruments declared but not yet emitted, logs land with the API in phase-09 | IN PROGRESS |
+| 7 | Baseline and canary releases distinguishable via attributes | `packages/telemetry` | `packages/telemetry/src/telemetry.test.ts` | phase-04 — `agent.release.id` retrieved as `refund-agent-v1` and `refund-agent-v2` from the two live traces | DONE |
 | 8 | Complete trace trees fetched and reconstructed | `packages/trace-graph` | reconstruction tests | phase-00 (proven), phase-06 | IN PROGRESS |
 | 9 | Trace nodes deduplicated by span ID | `packages/trace-graph` | duplicate-span tests | phase-06 | PENDING |
 | 10 | Dynamic identifiers normalised | `packages/normaliser` | normalisation property tests | phase-06 | PENDING |
