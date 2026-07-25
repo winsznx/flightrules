@@ -1,9 +1,9 @@
-# FlightRules handoff — after Phase 07
+# FlightRules handoff — after Phase 08
 
 Written: 2026-07-25. `main` is green and the working tree is clean.
 
 This replaces the previous handoff. Verify every claim below against the repository before relying
-on it; corrections to the previous handoff are listed under "Corrections".
+on it. The previous handoff needed no corrections; its one inaccuracy was already fixed in it.
 
 ---
 
@@ -19,175 +19,205 @@ on it; corrections to the previous handoff are listed under "Corrections".
 | 05 SigNoz MCP client and capability layer | PASS | `074a35a` | `9eda536` |
 | 06 Trace graph and normalisation engine | PASS | `7b8e2aa` | `5949148` |
 | 07 Contract schema and deterministic evaluator | PASS | `ca4225b` | `12e133b` |
-| 08–17 | NOT STARTED | — | — |
+| 08 Baseline mining and contract proposal | PASS | `7706e79` | `494fd8a` |
+| 09–17 | NOT STARTED | — | — |
 
 ## Verified state
 
-Every command below was run against the live stack on `main` after the Phase 07 merge.
+Every command below was run against the live stack on `main` after the Phase 08 merge.
 
 ```text
 make verify              exit 0
 make signoz-verify       exit 0
-make contract-validate   exit 0, 19 contract documents valid
-make test                599 passed, 0 failed, 0 skipped   (25 files)
-make test-integration     75 passed, 0 failed, 0 skipped   ( 5 files)
+make contract-validate   exit 0, 20 contract documents valid
+make test                862 passed, 0 failed, 0 skipped   (38 files)
+make test-integration     91 passed, 0 failed, 0 skipped   ( 6 files)
                          ---
-                         674 tests passed
+                         953 tests passed
+make demo-v1             exit 0 (DEMO_RUNS=25 seeds a batch)
+make demo-v2             exit 0
+make mine-demo-baseline  exit 0
 ```
 
-Integration breakdown: 8 database, 67 SigNoz. All fail rather than skip when their dependency is
+Integration breakdown: 8 database, 83 SigNoz. All fail rather than skip when their dependency is
 absent.
 
-## Corrections to the previous handoff
+## What Phase 08 added
 
-One inaccuracy, corrected rather than propagated: the previous handoff described the known-good
-route as six steps "each with a `.handler` server span". `refund.calculate` has no handler — it is
-local agent work — so v1 is one root span, six client spans and **five** handlers, twelve in total.
-No Phase 06 code or test asserted otherwise, so nothing was broken by it.
+One package, exactly as PRD section 13 names it.
 
-## What Phase 07 added
+### `packages/baseline-miner`
 
-Two packages, exactly as PRD section 13 names them.
+Storage-independent, because PRD sections 14.7 and 14.8 are Phase 09. It produces the values those
+rows will hold and returns them.
 
-### `packages/contract-schema`
+Trace selection with PRD section 8.7's controls and progress states; bounded batch retrieval whose
+field types are confirmed against the live SigNoz catalogue before it queries; fifteen typed exclusion
+reasons with counts that must reconcile or mining fails; exact fingerprint grouping; integer statistics
+with nearest-rank percentiles; representative selection and rare marking; PRD section 8.8's four review
+actions; rule proposal across nine rule types with an evidence basis on every rule; and deterministic
+draft YAML whose round trip through the public parser is proven by content hash.
 
-The versioned DSL of PRD section 10, with no dependency on a graph, a database or SigNoz — because
-`flightrules contract validate` has to run in a CI job that has none of them. TypeScript types, a
-published draft 2020-12 JSON Schema, safe YAML loading, static validation returning
-`{path, code, message}`, cross-rule contradiction detection, canonical serialisation, a SHA-256
-content hash, and a `flightrules-contract` command with PRD FR-012 exit codes.
+**The exit gate is proven live**: 34 fresh `refund-agent-v1` runs became one route family at the
+fingerprint the committed Phase 07 contract already approves, a human approval was recorded, a 28-rule
+draft contract was generated and accepted by the Phase 07 validator through the published CLI, a freshly
+executed known-good run passed it with 0 violations, and the canary failed it with 10 violations
+including three critical zero-tolerance ones naming the missing policy check, the missing fraud check
+and the duplicate refund. No model participates in any decision. Nothing is activated.
 
-The `matches` operator is an RE2-compatible Thompson NFA, not a JavaScript `RegExp`.
-
-### `packages/contract-engine`
-
-The deterministic run evaluator, storage-independent because persistence is Phase 09. `Map`-based
-indexes, the six selector operators, all eleven rule types, evidence carrying both span IDs and
-canonical node positions, stable violation identifiers, PRD section 11.11's evaluation order, and
-canonical evaluation JSON whose hash structurally cannot reach the completion timestamp.
-
-**The exit gate is proven live**: the committed contract at
-`contracts/demo-commerce/refund-agent/production/contract.yaml` passes the approved release and
-fails the canary with three critical zero-tolerance violations naming the missing fraud check, the
-missing policy check and the duplicate refund. No LLM participates in any decision.
+Reproduce with `DEMO_RUNS=25 make demo-v1 && make demo-v2 && make mine-demo-baseline`. The output is
+committed at `docs/evidence/phase-08/mining-run.log` and the generated contract at
+`docs/evidence/phase-08/mined-contract.yaml`.
 
 ## Important discoveries
 
-New source-lock entries this session: **SL-046 to SL-049**.
+New source-lock entries this session: **SL-050 and SL-051**.
 
 | ID | Finding |
 |---|---|
-| SL-046 | A non-string tag in Query Builder `selectFields` returns `null` unless its `dataType` is declared. The call **succeeds** — no error, no warning, every other column correct — so an attribute vanishes silently and per-column. Both `bool` and `number` are affected. Found because the evaluator reported insufficient evidence for the absent attribute instead of passing the rule. |
-| SL-047 | `yaml@2.9.0` resolves `!!binary` to a `Buffer` and `!!timestamp` to a `Date` with **no error and no warning**, and `customTags: []` does not prevent it. An unresolvable tag is only a warning. So the tag defence must walk the document AST, not read the options or the diagnostics. |
-| SL-048 | `ajv@8.20.0`'s default export cannot compile a draft 2020-12 schema; `ajv/dist/2020.js` can. |
-| SL-049 | `[]a]` is a two-member character class in RE2 and an empty class in JavaScript. FlightRules follows RE2, as PRD section 10.3 requires. |
+| SL-050 | `nextCursor` is empty exactly when a Query Builder page is **not full**, and a non-empty opaque token when it is — including when the limit happens to equal the total row count. That is the only truncation signal the pinned server offers. Offset paging under `order: timestamp asc` was verified to produce disjoint pages that concatenate exactly to the unpaged result. Note the asymmetry: a full page is *not* evidence that more rows exist. |
+| SL-051 | `signoz_get_field_keys` with no `searchText` returns the whole trace field catalogue in one response (40 keys, `complete: true`) with a `fieldDataType` per field — so the server itself can confirm the type a request should declare, which closes SL-046 by discovery rather than by a hand-maintained list. But it omits `timestamp`, omits every resource attribute, reports custom span attributes as `attribute` where `selectFields` needs `tag`, and reports two keys with an empty type. |
 
 ## Defects found and fixed
 
-All three were found by tests or a runtime probe, not by inspection.
+Both were found by a test, not by inspection.
 
-1. **A telemetry attribute key of `__proto__` replaced a normalised record's prototype** (Phase 06
-   code). An array value invoked the inherited setter, after which `evidence.length` returned `2` and
-   `evidence[0]` returned a value no span emitted. `Object.prototype` was untouched, so nothing
-   global broke, but any consumer reading without `Object.hasOwn` saw phantom data. Reproduced at
-   runtime before changing anything, then fixed with `Object.create(null)`; the attribute is now kept
-   as ordinary data. Every Phase 06 test still passes unmodified — this was a latent hardening gap
-   that Phase 07 newly depends on, not a Phase 06 gate failure.
-2. **`canonicalContract` depended on its caller having sorted the input.** True for a parsed
-   contract, but Phase 08's proposal generator and Phase 09's database rows are producers that do not
-   go through the YAML validator, and either would have hashed one policy two ways — which reads as a
-   policy change and forces a spurious re-approval. Canonicalisation now sorts its own input.
-3. **Ancestry undecidability was scoped too broadly**, conflating a chain truncated by unexported
-   spans with one that legitimately ends at a second parentless root. A detached side effect could
-   have escaped the rule by being detached.
+1. **The proposal generator prefixed a route fingerprint with `sha256:` twice**, so the generated
+   document carried `sha256:sha256:<hex>` and the validator rejected it with `INVALID_FORMAT`. The fix
+   is not just removing one prefix: a proposed rule now holds the **validated** bare form the evaluator
+   compares against, and the prefix is added once by the document renderer for a human reader.
+2. **A rule identifier was derived from the raw canonical label while its selector was derived from the
+   sanitised one.** For an ordinary label the two agree; for one carrying a control character they do
+   not, and two labels that sanitise to one selector value would have produced two rules governing the
+   same spans. Both now derive from one sanitised name, resolved once per mining run. Where two labels
+   collide, **neither** gets a rule and both are disclosed as `LABEL_NOT_EXPRESSIBLE` — a selector can
+   only say `name: X`, so a rule for either would also govern the other.
+
+## Judgement calls to preserve
+
+These are decisions with reasons, recorded so a later phase does not undo them by accident. ADR-0007
+holds the full set.
+
+1. **A cardinality bound is the p95 of the observed per-run counts when the maximum exceeds it.** PRD
+   FR-008's "maximum observed cardinality" read literally would encode an accidental duplicate refund as
+   permitted policy — the exact fault the product exists to catch. The outlier is disclosed and flagged
+   for human confirmation instead.
+2. **A step is proposed as required only when every observable approved run performed it.** A step
+   present in some runs and provably absent in others is bounded and disclosed as optional. A proposal
+   must never contain a rule its own baseline violates.
+3. **A remote handler is required through the edge from its caller, not by its own presence.** Phase
+   04's aborted payment attempt is the case: the client span exists and the handler span was never
+   exported, so `required_span` on the handler would report a skipped step for a telemetry gap.
+4. **An absence inside an unobservable subtree is not an absence.** The scoping is per subtree at label
+   granularity, matching ADR-0006 decision 8. A run that lost one handler span still proves the absence
+   of a step that would have run elsewhere in it.
+5. **A retried side effect's allowance is never widened by a margin.**
+6. **Absent telemetry is never a bound of zero.** The demo emits no token telemetry, so both token
+   budgets come back `ATTRIBUTE_NOT_EMITTED` and are disclosed rather than proposed.
+7. **A truncated dataset cannot found a baseline**, even when it holds enough runs, because the runs it
+   omitted are exactly the ones nobody looked at.
+8. **Deduplication is by run identifier**, never by order, customer or fingerprint.
+9. **`forbidden_span` and `forbidden_path` are never proposed.** Neither can be derived from
+   observation; naming a domain the agent never touched would be an invention.
 
 ## Unresolved limitations
 
-1. **The Phase 04 aborted server span is still unresolved, by design.** In the v2 trace the first
-   payment attempt's handler span is never exported. Phase 07 gives it a correct **evaluation
-   outcome** — `insufficient_evidence` with reason `unobservable_subtree` — rather than fixing the
-   cause. The duplicate-refund finding, whose evidence lives in the two exported client spans, still
-   fails the release. Carried forward as a Phase 16 investigation item.
-2. **Sibling temporal ordering is not expressible in P0.** In the real traces every step is a child
-   of `refund.request`, so `fraud.check` is a *sibling* of `payment.refund`, not an ancestor. The demo
-   emits no `explicit_predecessor` edges, and PRD section 11.3 forbids `inferred_time_order` from
-   satisfying a critical causal rule — SL-044 leaves timestamps at millisecond resolution, exactly
-   the scale where it would matter. `required_ancestry` is implemented in full and exercised on the
-   real parent-child pairs the traces do contain. The exit gate does not need ordering.
-3. **Release-scoped rules are `deferred`, not evaluated.** PRD section 11.11 assigns them to the
-   aggregation after run results are stored, which is Phase 11. Each still contributes its measured
-   metric sample, so Phase 11 aggregates rather than re-reading every trace.
-4. **`approved_routes` needs the approved families' canonical graphs to report similarity.** Without
-   them it still decides exact identity and violates correctly, and says similarity was unmeasurable
-   rather than implying a number. Phase 08 supplies the graphs.
-5. **Nothing from Phase 07 is persisted.** The evaluator is deliberately storage-independent.
-6. **The capability snapshot is exposed but not persisted** (Phase 05 limitation, unchanged; needs
-   the Phase 09 database layer).
-7. **`signoz_update_*` wrappers are not implemented**, and dashboard/alert read-back verification is
+1. **A proposal is deliberately broader than a hand-written contract** — 28 rules and 9 zero-tolerance
+   identifiers against the demo, where the Phase 07 contract has 15 and 4. Every rule is evidence-backed
+   and a reviewer is expected to prune. `order.lookup` becoming a critical prerequisite is the clearest
+   case: every approved run did look the order up before refunding, so the evidence is real, and whether
+   skipping it should fail a release is a judgement the miner does not make.
+2. **The generated contract's similarity figure differs from Phase 07's.** The canary scores 0.619047
+   against the generated contract and 0.572815 against the hand-written one, because PRD section 11.9
+   weights critical nodes and the two contracts mark different labels critical. Both are correct for
+   their own contract; do not "fix" either number.
+3. **Nothing from Phase 08 is persisted, and no HTTP API is exposed.** PRD sections 14.7, 14.8 and 15.5
+   are Phase 09. `selectionHash` and the derived baseline and family identifiers exist so a repeated job
+   is recognisable when persistence arrives.
+4. **The Phase 04 aborted server span is still unresolved, by design.** Phase 07 gives it a correct
+   evaluation outcome and Phase 08 gives it a correct mining outcome; the cause is a Phase 16
+   investigation item.
+5. **Sibling temporal ordering is still not expressible in P0** (Phase 07 limitation, unchanged), so no
+   proposal contains a "fraud before refund" rule — only "fraud present" and "refund descends from the
+   workflow root".
+6. **Release-scoped budgets remain `deferred`** at run scope until the Phase 11 aggregation.
+7. **A dataset larger than 5,000 traces is refused rather than sampled**, because sampling would make
+   every support ratio describe a subset the caller did not choose.
+8. **Metrics and logs are declared but not emitted** (Phase 04 limitation, unchanged). Acceptance scope
+   item 6 stays `IN PROGRESS`; emitting them is Phase 09 work.
+9. **`signoz_update_*` wrappers are not implemented**, and dashboard and alert read-back verification is
    untested. Both are Phase 10 scope by PRD assignment.
-8. **Span links and explicit predecessors are modelled but never populated** — the demo emits
-   neither.
-9. **Metrics and logs are declared but not emitted** (Phase 04 limitation, unchanged). Acceptance
-   scope item 6 stays `IN PROGRESS`. The evaluator now exists, so the instruments have something to
-   count; emitting them is Phase 09 work.
-10. **Node timestamps are millisecond-accurate** (SL-044). Excluded from the fingerprint, so
-    determinism is unaffected, but Phase 08 latency percentiles inherit the resolution.
+10. **Span links and explicit predecessors are modelled but never populated** — the demo emits neither.
+11. **The capability snapshot is exposed but not persisted** (Phase 05 limitation; needs Phase 09).
+12. **Node timestamps are millisecond-accurate** (SL-044), so the mined latency percentiles inherit that
+    resolution.
 
 ---
 
-## Next phase: 08 — Baseline mining and contract proposal
+## Next phase: 09 — Application core, API, jobs, and persistence
 
-PRD section: line 3128. Read it in full, together with section 11.8 (baseline route families,
-line 1596), 11.9 (similarity, line 1617), FR-007 and FR-008.
+PRD section: line 3164. Read it in full, together with section 14 (the data model, lines 1941–2198),
+section 15 (the API surface, lines 2199–2324), section 19 (the error model), FR-001, FR-002, FR-018,
+FR-019 and FR-020.
 
 ### Entry criteria — all SATISFIED
 
 | Criterion | Evidence |
 |---|---|
-| Phase 07 merged and green | `12e133b`; `make verify` exit 0 |
-| Deterministic canonical graphs and stable fingerprints | `packages/trace-graph`, proven live in Phases 06 and 07 |
-| A validated contract format exists | `packages/contract-schema`; 19 documents validate |
-| The evaluator can consume a proposed contract | `packages/contract-engine`; exit gate proven live |
-| Route fingerprints group exactly | PRD section 11.8 P0 grouping is exact by fingerprint |
-| Real fixtures available for both releases | `packages/test-fixtures/traces/` |
-| MCP client can fetch traces in bounded batches | `packages/signoz-mcp`, `SigNozOperations` |
+| Phase 08 merged and green | `494fd8a`; `make verify` exit 0 on `main` |
+| A deterministic miner produces the baseline rows | `packages/baseline-miner`, proven live on 34 runs |
+| A validated contract format and a deterministic evaluator exist | `packages/contract-schema`, `packages/contract-engine` |
+| Every lifecycle value Phase 09 must store already exists as a typed value | `BaselineVersion`, `RouteFamily`, `ContractProposal`, `RunEvaluation`, `Violation` |
+| A migration system with an applied history exists | `packages/db`, migrations `0001` and `0002` |
+| Typed error codes cover the lifecycle | `packages/domain/src/errors.ts` — 23 codes including `BASELINE_INSUFFICIENT_RUNS` and `JOB_ALREADY_RUNNING` |
+| An idempotency key for a long-running job exists | `selectionHash` on every mined baseline |
+| Telemetry instruments exist for the API and the worker | `packages/telemetry` |
 
 ### Scope
 
-Branch `phase/08-baseline-mining`. Create `packages/baseline-miner`. PRD Phase 08 lists twelve
-tasks: trace selection, bounded batch fetching, excluding incomplete traces **with reasons**, exact
-fingerprint grouping, route statistics, representative trace selection, marking rare families,
-approve and exclude actions, rule proposal from approved families, an evidence basis attached to
-every proposal, draft YAML generation, and preserving the baseline version and normaliser hash.
+Branch `phase/09-application-core`. PRD section 13 names `apps/api`, `apps/worker` and `apps/cli`;
+Phase 09 owns the first two and the persistence layer, while `apps/cli` is Phase 11.
 
-The exit gate: a user can turn a set of v1 traces into an approved contract without hand-writing the
-initial policy. **No rule may be activated automatically** — PRD Phase 08's test list says so
-explicitly, and PRD FR-018 puts activation behind human approval.
+PRD Phase 09 lists twelve tasks: all P0 database tables and migrations, projects and agents, the SigNoz
+connection setup, jobs with idempotency, baselines and route decisions, the contract lifecycle,
+evaluations and violations, audit events, progress events, the typed error envelope, API documentation
+generated from source, and request identifiers with tracing.
+
+The exit gate: **all product state survives process restarts and can be driven without the UI.**
 
 ### Facts that will matter
 
-- The generated contract must pass `packages/contract-schema` validation, so the proposer should
-  build a `TrajectoryContract` and serialise it rather than emitting YAML text directly. Note that
-  `canonicalContract` now sorts its own input, so a proposer does not need to.
-- `packages/contract-engine` exports `ApprovedRoute` (`{fingerprint, canonical}`), which is the shape
-  the miner should produce for `approved_routes` rules and for similarity reporting.
-- `isBaselineEligible(graph)` in `@flightrules/trace-graph` already encodes "only a `complete` trace
-  may contribute to a baseline" (PRD section 16.6, FR-007).
-- **Declare `dataType` for every non-string tag** in any new `selectFields` (SL-046). A boolean or
-  numeric tag requested without it returns `null` on a successful call.
-- `packages/test-fixtures/src/spans.ts` builds span rows for topologies the demo does not emit;
-  `approvedRefundRows({remove, add, replace})` is the quickest way to make a route variant.
-- The demo agent runs at `http://localhost:4100`; `make demo-v1` and `make demo-v2` produce fresh
-  traces. Integration tests need a run within the last six hours.
-- Source `.env` before any integration test or script: `set -a && . ./.env && set +a`.
-- New packages must be added to `tsconfig.build.json` references.
+- **Do not edit migrations `0001` or `0002`.** `0002` fixes same-millisecond UUIDv7 ordering using
+  RFC 9562 Method 3; go through the established generation path rather than around it.
+- The sixteen tables of PRD section 14 are the P0 set. `baseline_versions` and `route_families` map
+  directly onto `BaselineVersion` and `RouteFamily`; `contracts` and `contract_rules` map onto
+  `ContractProposal` and `ProposedRule` including `evidence_basis_json`.
+- `mineBaseline` takes a `TraceSource`, so the worker supplies `signozTraceSource(operations, context)`
+  and a test supplies a fixture source. No new abstraction is needed for the job runner.
+- `MINING_STAGES` is already PRD section 8.7's five progress states, and `mineBaseline` reports them
+  through `onProgress` — that is what PRD Phase 09 task 9's progress events should carry.
+- `selectionHash` is the idempotency key for a baseline job (PRD sections 18.2 and 20.1). A repeated
+  request with an identical selection produces the same `baselineIdentifier`.
+- PRD FR-018's lifecycle is `draft -> approved -> active -> superseded`. Phase 08 produces `draft` and
+  nothing else; activating a version must supersede the prior active version for the same agent and
+  environment while preserving every historical evaluation.
+- `canonicalContract` sorts its own input, so a contract arriving from a database row hashes the same as
+  one arriving from YAML.
+- The evaluator is storage-independent by design; persist its output, do not change it.
+- Every MCP write needs a read-back (operating contract rule 13). That bites in Phase 10, not here.
+- Declare `dataType` for every non-string tag in any new `selectFields` (SL-046), and confirm it against
+  the catalogue (SL-051). `verifyFieldTypes` already does both.
+- New packages and apps must be added to `tsconfig.build.json` references.
 - Biome forbids `console.*` except `error` and `warn`; scripts use `process.stdout.write`.
-- Run `make contract-validate` after touching any contract document; it is part of `make verify`.
-- The known-good route is: `refund.request` → `policy.retrieve`, `order.lookup`, `fraud.check`,
-  `refund.calculate`, `payment.refund`, `customer.notify`. Five of the six have a `.handler` server
-  span; `refund.calculate` does not. The unsafe route drops policy and fraud and emits
-  `payment.refund` twice at retry 0 and 1.
+- Biome rejects `(maybe?.x as T).y`; assert the value is present first.
+- A raw control character in a source file makes `grep` treat the whole file as binary and
+  suppress every match. Write such characters as JavaScript escapes (`\u0001`, `\u202e`) in
+  tests, as `packages/baseline-miner/src/safety.test.ts` does.
+- Run `make contract-validate` after touching any contract document; it now covers 20 documents,
+  including the one the miner generated under `docs/evidence/phase-08/`.
+- Source `.env` before any integration test or script: `set -a && . ./.env && set +a`.
+- Integration tests need a demo run within the last six hours. `DEMO_RUNS=25 make demo-v1` seeds a
+  batch through the agent's `/agent/seed` endpoint.
 - The v1 route fingerprint is
   `43070aa4af4f6c2c912a8d7bcc724f1d199e0425dc8ad7256b528eec195cb037`; v2 is
-  `22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466`. Their weighted Jaccard
-  similarity under the demo contract's critical-node weighting is 0.572815.
+  `22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466`.
