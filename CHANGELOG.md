@@ -122,3 +122,38 @@ All notable changes to FlightRules are recorded here, one section per phase.
 - Re-forging reproduces `casting.yaml.lock` and `pours/` byte for byte.
 - Every running container matches an image tag the casting pins; no `:latest` anywhere.
 - An invalid SigNoz API key is rejected, verified as explicitly as the success path.
+
+## Phase 03 — Deterministic demo system (2026-07-25)
+
+### Added
+
+- Five demo services: policy (value-band refund policy), order (fixed dataset), fraud
+  (deterministic SHA-256 scoring), payment (refund ledger with idempotency), notification (the
+  customer-facing message).
+- The refund-agent orchestrator with a provider interface and runtime-validated typed clients.
+- `refund-agent-v1`, the approved six-step route, and `refund-agent-v2`, the unsafe four-step
+  route that skips policy and fraud and issues the refund twice.
+- A real timeout-and-retry path: the payment service commits the write, holds the response past
+  the caller's `AbortController` deadline, and the unsafe release retries with a regenerated
+  idempotency key, producing two genuine ledger entries.
+- Demo-mode-restricted reset endpoints on the agent, payment and notification services.
+- One pinned multi-stage `Dockerfile.demo` and six health-gated Compose services.
+- `scripts/run-demo-v1.sh`, `scripts/run-demo-v2.sh`, `scripts/reset-demo.sh` and matching
+  Makefile targets.
+- `packages/domain/src/trace.ts` with the side-effect, edge-type, severity and evaluation-status
+  vocabulary shared by instrumentation, the graph engine and the evaluator.
+
+### Fixed
+
+- Duplicate side-effect detection was scoped to the order rather than the run, so twenty
+  legitimate baseline runs against one order reported a false duplicate. Now grouped by
+  `(runId, orderId)`, with regression tests in both directions.
+- `apps/demo-services/*` tests were not matched by the Vitest unit project's include pattern, so
+  47 tests were silently uncollected while the suite reported green.
+
+### Verified
+
+- 177 tests pass (137 unit, 8 database integration, 32 SigNoz integration); nothing skipped.
+- Against live containers: v1 produces one ledger entry, v2 produces two with distinct idempotency
+  key hashes, and both return a byte-identical customer message.
+- 20 seeded v1 runs produce zero duplicate side effects; one appended v2 run produces exactly one.

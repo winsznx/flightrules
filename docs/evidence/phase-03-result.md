@@ -191,7 +191,7 @@ response body.
 PHASE: 03 Deterministic demo system
 STATUS: PASS
 BRANCH: phase/03-demo-system
-COMMITS: <filled at commit>
+COMMITS: 9a37a881d6b1b913ceb9051f373e052d27ef3969 (phase), fa172fe0e5f7327494f4d78d5245a96c5f883008 (merge to main)
 SOURCES VERIFIED: no new external technical claims; the phase uses only Fastify 5.10.0 and Zod 4.4.3, both already pinned and recorded in SL-034
 IMPLEMENTED: five demo services (policy, order, fraud, payment with an idempotency ledger, notification); the refund-agent orchestrator with a provider interface and runtime-validated typed clients; refund-agent-v1 approved route and refund-agent-v2 unsafe route returning a materially identical customer answer; a real timeout-and-retry path producing a genuine duplicate ledger write; demo-mode-restricted reset endpoints; run and request identifiers; a shared pinned Dockerfile and six health-gated Compose services; run-demo-v1, run-demo-v2 and reset-demo scripts; the domain trace vocabulary
 TESTS RUN: pnpm run typecheck; make test; make test-integration; make verify; docker compose up -d --build --wait; scripts/run-demo-v1.sh; scripts/run-demo-v2.sh; DEMO_RUNS=20 scripts/run-demo-v1.sh; scripts/reset-demo.sh

@@ -6,7 +6,7 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 02, 2026-07-25.
+Last updated: Phase 03, 2026-07-25.
 
 ## Critical final assertions (PRD section 23)
 
@@ -14,9 +14,9 @@ Last updated: Phase 02, 2026-07-25.
 |---|---|---|---|---|---|
 | A1 | Foundry reproduces SigNoz and MCP from casting files | `casting.yaml`, `casting.yaml.lock`, `pours/` | `scripts/verify-reproducibility.sh`, `packages/test-fixtures/src/deployment.test.ts` | `docs/evidence/phase-02-result.md` | DONE |
 | A2 | v1 and v2 emit real distributed telemetry | `apps/demo-agent`, `apps/demo-services/*`, `packages/telemetry` | telemetry integration tests | `docs/evidence/phase-04-result.md` | PENDING |
-| A3 | v1 and v2 return materially the same customer answer | `apps/demo-agent` | demo equivalence test | `docs/evidence/phase-03-result.md` | PENDING |
-| A4 | v1 includes policy and fraud checks | `apps/demo-agent` | route assertion test | `docs/evidence/phase-03-result.md` | PENDING |
-| A5 | v2 omits those checks and duplicates payment | `apps/demo-agent`, `apps/demo-services/payment-service` | unsafe-route test, ledger test | `docs/evidence/phase-03-result.md` | PENDING |
+| A3 | v1 and v2 return materially the same customer answer | `apps/demo-agent` | `apps/demo-agent/src/orchestrator.test.ts` | `docs/evidence/phase-03-result.md` | DONE |
+| A4 | v1 includes policy and fraud checks | `apps/demo-agent` | `apps/demo-agent/src/orchestrator.test.ts` | `docs/evidence/phase-03-result.md` | DONE |
+| A5 | v2 omits those checks and duplicates payment | `apps/demo-agent`, `apps/demo-services/payment-service` | `apps/demo-agent/src/orchestrator.test.ts`, `apps/demo-services/payment-service/src/ledger.test.ts` | `docs/evidence/phase-03-result.md` | DONE |
 | A6 | FlightRules reconstructs both trace graphs from SigNoz | `packages/signoz-mcp`, `packages/trace-graph` | graph reconstruction tests | `docs/evidence/phase-06-result.md` | PENDING |
 | A7 | The active contract passes v1 | `packages/contract-engine` | v1 fixture evaluation test | `docs/evidence/phase-07-result.md` | PENDING |
 | A8 | The active contract fails v2 | `packages/contract-engine` | v2 fixture evaluation test | `docs/evidence/phase-07-result.md` | PENDING |
