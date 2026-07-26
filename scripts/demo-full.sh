@@ -29,6 +29,39 @@ EVIDENCE_DIR="${EVIDENCE_DIR:-docs/evidence/phase-11}"
 
 banner() { printf '\n\033[1m== %s\033[0m\n' "$1"; }
 
+# Evaluation, retried while SigNoz has not yet made the run queryable.
+#
+# The demo emits telemetry seconds before it evaluates it, and SigNoz does not make a span queryable
+# the instant it is accepted: the collector batches and ClickHouse commits its parts asynchronously.
+# On a freshly cast deployment the gap is seconds to a minute, and an evaluation that lands inside it
+# reports `insufficient_data` with zero runs — exit 3 — which a fresh-machine reproduction hit on the
+# canary. Retrying is honest here: the same real evaluation runs again over the same real window and
+# still has to find real runs. It is not a retry on *failure* generally — a violated contract exits 2
+# and is returned immediately.
+EVAL_ATTEMPTS="${EVAL_ATTEMPTS:-8}"
+EVAL_RETRY_SECONDS="${EVAL_RETRY_SECONDS:-15}"
+
+evaluate_release() {
+  local release="$1" lookback="$2" attempt code
+  for attempt in $(seq 1 "${EVAL_ATTEMPTS}"); do
+    set +e
+    ${CLI} release evaluate \
+      --project "${PROJECT}" --agent "${AGENT}" --release "${release}" \
+      --lookback "${lookback}" --timeout 300
+    code=$?
+    set -e
+    # 3 is insufficient data, which at this point in the demo means "not queryable yet".
+    if [ "${code}" -ne 3 ]; then return "${code}"; fi
+    if [ "${attempt}" -eq "${EVAL_ATTEMPTS}" ]; then
+      printf '\n%s still has no completed runs after %s attempts.\n' \
+        "${release}" "${EVAL_ATTEMPTS}" >&2
+      return 3
+    fi
+    printf '   no completed run yet; waiting %ss for SigNoz to catch up\n' "${EVAL_RETRY_SECONDS}"
+    sleep "${EVAL_RETRY_SECONDS}"
+  done
+}
+
 banner "1/8  known-good telemetry: ${DEMO_RUNS_V1:-25} runs of ${BASELINE_RELEASE}"
 DEMO_RUNS="${DEMO_RUNS_V1:-25}" bash scripts/run-demo-v1.sh
 
@@ -36,9 +69,7 @@ banner "2/8  seed the project, mine the baseline, activate the contract, sync Si
 bash scripts/seed-demo.sh
 
 banner "3/8  evaluate the approved release"
-${CLI} release evaluate \
-  --project "${PROJECT}" --agent "${AGENT}" --release "${BASELINE_RELEASE}" \
-  --lookback 360 --timeout 300
+evaluate_release "${BASELINE_RELEASE}" 360
 
 banner "4/8  release gate on the approved release — expecting exit 0"
 set +e
@@ -51,9 +82,7 @@ banner "5/8  unsafe canary telemetry: ${DEMO_RUNS_V2:-8} runs of ${CANARY_RELEAS
 DEMO_RUNS="${DEMO_RUNS_V2:-8}" bash scripts/run-demo-v2.sh
 
 banner "6/8  evaluate the canary"
-${CLI} release evaluate \
-  --project "${PROJECT}" --agent "${AGENT}" --release "${CANARY_RELEASE}" \
-  --lookback 60 --timeout 300
+evaluate_release "${CANARY_RELEASE}" 60
 
 banner "7/8  release gate on the canary — expecting exit 2"
 set +e
