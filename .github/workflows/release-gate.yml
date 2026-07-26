@@ -110,8 +110,16 @@ jobs:
       - name: Apply migrations
         run: pnpm --filter @flightrules/db run migrate
 
+      # The six demo services by name, deliberately. `compose.app.yaml` also declares the
+      # application's own PostgreSQL on host port 5433, which this job already provides as a service
+      # container on the same port — starting the whole file fails with
+      # `Bind for 0.0.0.0:5433 failed: port is already allocated`, and the demo topology never
+      # starts. Locally there is no service container and `make demo-up` starts everything.
       - name: Start the demo topology
-        run: docker compose -f compose.app.yaml up -d --build --wait
+        run: |
+          docker compose -f compose.app.yaml up -d --build --wait \
+            policy-service order-service fraud-service payment-service notification-service \
+            demo-agent
 
       - name: Start the API and the worker
         run: |
