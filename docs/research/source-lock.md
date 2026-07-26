@@ -762,3 +762,53 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
   narrowed to the agent — because the honest presentation of a metric the product cannot yet scope
   is the number plus the scope, not the number alone. Populating those dimensions on the emitted
   metric is Phase 16 work.
+
+## SL-063 — SL-062's third finding was a FlightRules defect, not a SigNoz behaviour
+
+- Source: SigNoz v0.134.0 with MCP Server v0.9.0, called live through
+  `@modelcontextprotocol/sdk@1.29.0` (tier 1), plus the FlightRules source that emits the metric
+- Supersedes: **SL-062 part 3 only.** Parts 1 and 2 — the time-series response shape, and labels as
+  an array of `{key: {name}, value}` rather than a map — were verified correctly and still hold.
+- Verified claim: `flight_rules.project.id` and `flight_rules.agent.id` came back with empty label
+  values because **nothing had ever emitted them**. `packages/telemetry/src/instruments.ts` set
+  `project.slug`, `agent.key` and `release.key`; `apps/api/src/routes/violation-evidence.ts` grouped
+  by the `flight_rules.*` names. SigNoz answered exactly as asked — with the requested labels,
+  unset. Grouping by a label nothing sets is not an error in SigNoz, which is why a single query
+  could not distinguish "the backend drops these" from "we never sent these".
+- Runtime confirmation: **Yes.** After the instruments were changed to emit both the identifier and
+  the key, `signoz_query_metrics` grouped by the two dimensions returns two series — the legacy one
+  with empty labels and a new one carrying
+  `flight_rules.project.id="019f9ccf-7c3a-71bf-8bbd-f043cdf50a0c"` and
+  `flight_rules.agent.id="019f9ccf-7c3c-72b9-a688-db40a061ac70"` — and a `filter` on
+  `flight_rules.agent.id` narrows the answer from two series to one. SL-062 predicted a filter would
+  match nothing; it matches exactly the agent's series.
+- Implementation consequence: the identity dimensions are declared once in
+  `packages/telemetry/src/metrics.ts` and spread into every instrument;
+  `QUERYABLE_IDENTITY_DIMENSIONS` is exported and imported by the API route so the emitting and
+  querying lists are one list; and `metricDimensionDisagreement()` fails a build in which an
+  instrument stops carrying a dimension a caller may narrow by. `make verify-telemetry` re-proves
+  all of it against the running deployment.
+- Lesson worth keeping: a backend that answers a query about a field it has never seen, without
+  erroring, cannot be diagnosed from the query alone. The cross-reference has to be between the two
+  halves of one's own product.
+
+## SL-064 — `pnpm audit` cannot complete against the current npm registry
+
+- Source: `pnpm@10.33.0` against `registry.npmjs.org`, run directly (tier 1)
+- Verified claim: `pnpm audit --audit-level high` fails on every invocation with
+  `Unexpected token '\x1f', "…" is not valid JSON`, thrown from `Response.json()` inside pnpm's own
+  bundle. pnpm requests the advisory endpoint with `accept-encoding: gzip`; Cloudflare returns the
+  body gzip-encoded **without** a `content-encoding` header, so nothing decompresses it. The first
+  two bytes of the body are `1f 8b`. Three consecutive runs, all exit 1.
+- Runtime confirmation: **Yes.** Reproduced three times, and the raw response inspected byte by byte
+  through `fetch` + `arrayBuffer`. The same endpoint returns plain JSON on some requests and gzip on
+  others, which is why the failure looked intermittent from outside and is total in practice.
+- Implementation consequence: `scripts/audit-dependencies.mjs` queries the same documented endpoint
+  — `POST https://registry.npmjs.org/-/npm/v1/security/advisories/bulk` — sniffs the gzip magic
+  number and decompresses when present, and matches advisory ranges against installed versions with
+  `semver`, because the endpoint returns every advisory matching *any* submitted version of a
+  package without saying which one it covers. Submitting `minimist@0.0.8` and `minimist@1.2.8`
+  together returns the `<0.2.4` advisory, which applies only to the first.
+- Impact: the `security` job of `.github/workflows/ci.yml` called the failing command, so the gate
+  had never run and the first real GitHub Actions run would have failed. Running it for the first
+  time immediately surfaced two high advisories against `postcss@8.4.31`.
