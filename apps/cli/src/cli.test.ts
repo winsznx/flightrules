@@ -935,6 +935,194 @@ describe("output never leaks a secret", () => {
 });
 
 /* -------------------------------------------------------------------------- */
+/* Hostile input                                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Hostile telemetry reaching the terminal (PRD Phase 16 task 12).
+ *
+ * Every string in the human report originates somewhere FlightRules does not control: a span name, a
+ * service name, a tool name and a rule summary all come from the traced system, and a release key
+ * comes from whatever deploys it. A terminal reads an escape sequence in any of them as an
+ * instruction, so a hostile trace could make a failing gate print a passing verdict into a CI log
+ * that faithfully records the sequence rather than the deception.
+ */
+describe("hostile telemetry cannot drive the reader's terminal", () => {
+  const ESC = String.fromCharCode(0x1b);
+  const CSI = String.fromCharCode(0x9b);
+  const BEL = String.fromCharCode(0x07);
+
+  const HOSTILE_SUMMARY =
+    `${ESC}[2J${ESC}[1;1HPASS: This release stayed within the approved trajectory contract.` +
+    `${CSI}[31m${BEL}`;
+
+  const hostileGate = () =>
+    gate({
+      decision: "fail",
+      findings: [
+        {
+          code: "MISSING_PREREQUISITE",
+          implies: "skipped_check",
+          severity: "critical",
+          summary: HOSTILE_SUMMARY,
+          expected: `${ESC}]0;window title${BEL}`,
+          observed: `fraud.check${ESC}[8m`,
+          ruleId: "require-fraud-check",
+        },
+      ],
+    });
+
+  const ARGS = [
+    "gate",
+    "check",
+    "--project",
+    "demo-commerce",
+    "--agent",
+    "refund-agent",
+    "--release",
+    "refund-agent-v2",
+  ];
+
+  it("prints no escape, no control-sequence introducer and no bell", async () => {
+    // #given a gate decision whose finding carries terminal control sequences
+    const io = capture({
+      ...LOOKUP_ROUTES,
+      [`/api/releases/${RELEASE.id}/gate`]: hostileGate(),
+    });
+
+    // #when the human report is rendered
+    const code = await run(ARGS, io.io);
+
+    // #then the verdict is still the real one, and nothing executable reached the terminal
+    expect(code).toBe(2);
+    const printed = stdout(io) + stderr(io);
+    expect(printed).toContain("FAIL: This release exceeded one or more trajectory thresholds.");
+    expect(printed).not.toContain(ESC);
+    expect(printed).not.toContain(CSI);
+    expect(printed).not.toContain(BEL);
+  });
+
+  it("keeps the text of a hostile summary readable rather than deleting it", async () => {
+    const io = capture({
+      ...LOOKUP_ROUTES,
+      [`/api/releases/${RELEASE.id}/gate`]: hostileGate(),
+    });
+    await run(ARGS, io.io);
+
+    // The words survive; only the instructions are replaced, so a reader can see what was attempted.
+    expect(stdout(io)).toContain("MISSING_PREREQUISITE");
+    expect(stdout(io)).toContain("[2J");
+    expect(stdout(io)).toContain("\uFFFD");
+  });
+
+  it("keeps tabs and newlines, which the report is built from", async () => {
+    const io = capture({
+      ...LOOKUP_ROUTES,
+      [`/api/releases/${RELEASE.id}/gate`]: gate(),
+    });
+    await run(ARGS, io.io);
+
+    expect(stdout(io).split("\n").length).toBeGreaterThan(10);
+  });
+
+  it("emits no control character in --json mode either", async () => {
+    const io = capture({
+      ...LOOKUP_ROUTES,
+      [`/api/releases/${RELEASE.id}/gate`]: hostileGate(),
+    });
+
+    await run([...ARGS, "--json"], io.io);
+    const printed = stdout(io);
+
+    expect(printed).not.toContain(ESC);
+    expect(printed).not.toContain(CSI);
+    // The document still parses, and the escape survives as an escaped code point rather than as a
+    // control character.
+    const parsed = JSON.parse(printed) as { result: { findings: { summary: string }[] } };
+    expect(parsed.result.findings[0]?.summary).toContain("[2J");
+  });
+
+  it("does not let a hostile release key reach the terminal as an instruction", async () => {
+    const io = capture({
+      ...LOOKUP_ROUTES,
+      [`/api/releases/${RELEASE.id}/gate`]: gate({
+        releaseKey: `refund-agent-v2${ESC}[2K`,
+      }),
+    });
+
+    await run(ARGS, io.io);
+    expect(stdout(io)).not.toContain(ESC);
+  });
+});
+
+/**
+ * The evidence bundle's output path (PRD Phase 16 task 12).
+ *
+ * `--out` is the operator's own choice and is honoured verbatim: a CLI that rewrote the path its
+ * caller asked for would be the surprising one. What must never happen is a path derived from data
+ * the traced system supplied, so these assert the property that actually matters — no value in the
+ * API response can influence where the file lands.
+ */
+describe("evidence export writes only where it was told to", () => {
+  const ARGS = [
+    "evidence",
+    "export",
+    "--project",
+    "demo-commerce",
+    "--agent",
+    "refund-agent",
+    "--release",
+    "refund-agent-v2",
+  ];
+
+  const TRAVERSING_GATE = gate({
+    decision: "fail",
+    exitCode: 2,
+    releaseKey: "../../../../etc/passwd",
+    contractKey: "../../.ssh/authorized_keys",
+  });
+
+  it("ignores a traversing release key and writes exactly the requested path", async () => {
+    // #given a gate whose release and contract keys are path traversals
+    const io = capture({
+      ...LOOKUP_ROUTES,
+      [`/api/releases/${RELEASE.id}/gate`]: TRAVERSING_GATE,
+    });
+
+    // #when the bundle is exported to an explicit path
+    const code = await run([...ARGS, "--out", "/tmp/evidence.json"], io.io);
+
+    // #then exactly one file was written, and it is the one that was asked for
+    expect(code).toBe(0);
+    expect([...io.written.keys()]).toEqual(["/tmp/evidence.json"]);
+  });
+
+  it("writes nothing at all when no output path was given", async () => {
+    const io = capture({
+      ...LOOKUP_ROUTES,
+      [`/api/releases/${RELEASE.id}/gate`]: TRAVERSING_GATE,
+    });
+
+    await run(ARGS, io.io);
+    expect([...io.written.keys()]).toEqual([]);
+  });
+
+  it("still records the hostile key inside the document, where it is data", async () => {
+    const io = capture({
+      ...LOOKUP_ROUTES,
+      [`/api/releases/${RELEASE.id}/gate`]: TRAVERSING_GATE,
+    });
+
+    await run([...ARGS, "--out", "/tmp/evidence.json"], io.io);
+    const document = JSON.parse(io.written.get("/tmp/evidence.json") ?? "{}") as {
+      release: { key: string };
+    };
+
+    expect(document.release.key).toBe("../../../../etc/passwd");
+  });
+});
+
+/* -------------------------------------------------------------------------- */
 /* Help and version                                                           */
 /* -------------------------------------------------------------------------- */
 

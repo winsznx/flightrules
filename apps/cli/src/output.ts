@@ -49,6 +49,59 @@ export const JsonEnvelope = z.object({
 
 export type JsonEnvelopeValue = z.infer<typeof JsonEnvelope>;
 
+/** U+FFFD, so a stripped code point is visible as damage rather than silently deleted. */
+const REPLACEMENT = "\uFFFD";
+
+/**
+ * Whether a terminal would read this code point as an instruction rather than as text.
+ *
+ * C0 except tab and newline, DEL, and the C1 range — the last because a terminal in an eight-bit
+ * mode reads `0x9b` as a control-sequence introducer on its own, so filtering only `ESC` would leave
+ * half of the attack in place. Decided by code point rather than by a regular expression, so no
+ * control character has to appear in this source file in order to describe itself.
+ */
+function isTerminalControl(code: number): boolean {
+  if (code === 0x09 || code === 0x0a) return false;
+  return code < 0x20 || (code >= 0x7f && code <= 0x9f);
+}
+
+/**
+ * Renders text safely for a terminal.
+ *
+ * Span names, service names, tool names, rule summaries and release keys all originate in telemetry
+ * or in an operator-supplied document, and every one of them reaches the human report. A span whose
+ * name carries `ESC [ 2 J` clears the reader's screen, and one carrying `ESC [ 1 A` overwrites the
+ * line above it — so a hostile trace could make a failing gate print a passing verdict, in a CI log
+ * that faithfully records the sequence rather than the deception. Nothing FlightRules prints needs a
+ * control character, so the report keeps tab and newline and nothing else.
+ *
+ * `--json` output does not depend on this: `JSON.stringify` already escapes every code point below
+ * `0x20`. It passes through the same filter anyway, because the guarantee belongs at the writer
+ * rather than at each call site that remembers to ask for it.
+ */
+export function printable(text: string): string {
+  let out = "";
+  for (const character of text) {
+    const code = character.codePointAt(0) ?? 0;
+    out += isTerminalControl(code) ? REPLACEMENT : character;
+  }
+  return out;
+}
+
+/**
+ * The same `Io` with both writers filtered.
+ *
+ * Applied once, at the entry point, so a command added later cannot reintroduce the hole by writing
+ * a rendered string directly.
+ */
+export function terminalSafe(io: Io): Io {
+  return {
+    ...io,
+    stdout: (text: string) => io.stdout(printable(text)),
+    stderr: (text: string) => io.stderr(printable(text)),
+  };
+}
+
 export function writeJson(
   io: Io,
   command: CommandName,
