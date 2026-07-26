@@ -169,7 +169,8 @@ a {
   margin-top: var(--spacing-22);
   list-style: none;
   padding: 0;
-  color: var(--fr-text-muted);
+  /* On Footer Ink, design.md's own Cool Ash already measures 6.06:1 — AA without adjustment. */
+  color: var(--fr-text-muted-on-dark);
   font-size: var(--text-nav);
 }
 
@@ -275,7 +276,13 @@ a {
 /* design.md "Featured Clay Card": 0px radius, generous padding, the only warm block on a page. */
 .fr-featured {
   background: var(--fr-surface-featured);
-  color: var(--fr-text-inverse);
+  /*
+   * Deep Ink, not white. Clay Ember is the one mid-luminance surface in the palette: white text on
+   * it measures 3.72:1 and the muted grey 1.31:1, both below AA, while Deep Ink measures 5.29:1.
+   * design.md names the surface and the palette; PRD section 20.3 decides which member of that
+   * palette may sit on it. Found by the axe sweep on the Release Diff page.
+   */
+  color: var(--fr-text);
   border-radius: var(--radius-heropanels);
   padding: var(--spacing-53) var(--spacing-59);
 }
@@ -496,6 +503,18 @@ a {
 
 .fr-dl dt {
   color: var(--fr-text-muted);
+}
+
+/*
+ * Declared after `.fr-dl dt` on purpose: the two selectors have equal specificity, so source order
+ * decides, and the featured card's rule has to be the later one.
+ */
+.fr-featured .fr-muted,
+.fr-featured .fr-eyebrow,
+.fr-featured .fr-dl dt,
+.fr-featured .fr-dl dd,
+.fr-featured .fr-stat {
+  color: var(--fr-text);
 }
 
 .fr-dl dd {

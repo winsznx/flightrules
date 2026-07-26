@@ -76,7 +76,18 @@ export default function LandingPage(): ReactNode {
 
         <Section title={LANDING.secondaryCta} testId="architecture">
           <figure style={{ margin: 0 }} id="architecture">
-            <pre className="fr-schematic" aria-describedby="architecture-caption">
+            {/*
+              At narrow widths the schematic scrolls horizontally, and a region that scrolls must
+              be reachable by keyboard or its right-hand half is unreachable without a pointer.
+              axe reports this as `scrollable-region-focusable`, serious.
+            */}
+            <pre
+              className="fr-schematic"
+              aria-describedby="architecture-caption"
+              tabIndex={0}
+              role="img"
+              aria-label="Architecture diagram: instrumented agent to SigNoz to FlightRules to the release gate"
+            >
               {SCHEMATIC}
             </pre>
             <figcaption
