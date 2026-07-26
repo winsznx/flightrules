@@ -161,3 +161,37 @@ describe("release-gate workflow", () => {
     expect(makefile).toContain("gate:");
   });
 });
+
+/**
+ * The demo topology's route to the collector.
+ *
+ * Docker Desktop resolves `host.docker.internal` on macOS whether or not a service declares the
+ * mapping, and Linux does not resolve it at all unless the service declares it. `demo-agent` was
+ * the one service in this file without the declaration, which was invisible for sixteen phases and
+ * fatal the first time the workflow ran on a Linux runner: the agent's exporter failed with
+ * ENOTFOUND, so the root `refund.request` span and every `agent.release.id` attribute the contract
+ * is keyed on were never ingested. The five services' server spans still arrived, as parentless
+ * roots with no release identifier, so SigNoz looked healthy and every query for a run came back
+ * empty.
+ *
+ * A service that points at `host.docker.internal` and does not map it cannot export on Linux. This
+ * asserts the invariant over the whole file rather than over the one service that broke it.
+ */
+describe("the demo topology can reach the collector on Linux", () => {
+  it("maps host.docker.internal in every service that points at it", async () => {
+    // #given each service block of the application compose file
+    const compose = await readRepoFile("compose.app.yaml");
+    const blocks = compose
+      .split(/\n {2}(?=[a-z][a-z0-9-]*:\n)/)
+      .filter((block) => block.includes("host.docker.internal"));
+
+    // #then every one of them declares the host-gateway mapping Linux needs
+    expect(blocks.length).toBeGreaterThan(0);
+    for (const block of blocks) {
+      const name = block.trimStart().split(":")[0] ?? "(unnamed)";
+      expect(block, `${name} points at host.docker.internal without mapping it`).toContain(
+        'host.docker.internal:host-gateway"',
+      );
+    }
+  });
+});

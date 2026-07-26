@@ -880,3 +880,29 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
   workaround was not — suppressing the type check suppressed the symptom on a developer machine and
   left the cause in place for the first runner that set `CI`.
 - Evidence: `docs/evidence/phase-17/actions.md`.
+
+## SL-068 — `host.docker.internal` exists on Docker Desktop whether or not a service maps it, and never on Linux unless it does
+
+- Access date: 2026-07-26
+- Source: Docker Engine 29.6.1 on `ubuntu-latest`, and Docker Desktop on macOS 27, both executed (tier 1)
+- Verified claim: `compose.app.yaml` declared
+  `extra_hosts: ["host.docker.internal:host-gateway"]` on five of its six demo services. On macOS
+  every container resolved the name regardless, because Docker Desktop injects it. On a Linux runner
+  only the five that declared it resolved: from `payment-service`,
+  `getent hosts host.docker.internal` returned `172.17.0.1` and an OTLP `POST /v1/traces` returned
+  **200**; from `demo-agent`, `getent` returned nothing and the identical POST failed with
+  **`TypeError: fetch failed ENOTFOUND`**.
+- Runtime confirmation: **Yes.** Both containers were probed in the same job, on the same network,
+  one line apart.
+- Why it was invisible: the agent is the only process that emits the root `refund.request` span and
+  the `agent.release.id` attribute every contract rule is keyed on. With its exporter dead, the five
+  services' server spans still arrived — as parentless roots carrying no release identifier. SigNoz
+  was healthy, ingestion returned 200, the demo returned a real trace identifier, and every query
+  for a run came back empty. Baseline mining reported `insufficient_runs` with `familyCount: 0`,
+  which reads as "the telemetry has not caught up yet" and is why the seed's retry loop exhausted
+  itself eight times without ever naming a cause.
+- Implementation consequence: `demo-agent` now declares the mapping like every other service.
+  `packages/test-fixtures/src/release-gate-workflow.test.ts` asserts the invariant over the whole
+  file — any service that points at `host.docker.internal` must map it — and was confirmed to fail
+  when the mapping is removed.
+- Evidence: `docs/evidence/phase-17/actions.md`.
