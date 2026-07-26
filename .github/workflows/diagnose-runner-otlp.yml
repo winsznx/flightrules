@@ -1,0 +1,130 @@
+name: Diagnose runner OTLP path
+
+# Temporary Phase 17 instrument. Manually dispatched, or pushed to a disposable `diagnose/**`
+# branch. Never runs on `main` or a phase branch, and is deleted once the question it asks is
+# answered. It changes nothing about the product.
+#
+# The question: the demo topology exports to `host.docker.internal:4318`, a Docker Desktop
+# convention that `compose.app.yaml` maps on Linux with `extra_hosts: host-gateway`. On a runner the
+# demo runs succeed, SigNoz is healthy, and no `refund-agent-v1` trace ever becomes queryable. This
+# asks, from inside a demo container, whether the collector is reachable at all and by what address.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["diagnose/**"]
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "24.14.1"
+  PNPM_VERSION: "10.33.0"
+  FOUNDRY_VERSION: "v0.2.16"
+
+jobs:
+  diagnose:
+    name: Can a demo container reach the collector
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Install foundryctl
+        run: |
+          curl -fsSL https://signoz.io/foundry.sh | FOUNDRY_VERSION="${FOUNDRY_VERSION}" bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Cast the deployment
+        run: foundryctl cast -f casting.yaml --format text --no-ledger --no-updater
+
+      - name: Bootstrap SigNoz
+        run: bash scripts/bootstrap-signoz.sh
+        env:
+          SIGNOZ_ADMIN_PASSWORD: ${{ format('Ci-{0}-{1}-Aa1!', github.run_id, github.run_attempt) }}
+
+      - name: Probe
+        run: |
+          set +e
+          banner() { echo; echo "############ $* ############"; echo; }
+
+          banner "HOST SIDE: WHAT IS PUBLISHED, AND WHAT ARE THE BRIDGES"
+          docker ps --format '{{.Names}}\t{{.Ports}}'
+          docker network ls
+          docker network inspect bridge --format 'bridge gateway: {{ (index .IPAM.Config 0).Gateway }}'
+          ip -4 addr show docker0 2>/dev/null | head -5
+          ss -ltnp 2>/dev/null | grep -E '4317|4318|8080|8000' || true
+
+          banner "HOST SIDE: OTLP POST FROM THE RUNNER ITSELF"
+          curl -si --max-time 15 -X POST http://localhost:4318/v1/traces \
+            -H 'Content-Type: application/json' -d '{"resourceSpans":[]}' | head -5
+
+          banner "START THE DEMO TOPOLOGY"
+          docker compose -f compose.app.yaml up -d --build --wait \
+            policy-service order-service fraud-service payment-service notification-service demo-agent
+          echo "compose exit=$?"
+          docker compose -f compose.app.yaml ps
+
+          banner "CONTAINER SIDE: DOES host.docker.internal RESOLVE"
+          docker compose -f compose.app.yaml exec -T payment-service sh -c \
+            'cat /etc/hosts; getent hosts host.docker.internal || echo "NO RESOLUTION"'
+
+          banner "CONTAINER SIDE: OTLP POST TO host.docker.internal:4318"
+          docker compose -f compose.app.yaml exec -T payment-service node -e '
+            fetch("http://host.docker.internal:4318/v1/traces",{method:"POST",
+              headers:{"content-type":"application/json"},body:"{\"resourceSpans\":[]}"})
+              .then(r=>console.log("status",r.status))
+              .catch(e=>console.log("ERROR",e.name,e.message,e.cause&&e.cause.code));'
+
+          GW="$(docker network inspect bridge --format '{{ (index .IPAM.Config 0).Gateway }}')"
+          banner "CONTAINER SIDE: OTLP POST TO THE BRIDGE GATEWAY $GW"
+          docker compose -f compose.app.yaml exec -T payment-service node -e '
+            const gw=process.env.GW;
+            fetch(`http://${gw}:4318/v1/traces`,{method:"POST",
+              headers:{"content-type":"application/json"},body:"{\"resourceSpans\":[]}"})
+              .then(r=>console.log("status",r.status))
+              .catch(e=>console.log("ERROR",e.name,e.message,e.cause&&e.cause.code));' \
+            2>&1 || true
+          docker compose -f compose.app.yaml exec -T -e GW="$GW" payment-service node -e '
+            const gw=process.env.GW;
+            fetch(`http://${gw}:4318/v1/traces`,{method:"POST",
+              headers:{"content-type":"application/json"},body:"{\"resourceSpans\":[]}"})
+              .then(r=>console.log("status",r.status))
+              .catch(e=>console.log("ERROR",e.name,e.message,e.cause&&e.cause.code));'
+
+          banner "WHAT ENDPOINT DID THE SERVICE ACTUALLY GET"
+          docker compose -f compose.app.yaml exec -T payment-service sh -c \
+            'echo "OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_EXPORTER_OTLP_ENDPOINT"'
+
+          banner "RUN ONE DEMO REQUEST AND READ THE SERVICE LOGS"
+          set -a; . ./.env; set +a
+          DEMO_RUNS=1 bash scripts/run-demo-v1.sh
+          sleep 20
+          docker compose -f compose.app.yaml logs --tail 40 demo-agent payment-service
+
+          banner "IS IT QUERYABLE"
+          node scripts/wait-for-demo-traces.mjs refund-agent-v1
+          echo "probe exit=$?"
+
+          banner "COLLECTOR LOGS"
+          docker logs --tail 60 "$(docker ps --filter name=ingester --format '{{.Names}}' | head -1)" 2>&1 | tail -60
+
+          banner "TEAR DOWN"
+          docker compose -f compose.app.yaml down -v || true
+          docker compose -f pours/deployment/compose.yaml -p signoz down -v || true
+          exit 0
