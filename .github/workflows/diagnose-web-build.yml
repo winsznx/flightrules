@@ -1,0 +1,112 @@
+name: Diagnose web build
+
+# Temporary Phase 17 instrument. Manually dispatched only, never on push, and deleted once the
+# silent `next build` exit on Linux is understood. It changes nothing about the product; it runs
+# the same command CI runs, with every diagnostic Node and Next expose at the pinned versions.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "24.14.1"
+  PNPM_VERSION: "10.33.0"
+
+jobs:
+  diagnose:
+    name: Reproduce the silent next build exit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Environment
+        run: |
+          set -x
+          uname -a
+          node --version
+          pnpm --version
+          nproc
+          free -m
+          ulimit -a
+          df -h .
+          cat /etc/os-release
+          node -p "require('next/package.json').version" || true
+          node -p "require('typescript/package.json').version" || true
+          env | grep -iE 'node|next|npm|pnpm|ci|turbo' | sort
+
+      - name: Workspace build
+        run: pnpm run build
+
+      - name: apps/web typecheck alone
+        working-directory: apps/web
+        run: |
+          set -x
+          pnpm run typecheck
+          echo "typecheck exit=$?"
+
+      - name: next build under --trace-exit, exit code and signal captured
+        working-directory: apps/web
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          NODE_OPTIONS: "--trace-exit --trace-uncaught --trace-warnings"
+        run: |
+          set -x
+          set +e
+          NEXT_BIN="$(node -p "require.resolve('next/dist/bin/next')")"
+          echo "next bin: $NEXT_BIN"
+          ls -la .next 2>/dev/null || echo "no .next yet"
+          node "$NEXT_BIN" build 2>build.err.log | tee build.out.log
+          code=$?
+          echo "=== next build exit code: $code ==="
+          echo "=== stderr ==="
+          cat build.err.log || true
+          echo "=== end stderr ==="
+          exit 0
+
+      - name: Same build through a shell so the signal is visible
+        working-directory: apps/web
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          set +e
+          rm -rf .next
+          bash -c 'next build; echo "raw exit=$?"' 2>&1 | tail -40
+          exit 0
+
+      - name: Inspect what the build produced
+        working-directory: apps/web
+        run: |
+          set -x
+          ls -la .next 2>/dev/null || echo "no .next"
+          find .next -maxdepth 2 2>/dev/null | head -60 || true
+          cat .next/trace 2>/dev/null | tail -5 || true
+
+      - name: Kernel ring buffer for OOM or segfault evidence
+        if: always()
+        run: |
+          sudo dmesg 2>/dev/null | tail -40 || echo "dmesg unavailable"
+
+      - name: Webpack builder for comparison
+        working-directory: apps/web
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          set +e
+          rm -rf .next
+          next build --webpack 2>&1 | tail -40
+          echo "webpack exit=$?"
+          exit 0
