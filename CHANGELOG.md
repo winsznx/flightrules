@@ -2,6 +2,65 @@
 
 All notable changes to FlightRules are recorded here, one section per phase.
 
+## Phase 17 — Release (2026-07-26)
+
+### Added
+
+- `README.md` rewritten as the sequence a reviewer actually follows, with the public deployment at
+  the top and every known limitation stated plainly.
+- `LICENSE` (Apache-2.0), `SECURITY.md`, `CONTRIBUTING.md`, `THIRD_PARTY_NOTICES.md`.
+- `docs/SUBMISSION.md`, `docs/ARCHITECTURE.md` and `docs/BLOG_DRAFT.md`.
+- `docs/evidence/phase-17/actions.md` — the first real GitHub Actions runs and the three defects
+  they found.
+- `docs/evidence/phase-17/railway.md` — the hosted deployment and the canonical demo executed
+  against it.
+- `scripts/wait-for-demo-traces.mjs` — a readiness probe on the supported retrieval path that says
+  what SigNoz actually holds when a release never appears, rather than only that it did not.
+
+### Fixed
+
+- **`next build` exited `1` on any runner with `CI` set, having printed nothing** (SL-067).
+  Next.js 16.2.11 probes the filesystem for `typescript/lib/typescript.js`, which TypeScript 7 does
+  not ship; off CI it reinstalled TypeScript on every build, and on CI it threw an error that
+  `next/dist/build/type-check.js` discarded before calling `process.exit(1)`. `apps/web` now pins
+  the TypeScript major Next.js supports, and `typescript.ignoreBuildErrors` was **removed** — the
+  application passes `tsc --noEmit` *and* Next's own step, including the route-type validation the
+  suppression had also disabled.
+- **The demo agent could not export telemetry on Linux** (SL-068). `compose.app.yaml` mapped
+  `host.docker.internal` on five of its six demo services; Docker Desktop injects it on macOS
+  regardless, and Linux does not. The agent is the only process that emits the root
+  `refund.request` span and the `agent.release.id` attribute, so its silence made every query for a
+  run return empty while SigNoz looked healthy.
+- The CI SigNoz job now provides the database and the demo batch its integration suite documents,
+  and both workflows start the demo topology by service name so it cannot collide with the job's
+  own PostgreSQL on port 5433.
+- The release gate waits for each release to become queryable before evaluating it, instead of
+  evaluating 1.2 seconds after emitting and reporting `insufficient_data`.
+
+### Verified
+
+- **CI**: six of six jobs green on `ubuntu-latest` —
+  https://github.com/winsznx/flightrules/actions/runs/30218574060
+- **Release gate**: approved release exit `0`, unsafe canary exit `2`, asserted by the workflow —
+  https://github.com/winsznx/flightrules/actions/runs/30218574096
+- 1,419 unit and property tests, 171 database integration tests, 115 SigNoz integration tests, all
+  on a runner.
+- The product deployed to Railway across sixteen services with a publicly reachable SigNoz, and the
+  canonical demo executed against it: artefacts `synced: 10, conflict: 0`, approved gate exit `0`,
+  canary gate exit `2` with 80 violations, 24 zero-tolerance and 8 duplicate refund writes.
+- The hosted decision hash is identical before and after an API restart.
+
+### Discovered
+
+- `CI`, not the platform, was the discriminator for the silent build failure; it reproduces on macOS
+  with `CI=true`.
+- `signoz_list_services` lags the raw span table on a freshly cast deployment: a trace is queryable
+  minutes before the service that produced it appears in the catalogue.
+- Railway cannot host the Foundry casting unchanged — no bind mounts, no shared volumes, no
+  `service_completed_successfully` init containers — so the hosted SigNoz core comes from SigNoz's
+  own Railway template while the MCP server is deployed at the pinned `v0.9.0`. Foundry remains the
+  reproducible path.
+
 ## Phase 00 — Source lock and feasibility proof (2026-07-25)
 
 ### Added

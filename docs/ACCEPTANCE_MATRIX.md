@@ -6,7 +6,7 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 16, 2026-07-26.
+Last updated: Phase 17, 2026-07-26.
 
 ## Critical final assertions (PRD section 23)
 
@@ -101,6 +101,18 @@ Last updated: Phase 16, 2026-07-26.
 | `/projects/[projectId]/violations/[violationId]` | Violation Inspector | `.../violations/[violationId]/page.tsx`, `apps/api/src/routes/violation-evidence.ts`, `lib/evidence-summary.ts` | `web.test.ts`; `evidence-summary.test.ts`; `phase-15-violation-inspector.spec.ts` exit gate and a reproduced SigNoz outage; live smoke | DONE |
 | `/projects/[projectId]/integrations/signoz` | SigNoz integration | `apps/web/src/app/projects/[projectId]/integrations/signoz/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
 | `/demo` | Demo | `apps/web/src/app/demo/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+
+## Phase 17 — the release, on GitHub and in production
+
+| Assertion | Evidence | Status |
+|---|---|---|
+| Both workflows run and pass on GitHub Actions | CI https://github.com/winsznx/flightrules/actions/runs/30218574060 — six of six jobs green. Release gate https://github.com/winsznx/flightrules/actions/runs/30218574096 — approved release exit `0`, unsafe canary exit `2`, asserted by the workflow | DONE |
+| Test totals on a runner, not a laptop | 1,419 unit and property (62 files), 171 database integration (9 files), 115 SigNoz integration (8 files) | DONE |
+| Three CI-only defects found and fixed, each pinned by a test | SL-067 the silent `next build` exit; SL-068 the demo agent's missing `host.docker.internal` mapping; the SigNoz job's missing database and demo batch. `docs/evidence/phase-17/actions.md` | DONE |
+| The product is deployed publicly, with a publicly reachable SigNoz | Sixteen Railway services. `docs/evidence/phase-17/railway.md` | DONE |
+| The canonical demo runs against the hosted deployment | Baseline from 26 live runs, contract active, artefacts `synced: 10, conflict: 0`, approved gate exit `0`, canary gate exit `2` with 80 violations, 24 zero-tolerance, 8 duplicate refunds | DONE |
+| The hosted decision survives an API restart | Identical `decisionHash` `c5fc5afd456c1cc4d60b6e5a154a0954e2a9fb522c40d47d7c4ce458d259d77e` before and after | DONE |
+| Hosted OTLP traces, metrics and logs | `make verify-telemetry` against the hosted SigNoz: 5 log records correlate to a real violation trace; metric dimensions queryable with real values | DONE |
 
 ## Phase 00 exit-gate chain
 
