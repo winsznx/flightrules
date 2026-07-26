@@ -812,3 +812,36 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
 - Impact: the `security` job of `.github/workflows/ci.yml` called the failing command, so the gate
   had never run and the first real GitHub Actions run would have failed. Running it for the first
   time immediately surfaced two high advisories against `postcss@8.4.31`.
+
+## SL-065 — `signoz_get_alert_history` does not use the list envelope every other list tool uses
+
+- Source: SigNoz MCP Server v0.9.0, called directly against the running deployment (tier 1)
+- Verified claim: every other list tool answers `{"data": [ ... ]}`. `signoz_get_alert_history`
+  answers `{"status":"success","data":{"items":[ ... ],"total":n}}`. `data` is an object, not an
+  array, and `total` is the count of retained transitions rather than of returned rows.
+- Runtime confirmation: **Yes.** Observed for all four managed alerts of `demo-commerce`, both when
+  the history was empty (`{"items":[],"total":0}`) and when it held transitions.
+- Implementation consequence: `scripts/verify-alert-lifecycle.mjs` accepts both shapes. Reading
+  `data` as an array throws rather than returning nothing, which is the safer failure — an empty
+  history and a history in a different place must never produce the same answer, because the first
+  means "no transition happened" and the second means "we did not look".
+
+## SL-066 — An alert history row carries the rule's state and the sample's state under different keys
+
+- Source: SigNoz MCP Server v0.9.0 against SigNoz v0.134.0, observed directly (tier 1)
+- Verified claim: one history row carries `overallState` **and** `state`, and they are different
+  things. `overallState` is the rule's state and takes `firing` or `inactive`. `state` is the state
+  of one evaluated sample and takes values the rule never takes, including `nodata`. A row can read
+  `{"overallState":"firing","state":"nodata","value":0}` — the rule is firing *because* a sample was
+  absent.
+- Runtime confirmation: **Yes.** Observed on `No Evaluation Data Alert`, whose `alertOnAbsent`
+  condition produces exactly that row, and on the two threshold alerts, whose rows carry
+  `overallState: "firing"` with a real `value`.
+- Implementation consequence: every state decision reads `overallState`. Reading `state` would
+  report a rule that merely had a gap in its data as one that fired. The *current* state is read
+  from the rule itself rather than from the newest history row, because history is written per
+  evaluated sample: a rule with no sample in the last cycle has no row to read and still has a
+  state.
+- Evidence: `docs/evidence/phase-16/alert-lifecycle.md`, which records both transitions of both
+  threshold alerts — firing at 12:09:49Z and 12:09:33Z, recovering to `inactive` at 12:14:49Z and
+  12:14:33Z, exactly 300 s later, matching the configured `evalWindow`.

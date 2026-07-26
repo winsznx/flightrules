@@ -1,0 +1,48 @@
+
+Managed alerts
+  ok    4 managed alert(s) for demo-commerce
+
+FlightRules / demo-commerce / refund-agent / Violation Rate Alert
+  ok    configuration reads back by identifier
+  ok    query flight_rules.violations where project.slug = 'demo-commerce' AND agent.key = 'refund-agent'
+  ok    threshold critical above 0, recovery 0
+  ok    current state firing
+  ok    firing recorded at 2026-07-26T12:09:49.220Z with value 220
+
+FlightRules / demo-commerce / refund-agent / Duplicate Side Effect Alert
+  ok    configuration reads back by identifier
+  ok    query flight_rules.duplicate_side_effects where project.slug = 'demo-commerce' AND agent.key = 'refund-agent'
+  ok    threshold critical above 0
+  ok    current state firing
+  ok    firing recorded at 2026-07-26T12:09:33.373Z with value 22
+
+FlightRules / demo-commerce / refund-agent / Release Evaluation Error Alert
+  ok    configuration reads back by identifier
+  ok    query flight_rules.evaluations where project.slug = 'demo-commerce' AND agent.key = 'refund-agent' AND status = 'error'
+  ok    threshold error above 0
+  ok    current state inactive
+  note  alert history is empty; SigNoz has recorded no state change for this rule yet
+  note  no firing transition in the retained history for this rule
+
+FlightRules / demo-commerce / refund-agent / No Evaluation Data Alert
+  ok    configuration reads back by identifier
+  ok    query flight_rules.evaluations where project.slug = 'demo-commerce' AND agent.key = 'refund-agent'
+  ok    threshold warning below 1
+  ok    current state inactive
+  ok    firing recorded at 2026-07-26T12:04:15.132Z with value 0
+
+Recovery
+  note  2 alert(s) firing. Waiting up to 20 minutes for the evaluation window to slide past the last violation.
+  ok    FlightRules / demo-commerce / refund-agent / Violation Rate Alert: recovered to inactive at 2026-07-26T12:14:49.220Z
+  ok    FlightRules / demo-commerce / refund-agent / Duplicate Side Effect Alert: recovered to inactive at 2026-07-26T12:14:33.373Z
+
+Configuration after the cycle
+  ok    FlightRules / demo-commerce / refund-agent / Violation Rate Alert: query and thresholds unchanged
+  ok    FlightRules / demo-commerce / refund-agent / Duplicate Side Effect Alert: query and thresholds unchanged
+  ok    FlightRules / demo-commerce / refund-agent / Release Evaluation Error Alert: query and thresholds unchanged
+  ok    FlightRules / demo-commerce / refund-agent / No Evaluation Data Alert: query and thresholds unchanged
+
+Wrote docs/evidence/phase-16/alert-lifecycle.json
+
+Every managed alert's lifecycle was observed against the running SigNoz.
+EXIT=0

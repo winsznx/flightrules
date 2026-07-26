@@ -5,7 +5,7 @@ SHELL := /usr/bin/env bash
         scan-deps verify clean contract-validate demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
         signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility mine-demo-baseline \
         signoz-sync signoz-purge api worker web cli demo-seed demo-full demo-urls gate gate-json evidence scan-design \
-        verify-telemetry measure-performance scan-history
+        verify-telemetry measure-performance scan-history verify-alerts verify-fresh-machine
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -162,6 +162,12 @@ signoz-verify: ## Verify every SigNoz surface against the running deployment
 
 verify-telemetry: ## Prove exported logs correlate and metric dimensions are queryable in SigNoz
 	@set -a; [ -f .env ] && . ./.env; set +a; node scripts/verify-telemetry.mjs
+
+verify-alerts: ## Observe every managed alert's configuration, firing and recovery in SigNoz
+	@set -a; [ -f .env ] && . ./.env; set +a; node scripts/verify-alert-lifecycle.mjs $(ARGS)
+
+verify-fresh-machine: ## Reproduce the whole product in a clean clone. DESTROYS local SigNoz data
+	@bash scripts/verify-fresh-machine.sh
 
 measure-performance: ## Measure every PRD section 20.2 target with repetitions, median, p95 and max
 	@set -a; [ -f .env ] && . ./.env; set +a; node scripts/measure-performance.mjs

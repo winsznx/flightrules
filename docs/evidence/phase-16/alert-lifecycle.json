@@ -1,0 +1,210 @@
+{
+  "project": "demo-commerce",
+  "alerts": [
+    {
+      "name": "FlightRules / demo-commerce / refund-agent / Violation Rate Alert",
+      "ruleId": "019f9e4c-6589-780d-a5c0-48525983c1e8",
+      "configuration": {
+        "alert": "FlightRules / demo-commerce / refund-agent / Violation Rate Alert",
+        "ruleType": "threshold_rule",
+        "severity": "critical",
+        "evalWindow": "5m0s",
+        "metric": "flight_rules.violations",
+        "filter": "project.slug = 'demo-commerce' AND agent.key = 'refund-agent'",
+        "thresholds": [
+          {
+            "name": "critical",
+            "target": 0,
+            "op": "above",
+            "matchType": "at_least_once",
+            "recoveryTarget": 0,
+            "channels": [
+              "FlightRules / demo-commerce / Notifications"
+            ]
+          }
+        ]
+      },
+      "configurationUnchanged": true,
+      "firing": {
+        "overallState": "firing",
+        "sampleState": "firing",
+        "stateChanged": true,
+        "unixMilli": 1785067789220,
+        "value": 220
+      },
+      "recovery": {
+        "overallState": "inactive",
+        "sampleState": "inactive",
+        "stateChanged": true,
+        "unixMilli": 1785068089220,
+        "value": 220
+      },
+      "currentState": "firing",
+      "historySample": [
+        {
+          "overallState": "inactive",
+          "sampleState": "inactive",
+          "stateChanged": true,
+          "unixMilli": 1785068089220,
+          "value": 220
+        },
+        {
+          "overallState": "firing",
+          "sampleState": "firing",
+          "stateChanged": true,
+          "unixMilli": 1785067789220,
+          "value": 220
+        }
+      ]
+    },
+    {
+      "name": "FlightRules / demo-commerce / refund-agent / Duplicate Side Effect Alert",
+      "ruleId": "019f9e4c-65be-7cc3-aa17-038db7e0563c",
+      "configuration": {
+        "alert": "FlightRules / demo-commerce / refund-agent / Duplicate Side Effect Alert",
+        "ruleType": "threshold_rule",
+        "severity": "critical",
+        "evalWindow": "5m0s",
+        "metric": "flight_rules.duplicate_side_effects",
+        "filter": "project.slug = 'demo-commerce' AND agent.key = 'refund-agent'",
+        "thresholds": [
+          {
+            "name": "critical",
+            "target": 0,
+            "op": "above",
+            "matchType": "at_least_once",
+            "recoveryTarget": null,
+            "channels": [
+              "FlightRules / demo-commerce / Notifications"
+            ]
+          }
+        ]
+      },
+      "configurationUnchanged": true,
+      "firing": {
+        "overallState": "firing",
+        "sampleState": "firing",
+        "stateChanged": true,
+        "unixMilli": 1785067773373,
+        "value": 22
+      },
+      "recovery": {
+        "overallState": "inactive",
+        "sampleState": "inactive",
+        "stateChanged": true,
+        "unixMilli": 1785068073373,
+        "value": 22
+      },
+      "currentState": "firing",
+      "historySample": [
+        {
+          "overallState": "inactive",
+          "sampleState": "inactive",
+          "stateChanged": true,
+          "unixMilli": 1785068073373,
+          "value": 22
+        },
+        {
+          "overallState": "firing",
+          "sampleState": "firing",
+          "stateChanged": true,
+          "unixMilli": 1785067773373,
+          "value": 22
+        }
+      ]
+    },
+    {
+      "name": "FlightRules / demo-commerce / refund-agent / Release Evaluation Error Alert",
+      "ruleId": "019f9e4c-65f2-7968-89c1-2f807ac2078b",
+      "configuration": {
+        "alert": "FlightRules / demo-commerce / refund-agent / Release Evaluation Error Alert",
+        "ruleType": "threshold_rule",
+        "severity": "error",
+        "evalWindow": "5m0s",
+        "metric": "flight_rules.evaluations",
+        "filter": "project.slug = 'demo-commerce' AND agent.key = 'refund-agent' AND status = 'error'",
+        "thresholds": [
+          {
+            "name": "error",
+            "target": 0,
+            "op": "above",
+            "matchType": "at_least_once",
+            "recoveryTarget": null,
+            "channels": [
+              "FlightRules / demo-commerce / Notifications"
+            ]
+          }
+        ]
+      },
+      "configurationUnchanged": true,
+      "firing": null,
+      "recovery": null,
+      "currentState": "inactive",
+      "historySample": []
+    },
+    {
+      "name": "FlightRules / demo-commerce / refund-agent / No Evaluation Data Alert",
+      "ruleId": "019f9e4c-6624-76ae-9ec6-0d9242e817da",
+      "configuration": {
+        "alert": "FlightRules / demo-commerce / refund-agent / No Evaluation Data Alert",
+        "ruleType": "threshold_rule",
+        "severity": "warning",
+        "evalWindow": "15m0s",
+        "metric": "flight_rules.evaluations",
+        "filter": "project.slug = 'demo-commerce' AND agent.key = 'refund-agent'",
+        "thresholds": [
+          {
+            "name": "warning",
+            "target": 1,
+            "op": "below",
+            "matchType": "all_the_times",
+            "recoveryTarget": null,
+            "channels": [
+              "FlightRules / demo-commerce / Notifications"
+            ]
+          }
+        ]
+      },
+      "configurationUnchanged": true,
+      "firing": {
+        "overallState": "firing",
+        "sampleState": "inactive",
+        "stateChanged": false,
+        "unixMilli": 1785067455132,
+        "value": 0
+      },
+      "recovery": null,
+      "currentState": "inactive",
+      "historySample": [
+        {
+          "overallState": "inactive",
+          "sampleState": "inactive",
+          "stateChanged": true,
+          "unixMilli": 1785067755132,
+          "value": 0
+        },
+        {
+          "overallState": "firing",
+          "sampleState": "inactive",
+          "stateChanged": false,
+          "unixMilli": 1785067455132,
+          "value": 0
+        },
+        {
+          "overallState": "firing",
+          "sampleState": "firing",
+          "stateChanged": false,
+          "unixMilli": 1785067455132,
+          "value": 0
+        },
+        {
+          "overallState": "firing",
+          "sampleState": "nodata",
+          "stateChanged": true,
+          "unixMilli": 1785067275132,
+          "value": 0
+        }
+      ]
+    }
+  ]
+}
