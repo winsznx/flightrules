@@ -111,14 +111,17 @@ evidence: ## Export the release evidence bundle to OUT (default docs/evidence/re
 			--release "$${RELEASE:-refund-agent-v1}" \
 			--out "$${OUT:-docs/evidence/release-gate.json}"
 
+# These three load .env the same way `api`, `worker` and `test-integration` do. Without it
+# `make db-migrate` — a documented README step — fails with "DATABASE_URL is not set." on any
+# machine that has not exported the variable by hand, which is every fresh machine.
 db-migrate: ## Apply database migrations
-	pnpm --filter @flightrules/db run migrate
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/db run migrate
 
 db-rollback: ## Revert the most recent database migration
-	pnpm --filter @flightrules/db run rollback
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/db run rollback
 
 db-status: ## Show applied database migrations
-	pnpm --filter @flightrules/db run migrate:status
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/db run migrate:status
 
 contract-validate: ## Validate every committed contract document
 	@bash scripts/validate-contracts.sh
