@@ -1,11 +1,11 @@
-# FlightRules handoff — after Phase 15
+# FlightRules handoff — Phase 16 in progress
 
-Written 2026-07-26. `main` is green and the working tree is clean.
+Written 2026-07-26. **Phase 16 is not complete.** `phase/16-hardening` is green and committed;
+eight of the sixteen Phase 16 tasks are done with runtime evidence, and eight remain. Nothing has
+been merged to `main`, and Phase 17 has not started — correctly, because Phase 17 may not begin
+until Phase 16 passes.
 
-This replaces the previous handoff. Verify every claim below against the repository before relying
-on it. The previous handoff was verified in full at the start of this session: `make verify` exit 0,
-1,116 unit and 234 integration tests, `make demo-full` reproducing exit 0 then exit 2, and all
-twenty route responses rendering real content. Nothing it claimed was found to be false.
+Verify every claim below against the repository before relying on it.
 
 ---
 
@@ -13,196 +13,229 @@ twenty route responses rendering real content. Nothing it claimed was found to b
 
 | Phase | Status | Phase commit | Merge commit |
 |---|---|---|---|
-| 00–10 | PASS | see the Phase 12 handoff in git history | — |
-| 11 Release evaluation, CLI, and GitHub gate | PASS | `e40b920` | `21b6b75` |
-| 12 UI foundation and `design.md` integration | PASS | `a7b3c78` | `5726d26` |
-| **13 Baseline and Contract Studio UI** | **PASS** | `d1ac0c4` | `faf2d26` |
-| **14 Release Diff UI** | **PASS** | `d5d8daa` | `d14f4fb` |
-| **15 Violation Inspector UI** | **PASS** | `676ffed` | `42ff820` |
-| 16–17 | NOT STARTED | — | — |
+| 00–12 | PASS | see git history | — |
+| 13 Baseline and Contract Studio UI | PASS | `d1ac0c4` | `faf2d26` |
+| 14 Release Diff UI | PASS | `d5d8daa` | `d14f4fb` |
+| 15 Violation Inspector UI | PASS | `676ffed` | `42ff820` |
+| **16 Hardening** | **IN PROGRESS** | branch `phase/16-hardening`, head `ab597bb` | not merged |
+| 17 Release | NOT STARTED | — | — |
 
-## Verified state
+`main` is unchanged at `9eac28d`.
+
+## The previous handoff's claims were all true
+
+Every figure in it was re-verified at the start of this session against the running stack, not
+trusted:
 
 ```text
 make verify              exit 0
 make test                1,159 passed, 0 failed, 0 skipped   (54 files)
-make test-integration      241 passed, 0 failed, 0 skipped   (15 files)
-make test-e2e               68 passed, 0 failed, 4 skipped   (72 tests, 3 viewports)
-                         ---
-                         1,468 tests passed
+make test-integration      243 passed, 0 failed, 0 skipped   (15 files, 672 s)
+make test-e2e               68 passed, 4 skipped             (72 tests, 4 projects)
 make signoz-verify       exit 0
 make contract-validate   exit 0, 20 documents
-make demo-full           exit 0 — approved release exit 0, unsafe canary exit 2
-managed artefacts        10 total, 10 synced, 0 drifted, 0 failed, 0 conflict
+make demo-full           exit 0 — approved exit 0, unsafe canary exit 2
+managed artefacts        {"total":10,"synced":10,"drifted":0,"failed":0,"conflict":0}
 ```
+
+The built worker's idle poll timer is not `unref`ed (`apps/worker/dist/runner.js:232`); the lease
+heartbeat and the shutdown timeout still are, correctly.
+
+## Current state on the branch
+
+```text
+make test          1,324 passed, 0 failed, 0 skipped   (59 files)
+make test-e2e         86 passed, 4 skipped             (90 tests, 3 read-only projects)
+make scan-deps     exit 0    (was failing 100 % of the time before this branch)
+make scan-secrets  exit 0
+make scan-licences exit 0    302 packages
+make scan-history  exit 0    58 commits, gitleaks
+make scan-design   exit 0
+make verify-telemetry exit 0 (new)
+make measure-performance every PRD 20.2 target met
+```
+
+`make verify`, `make test-integration` and the destructive `workflow` browser project have **not**
+been re-run since the last few commits. Do that first.
 
 ---
 
-## What Phases 13 to 15 added
+## Phase 16: what is done
 
-**Phase 13** made the product interactive. `packages/contract-schema/src/edit.ts` implements PRD
-section 8.9's eight graph rule controls as deterministic transformations of the stored YAML, each
-re-validated through the Phase 07 parser before it is returned — so the graph controls and the
-editor are two views of one document and cannot drift. The baseline form submits, the job reports
-persisted progress, the four review verbs write audit events, and the Contract Studio validates,
-approves, activates, syncs and exports.
+Eighteen commits, `4abe32e..ab597bb`. `docs/evidence/phase-16-plan.md` maps all sixteen tasks.
 
-**Phase 14** made the regression readable. `GET /api/releases/:releaseId/diff` compares the
-release's representative run against the approved route family **the evaluator itself** judged it
-nearest to, on the server, deterministically. The page renders sentences before tables:
-*"N step(s) the approved route always performs are absent from this release … Each one is a check
-that did not run."*
+### Four defects entry verification found before any Phase 16 work
 
-**Phase 15** made every failure auditable. Two on-request reads —
-`GET /api/violations/:id/logs` and `/metrics` — neither of which can fail the page, and an evidence
-summary that carries identifiers and hashes and nothing else.
+| # | Defect | Fix |
+|---|---|---|
+| E1 | `make scan-deps` failed **100 %** of the time. `pnpm@10.33.0` hands a gzip body carrying no `content-encoding` header to `Response.json()`. The CI `security` job calls it, so the first real GitHub Actions run would have failed on a gate that had never run. | `scripts/audit-dependencies.mjs` (SL-064) |
+| E2 | `make db-migrate` did not source `.env`, so the documented README step exited 5 on any fresh machine. | Makefile |
+| E3 | `.env.example` set one `OTEL_SERVICE_NAME=flightrules-api`, which the worker also reads — every worker signal was attributed to the API. | `.env.example` |
+| E4 | SL-062's diagnosis was wrong. See below. | instruments + API (SL-063) |
 
-## Three things a later phase could undo by accident
+Running the dependency gate for the first time immediately surfaced **two high advisories** in
+`postcss@8.4.31` with no patched version. Resolved by a `pnpm.overrides` pin to `8.5.23`, outside
+both ranges.
 
-1. **The four client components are the only ones.** `auto-refresh`, `submit-button`,
-   `yaml-editor`, `copy-button`. Five assertions in `apps/web/src/web.test.ts` enforce it: no route
-   file is a client component, exactly those four exist, none fetches or imports the `server-only`
-   API client, each is under 160 lines, and the design-token rule applies inside them. A fifth
-   client component should be a deliberate decision with its name added to that list.
-2. **No comparison engine is bundled into the browser.** A test asserts no web module imports
-   `@flightrules/trace-graph`, `@flightrules/contract-engine` or `@flightrules/baseline-miner`. That
-   is how "no graph data is fabricated client-side" is guaranteed rather than reviewed.
-3. **The metric's *kind* is a field, not a caption.** `measured`, `observed side effect`,
-   `inferred risk`, `unavailable`. Collapsing them into one number would let the product imply an
-   effect the telemetry does not prove.
+### Tasks complete, with runtime evidence
+
+| Task | Evidence |
+|---|---|
+| 1 Threat model | `docs/THREAT_MODEL.md` — 31 threats, each with asset, attack path, control, residual risk, verification, status. Three accepted risks, all disclosed |
+| 2 Dependency, licence, secret and history scans | `docs/evidence/phase-16/security-scans.md` |
+| 3 Fuzz contract parsing | `packages/contract-schema/src/fuzz.test.ts`, 54 cases and properties |
+| 4 Fuzz graph and selectors | `packages/trace-graph/src/fuzz.test.ts`, 58 cases and properties |
+| 5, 14 Large traces and performance | `docs/evidence/phase-16/performance.{md,txt,json}`, `make measure-performance` |
+| 6 Malformed MCP responses | `packages/signoz-mcp/src/malformed.test.ts`, 25 cases on top of the existing 17 shapes |
+| 13 High cardinality and metric dimensions | `docs/evidence/phase-16/metric-dimensions.md`, SL-063 |
+| 15 Accessibility | `docs/evidence/phase-16/accessibility.md`, `tests/e2e/phase-16-accessibility.spec.ts` |
+| OTLP logs | `docs/evidence/phase-16/otlp-logs.md` |
+
+### The two findings worth reading before touching this area
+
+**OTLP logs.** The Violation Inspector correlates on the **demo run's** trace, not FlightRules'. So
+exporting only the API's and the worker's logs would have closed nothing — the only processes inside
+a failing refund trace are the demo services. `registerServiceSpans` now emits one correlated record
+per instrumented request and the payment service writes its ledger line. Proven live: five records
+correlate to a real violation's trace, including **two `refund committed to the payment ledger`
+lines in one trace** — the duplicate side effect in the service's own words.
+
+**SL-062 was wrong, and SL-063 supersedes its third part.** The metric labels were empty because the
+instruments emitted `project.slug`/`agent.key` while the API grouped by
+`flight_rules.project.id`/`flight_rules.agent.id`. Grouping by a label nothing sets is not an error
+in SigNoz, which is why no single query could tell the two explanations apart. Filtering on
+`flight_rules.agent.id` now narrows two series to one, live.
+
+`make verify-telemetry` re-proves both against the running deployment. It exists because neither
+claim can be established from the application side: "the exporter was constructed" and "the counter
+was incremented" are both true in a deployment where nothing arrives.
+
+---
+
+## Phase 16: what remains
+
+In the order they repay effort.
+
+### 1. Tasks 10 and 11 — incomplete telemetry and missing attributes
+
+Pure unit tests against the evaluator, no infrastructure. Cover missing root, child or handler;
+sampled traces; locally unobservable subtrees; malformed parent relationships; cross-trace links;
+missing service, operation, release or run identifiers. Then every rule type against absent, `null`,
+wrong-type, empty-string, zero, false, negative, out-of-range and `dataType`-omitted values.
+
+**Two behaviours must be preserved and are the point of the task:** local insufficient-evidence
+scoping must keep the absent aborted-payment handler span from becoming a false violation, and
+missing data must never silently become zero or false.
+
+### 2. Task 12 — hostile input across the remaining surfaces
+
+Partly covered already: both fuzz suites assert no prototype pollution and no crash, and
+`phase-14`/`phase-15` browser tests assert hostile telemetry is escaped rather than rendered. What
+is not yet asserted: terminal control-sequence injection through the CLI, path traversal through
+`evidence export --out`, and hostile strings reaching managed SigNoz artefact names.
+
+### 3. Tasks 7, 8 and 9 — races, worker restarts, SigNoz outage
+
+Integration tests. **Stop the worker before `make test-integration`** — it competes with the suite
+and fails the runner shutdown test for an unrelated reason. The suite takes about 11 minutes and
+**drops the schema**, so `make demo-full` must follow it.
+
+Task 8 must extend rather than replace the existing lifecycle proof, and must not reintroduce
+`unref()` on the idle poll timer. It also needs a production operational check for jobs remaining
+queued beyond a threshold.
+
+### 4. Alert firing and recovery
+
+Firing is evidenced from Phase 10; recovery is not. For each required alert: normal state, firing
+state, alert history records firing, conditions cleared, recovery where the pinned version supports
+it, history records recovery, and the configured query and threshold survive read-back. If v0.134.0
+cannot expose recovery, record the exact limitation from runtime behaviour — do not invent it.
+
+### 5. Task 16 — fresh-machine reproducibility
+
+The largest remaining item and mandatory. A genuinely clean clone outside this working tree, from
+committed files and documented prerequisites only, through all 24 steps. Every manual correction
+becomes documentation or automation.
+
+E2 was found precisely because the README's step five does not work on a fresh machine. Expect
+more of that kind.
+
+### 6. Close out
+
+Re-run everything, write `docs/evidence/phase-16-result.md`, update
+`docs/ACCEPTANCE_MATRIX.md` and `CHANGELOG.md`, merge to `main`.
+
+---
 
 ## Operational facts that cost time to rediscover
 
 - **A demo reset alone is not a clean state.** `make signoz-purge` **then** the reset. Without the
   purge the next sync correctly reports ten conflicts, because the SigNoz resources outlive the
-  register rows that recorded owning them.
-- **Stop the worker before `make test-integration`.** It competes with the suite for queued jobs and
-  fails the runner shutdown test for a reason unrelated to the runner.
+  register rows. Reproduced again this session after the integration suite dropped the schema:
+  `synced: 0, conflict: 10`, then `synced: 10, conflict: 0` after a purge.
+- **Stop the worker before `make test-integration`.**
 - **`make test-e2e` needs a seeded demo and leaves it reset.** `make demo-full` before, and again
   after. The destructive Phase 13 workflow runs in its own Playwright project, declared last.
-- **Do not run a build while the development web server is running.** They share `.next`; the
-  running server's chunks are replaced and every page 404s until it restarts.
+- **Do not run a build while a web server is running.** They share `.next`.
 - **A long-running API or worker can outlive its own `dist`.** Restart both after `make typecheck`.
-- **A worker that is absent is the first thing to check when a job stays `queued`.** It used to
-  exit silently when idle (fixed 2026-07-26, `docs/evidence/fix-worker-idle-exit/diagnosis.md`); a
-  regression test now drives the real loop across an idle period before submitting work.
-- **`make demo-urls`** resolves every demo URL from the running API and writes `.demo-state.json`.
-  Nothing in `docs/DEMO_SCRIPT.md` hard-codes an identifier.
+- **The browser suite runs on `:3100`**, while `WEB_PORT` defaults to `3000`. That is deliberate and
+  documented at `docs/DEMO_SCRIPT.md:298` — the demo uses the dev server on 3000 and the browser
+  suite a production build on 3100.
+- **`make verify-telemetry` needs a recent `make demo-full`.** It correlates against a real
+  violation's trace, and a violation whose run predates the current log export legitimately returns
+  `empty`.
+- **`make demo-urls`** resolves every demo URL from the running API into `.demo-state.json`.
+
+## New commands this branch adds
+
+```text
+make verify-telemetry      prove exported logs correlate and metric dimensions are queryable
+make measure-performance   every PRD 20.2 target, repetitions, median, p95, max, heap
+make scan-history          gitleaks over the whole git history
+```
 
 ---
 
-## Unresolved limitations, for Phase 16
+## Unresolved limitations, updated
 
-1. **Logs are not exported over OTLP.** FlightRules writes structured logs to stdout, so SigNoz holds
-   none and the Violation Inspector's log panel is always `empty`. It says exactly that. This is the
-   single largest honest gap in the evidence chain.
-2. **The `flight_rules.*` metrics carry the project and agent dimensions with empty values**
-   (SL-062), so a metric cannot be narrowed to one agent. The API discloses it in its own response.
-3. **No automated accessibility audit.** Focus, labelling, landmarks, reading order and the absence
-   of colour-only status are each asserted, but no axe-style sweep runs. PRD section 22.4.
-4. **Alert recovery is not evidenced.** Firing is (Phase 10); recovery is not.
-5. **The GitHub workflow has never run on GitHub.** Fourteen tests assert its shape and every command
-   in it is one `make demo-full` runs locally. Phase 17 must run it for real.
-6. **The Phase 13 workflow is validated at one viewport.** Presentation is validated at three.
-7. **Token and retry regression are disclosed rather than measured** for the demo agent, which makes
-   no model call.
-8. **No authentication.** PRD section 6.1 scopes P0 to local mode.
-9. **`Open in SigNoz` opens the trace view, not a release-filtered view.** SigNoz's release-scoped
-   URL shape was not verified and SL-012 makes an HTTP probe worthless as verification, so no link
-   was invented.
-
-## Next phase: 16 — Hardening, performance, and adversarial validation
-
-PRD line 3431. Entry criteria are satisfied: Phases 13, 14 and 15 are merged, `main` is green, and
-the full demo reproduces exit 0 then exit 2.
-
-The four highest-value items, in the order they repay effort:
-
-1. **Export logs over OTLP**, closing limitation 1 and making the Violation Inspector's log panel
-   show something. The panel, its correlation and its degraded states already exist.
-2. **Attach the project and agent dimensions to the emitted metrics**, closing limitation 2.
-3. **Add the accessibility sweep** to the browser suite that already runs at three viewports.
-4. **Evidence alert recovery**, closing limitation 4.
+| # | Limitation | State |
+|---|---|---|
+| 1 | Logs not exported over OTLP | **CLOSED.** Proven live, `docs/evidence/phase-16/otlp-logs.md` |
+| 2 | Metric dimensions empty (SL-062) | **CLOSED.** Diagnosis corrected in SL-063, proven live |
+| 3 | No automated accessibility audit | **CLOSED.** axe sweep, three serious classes found and fixed |
+| 4 | Alert recovery unevidenced | **OPEN.** Phase 16 |
+| 5 | The GitHub workflow has never run on GitHub | **OPEN.** Phase 17 |
+| 6 | The Phase 13 workflow is validated at one viewport | OPEN, by design |
+| 7 | Token and retry regression are disclosed rather than measured | OPEN, the demo agent makes no model call |
+| 8 | No authentication | OPEN, PRD section 6.1 scopes P0 to local mode. `docs/THREAT_MODEL.md` T08 |
+| 9 | `Open in SigNoz` opens the trace view, not a release-filtered view | OPEN, no verified URL shape |
+| 10 | The API's own pino lines reach SigNoz without a trace ID | **NEW.** ESM import order defeats the HTTP instrumentation; does not affect the inspector, which correlates on demo traces |
+| 11 | No screen-reader walkthrough; browser coverage is Chromium only | **NEW.** PRD section 20.4 names three engines |
+| 12 | No container-image vulnerability scan | **NEW.** No scanner is pinned by the repository; images are unmodified upstream releases pinned by tag |
 
 ---
 
-## Release and deployment authorisation (recorded 2026-07-26, for Phase 16 and Phase 17)
+## Phase 17 authorisation, unchanged and still standing
 
-The repository owner has granted standing authorisation for the public release actions below. A
-later session must **not** re-ask whether they are permitted. It must still not perform any of them
-before Phases 13 to 16 are complete, merged and green — partial phase work is never published.
+The repository owner has granted standing authorisation for the public release actions: create the
+public GitHub repository and set its metadata, push `main`, push tags, create the release, inspect
+and fix Actions failures, create or reuse Railway projects and services, configure Railway secrets,
+deploy, run migrations, seed the public demo, and obtain a separate hosted SigNoz credential through
+the supported process. A later session must **not** re-ask whether these are permitted.
 
-### Granted authorisations
+It must still not perform any of them before Phase 16 is complete, merged and green.
 
-| Capability | State |
-|---|---|
-| `gh` GitHub CLI | Already authenticated on this machine |
-| Railway CLI and account | Already authenticated on this machine |
-| Create the final **public** GitHub repository and set its metadata | Authorised |
-| Push `main`, create tags, create GitHub releases | Authorised |
-| Deploy the completed application through Railway | Authorised |
+### One thing to check before Phase 17 pushes anything
 
-### GitHub release requirements (Phase 17)
+`gh` is authenticated as `winsznx` with scopes `gist, read:org, repo`. **There is no `workflow`
+scope.** Pushing a branch that contains `.github/workflows/*` with a token lacking it is rejected by
+GitHub. Either run `gh auth refresh -s workflow` in an interactive session first, or expect the
+first `git push` of `main` to fail with a workflow-scope error.
 
-1. Inspect whether a GitHub remote or repository already exists; never create a duplicate.
-2. If none exists, create a **public** repository under the PRD's final product name.
-3. Set a precise description derived from the PRD section 3.6 product claim.
-4. Add suitable topics.
-5. Use the licence the repository already establishes — `Apache-2.0`, declared in `package.json`
-   and enforced by `make scan-licences`. It is a deliberate decision, already documented; do not
-   re-decide it without an ADR.
-6. Finalise the README, architecture document, threat model, contribution instructions, security
-   policy, third-party notices and AI-assistant disclosure that PRD section 26 requires.
-7. Push complete `main`, then the release tag, then create the release with factual notes.
-8. **Run the real GitHub Actions workflows after pushing.** The 14 local shape tests over
-   `.github/workflows/release-gate.yml` are not the final proof — the handoff's unresolved
-   limitation 2 stands until a real run exists.
-9. Inspect every workflow result and fix every failure before declaring release readiness.
-10. Record the public repository URL and every workflow run URL in the final evidence.
+No repository named `flightrules` exists on that account yet. Railway is authenticated as `winszn`.
 
-### Railway deployment requirements (Phase 17)
+### One file that must not be published
 
-1. Inspect the existing Railway account, projects and services first; never duplicate.
-2. Deploy through the repository's supported production architecture (`compose.app.yaml` names the
-   services: postgres, api, worker, web, and the demo topology).
-3. **Foundry and `casting.yaml` remain the authoritative, judge-reproducible SigNoz deployment.**
-   Railway is the hosted public demo path and must not replace that requirement.
-4. Decide explicitly whether SigNoz is deployed on Railway or FlightRules connects to another
-   publicly reachable SigNoz. Never deploy against an address reachable only from this machine —
-   `http://localhost:8080` and `http://localhost:8090` are local-only.
-5. All secrets go through Railway's secret configuration. Never into source, images, build args,
-   logs, screenshots or evidence files.
-6. Run migrations through the documented process (`make db-migrate`, `@flightrules/db run migrate`).
-7. Verify API, worker, web, database, SigNoz, MCP and OTLP connectivity **from the deployed
-   environment**, functionally. A successful Railway build is not deployment success, and an open
-   port is not readiness — SL-010 and SL-012 both apply.
-8. Run the real public demo: approved release passes, unsafe release fails with the deterministic
-   gate result, the UI shows the real diff and violation evidence, public SigNoz links resolve.
-9. Save public deployment URLs and redacted deployment evidence.
-
-### SigNoz credential audit (do before asking for any key)
-
-A valid local credential already exists — Phase 10's live MCP writes and read-backs prove it. Find
-and document its source rather than requesting a new one. The audit to perform and record in
-`docs/RUNBOOK.md`:
-
-1. The environment schema and setup scripts: `.env.example`, `scripts/bootstrap-signoz.sh`.
-2. How the local SigNoz first user was bootstrapped, and how the API key was minted.
-3. The exact server-side variable names FlightRules reads. Use the repository's existing names —
-   do not add aliases.
-4. That the key is not committed (`make scan-secrets`), not exposed to the browser
-   (`apps/web/src/lib/api.ts` is `server-only`), and redacted from logs and evidence
-   (`packages/domain/src/redaction.ts`).
-5. That `.env.example` names the variable and carries no value.
-6. That `POST /api/setup/signoz/verify` validates a supplied key through a read-only MCP call, and
-   that an incorrect key produces the expected authentication failure.
-
-For the hosted environment, mint a **separate** deployment credential through the supported SigNoz
-process and store it only in Railway secrets.
-
-### Final outputs the release session must return
-
-Public repository URL; final commit; release tag and release URL; GitHub Actions run results;
-public web URL; public API URL; public SigNoz URL where appropriate; Railway project and service
-names; final exact test counts; approved gate result; unsafe gate result; the exact demo commands;
-the exact reset command; remaining honest limitations; submission-ready status.
+An untracked `ChatGPT Image Jul 26, 2026, 06_13_55 AM.png` sits in the repository root. It is not
+part of the product, has never been committed, and must not be. Check `git status` before any
+`git add -A`.
