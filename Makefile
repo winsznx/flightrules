@@ -4,7 +4,8 @@ SHELL := /usr/bin/env bash
         test-integration-db test-integration-signoz test-e2e build up down db-migrate db-rollback db-status scan-secrets scan-licences \
         scan-deps verify clean contract-validate demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
         signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility mine-demo-baseline \
-        signoz-sync signoz-purge api worker web cli demo-seed demo-full demo-urls gate gate-json evidence scan-design
+        signoz-sync signoz-purge api worker web cli demo-seed demo-full demo-urls gate gate-json evidence scan-design \
+        verify-telemetry
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -155,6 +156,9 @@ signoz-bootstrap: ## Create the first SigNoz user and mint a FlightRules API key
 
 signoz-verify: ## Verify every SigNoz surface against the running deployment
 	@bash scripts/verify-signoz.sh
+
+verify-telemetry: ## Prove exported logs correlate and metric dimensions are queryable in SigNoz
+	@set -a; [ -f .env ] && . ./.env; set +a; node scripts/verify-telemetry.mjs
 
 signoz-capabilities: ## Refresh docs/research/mcp-capabilities.json from the live MCP server
 	@set -a; [ -f .env ] && . ./.env; set +a; node scripts/snapshot-mcp-capabilities.mjs
