@@ -229,15 +229,19 @@ set -e
 # ---------------------------------------------------------------------------
 step "12  ten managed SigNoz artefacts, verified by read-back"
 # ---------------------------------------------------------------------------
-register="$(curl -fsS "http://localhost:${API_PORT:-4000}/api/projects" 2>/dev/null | \
+project_id="$(curl -fsS "http://localhost:${API_PORT:-4000}/api/projects?limit=10" 2>/dev/null | \
   python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["items"][0]["id"])' 2>/dev/null || echo '')"
-if [ -n "${register}" ]; then
-  summary="$(curl -fsS "http://localhost:${API_PORT:-4000}/api/projects/${register}/artifacts" \
-    2>/dev/null | python3 -c 'import json,sys;d=json.load(sys.stdin);print(json.dumps(d.get("summary",d)))' \
+if [ -n "${project_id}" ]; then
+  summary="$(curl -fsS \
+    "http://localhost:${API_PORT:-4000}/api/setup/signoz/artifacts?projectId=${project_id}" \
+    2>/dev/null | python3 -c 'import json,sys;print(json.dumps(json.load(sys.stdin)["summary"]))' \
     2>/dev/null || echo '')"
   info "artefact register: ${summary}"
-  if printf '%s' "${summary}" | grep -q '"synced": *10'; then
-    pass "ten artefacts synced and read-back verified"
+  if printf '%s' "${summary}" | python3 -c 'import json,sys
+s=json.load(sys.stdin)
+sys.exit(0 if s.get("total")==10 and s.get("synced")==10 and s.get("failed")==0
+         and s.get("conflict")==0 else 1)' 2>/dev/null; then
+    pass "ten artefacts synced, none failed, none in conflict"
   else
     fail "the artefact register does not report ten synced artefacts"
   fi
@@ -248,7 +252,26 @@ fi
 # ---------------------------------------------------------------------------
 step "13  exported metrics and logs reach SigNoz"
 # ---------------------------------------------------------------------------
-run "make verify-telemetry" make verify-telemetry
+# `make demo-urls` first: `verify-telemetry` correlates against the trace of a real violation, which
+# it reads from `.demo-state.json`. Without it the log check fails with "no trace to correlate
+# against" — which is what a fresh reproduction found, and is a missing step in the sequence rather
+# than a missing capability.
+run "make demo-urls" make demo-urls
+
+# On a brand-new deployment SigNoz's metric catalogue lags its first data points, so
+# `signoz_list_metrics` can report a metric as absent for a minute or two after it was first
+# written. Retried rather than waited on blindly, and the failure is still a failure if it persists.
+telemetry_ok=0
+for attempt in 1 2 3 4 5 6; do
+  if make verify-telemetry >>"${REPORT}" 2>&1; then telemetry_ok=1; break; fi
+  info "verify-telemetry attempt ${attempt} failed; the metric catalogue may still be warming"
+  sleep 30
+done
+if [ "${telemetry_ok}" -eq 1 ]; then
+  pass "make verify-telemetry"
+else
+  fail "make verify-telemetry after six attempts"
+fi
 
 # ---------------------------------------------------------------------------
 step "14  the documented test commands"
