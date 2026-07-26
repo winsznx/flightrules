@@ -31,6 +31,14 @@ export interface ApiConfig {
   readonly environmentName: string;
   readonly maxRequestBodyBytes: number;
   readonly shutdownTimeoutMs: number;
+  /**
+   * How long a job may sit claimable before `/health/dependencies` calls the queue stalled.
+   *
+   * Five minutes by default: long enough that an ordinary evaluation queued behind another is not
+   * an incident, short enough that a worker which stopped claiming is visible within one alert
+   * window rather than at the next demo.
+   */
+  readonly jobStalledAfterSeconds: number;
 }
 
 const LOG_LEVELS = ["fatal", "error", "warn", "info", "debug", "trace"] as const;
@@ -117,6 +125,12 @@ export function loadApiConfig(source: Record<string, string | undefined> = proce
       1_048_576,
       "MAX_REQUEST_BODY_BYTES",
       { min: 1_024, max: 16_777_216 },
+    ),
+    jobStalledAfterSeconds: boundedInteger(
+      source["JOB_STALLED_AFTER_SECONDS"],
+      300,
+      "JOB_STALLED_AFTER_SECONDS",
+      { min: 1, max: 86_400 },
     ),
     shutdownTimeoutMs: boundedInteger(
       source["SHUTDOWN_TIMEOUT_MS"],
