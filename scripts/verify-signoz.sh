@@ -112,6 +112,29 @@ else
     fail "MCP initialize did not report ${EXPECTED_MCP_VERSION} (body: ${authed:0:160})"
   fi
 
+  # The minted key must actually *work*, not merely exist and open a session.
+  #
+  # `initialize` succeeds against the MCP server without the SigNoz credential ever being presented
+  # to SigNoz, so it passes with a key SigNoz will reject. A fresh-machine reproduction found
+  # exactly that: bootstrap had failed, `.env` still held `replace-me`, this script reported the
+  # MCP server healthy, and every tool call afterwards returned
+  # `SigNoz API error: unexpected status 401: unauthenticated`. Only a real tool call proves the
+  # credential.
+  tool_body="$(curl -s --max-time 30 -X POST "${SIGNOZ_MCP_URL}" \
+    -H "SIGNOZ-API-KEY: ${SIGNOZ_API_KEY}" \
+    -H 'Content-Type: application/json' \
+    -H 'Accept: application/json, text/event-stream' \
+    -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"signoz_list_services","arguments":{"searchContext":"FlightRules verification: confirm the minted API key is accepted by SigNoz"}}}' \
+    || echo "")"
+
+  if printf '%s' "${tool_body}" | grep -qiE '401|unauthenticated|unauthorized|"isError":true'; then
+    fail "the minted API key was rejected by SigNoz (body: ${tool_body:0:200})"
+  elif printf '%s' "${tool_body}" | grep -q '"result"'; then
+    pass "the minted API key is accepted by SigNoz on a real tool call"
+  else
+    fail "a tool call with the minted key returned no result (body: ${tool_body:0:200})"
+  fi
+
   # A wrong key must be rejected. If it is accepted, authentication is not being enforced.
   unauthed_code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST "${SIGNOZ_MCP_URL}" \
     -H "SIGNOZ-API-KEY: definitely-not-a-valid-flightrules-key" \

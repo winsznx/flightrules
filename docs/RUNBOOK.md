@@ -26,9 +26,16 @@ inspect exactly which image tags will run without needing Foundry installed firs
 **This must run before any telemetry is produced.** See section 5.
 
 ```bash
-export SIGNOZ_ADMIN_PASSWORD="$(openssl rand -base64 18)"
+export SIGNOZ_ADMIN_PASSWORD="$(openssl rand -base64 18)Aa1!"
 make signoz-bootstrap
 ```
+
+The trailing `Aa1!` is not decoration. SigNoz v0.134.0 enforces a password policy on
+`/api/v1/register` — at least 12 characters with an uppercase letter, a lowercase letter, a digit
+and a symbol — and states it only in the rejection body. `openssl rand -base64 18` draws from
+`[A-Za-z0-9+/=]`, so a given draw often contains no digit or no symbol and registration fails with
+HTTP 400. The suffix makes the password compliant by construction. `bootstrap-signoz.sh` checks the
+policy before it calls SigNoz, so a non-compliant password names the rule it broke.
 
 The script is idempotent. It creates the organisation and root user, creates the `flightrules-mcp`
 service account, assigns the managed `signoz-admin` role, mints a 90-day API key, writes it to
@@ -181,7 +188,7 @@ docker compose -f compose.app.yaml down -v
 rm -f .env
 
 make signoz-up
-export SIGNOZ_ADMIN_PASSWORD="$(openssl rand -base64 18)"
+export SIGNOZ_ADMIN_PASSWORD="$(openssl rand -base64 18)Aa1!"
 make signoz-bootstrap
 make up
 make db-migrate

@@ -28,7 +28,7 @@ export PATH="$HOME/.local/bin:$PATH"
 
 make install
 make signoz-up
-export SIGNOZ_ADMIN_PASSWORD="$(openssl rand -base64 18)"
+export SIGNOZ_ADMIN_PASSWORD="$(openssl rand -base64 18)Aa1!"
 make signoz-bootstrap          # writes SIGNOZ_API_KEY to .env, mode 600
 make signoz-verify             # every SigNoz surface
 

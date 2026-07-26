@@ -153,7 +153,11 @@ jobs:
       - name: Bootstrap SigNoz and mint an API key
         run: bash scripts/bootstrap-signoz.sh
         env:
-          SIGNOZ_ADMIN_PASSWORD: ${{ format('ci-{0}', github.run_id) }}
+          # Compliant with SigNoz's password policy by construction: at least 12 characters
+          # with an uppercase letter, a lowercase letter, a digit and a symbol. `ci-<run_id>`
+          # alone has neither an uppercase letter nor a symbol, so registration returned HTTP
+          # 400 and this job could never have passed.
+          SIGNOZ_ADMIN_PASSWORD: ${{ format('Ci-{0}-Aa1!', github.run_id) }}
 
       - name: Verify every SigNoz surface
         run: bash scripts/verify-signoz.sh

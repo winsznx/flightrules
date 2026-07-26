@@ -100,7 +100,9 @@ jobs:
       - name: Bootstrap SigNoz and mint an API key
         run: bash scripts/bootstrap-signoz.sh
         env:
-          SIGNOZ_ADMIN_PASSWORD: ${{ format('ci-{0}-{1}', github.run_id, github.run_attempt) }}
+          # Compliant with SigNoz's password policy by construction. See `ci.yml` for why the
+          # previous value could never have registered.
+          SIGNOZ_ADMIN_PASSWORD: ${{ format('Ci-{0}-{1}-Aa1!', github.run_id, github.run_attempt) }}
 
       - name: Verify every SigNoz surface
         run: bash scripts/verify-signoz.sh
