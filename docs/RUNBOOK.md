@@ -2,6 +2,12 @@
 
 Operational procedures for the SigNoz stack and the FlightRules application services.
 
+This runbook is for the **local, Foundry-deployed stack**, which is the pinned and reproducible one
+and the only one these commands operate on. The hosted deployment — sixteen Railway services with a
+publicly reachable SigNoz — is documented separately in
+[evidence/phase-17/railway.md](evidence/phase-17/railway.md), including why its SigNoz core is not
+version-pinned by this repository and what that costs.
+
 ---
 
 ## 1. Deploy SigNoz
