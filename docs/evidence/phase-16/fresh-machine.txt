@@ -1,32 +1,32 @@
 FlightRules fresh-machine reproduction
 source /Users/mac/flightrules
-clone  /private/tmp/flightrules-fresh2
-started 2026-07-26T12:30:06Z
+clone  /private/tmp/flightrules-fresh3
+started 2026-07-26T12:42:53Z
 
 [1m== 0  destroy the shared state a fresh machine would not have[0m
- Container signoz-telemetrystore-migrator Stopping 
- Container signoz-metastore-postgres-0 Stopping 
- Container signoz-signoz-0 Stopping 
- Container signoz-ingester-1 Stopping 
- Container signoz-mcp Stopping 
  Container signoz-telemetrystore-clickhouse-0-0 Stopping 
+ Container signoz-ingester-1 Stopping 
+ Container signoz-metastore-postgres-0 Stopping 
+ Container signoz-telemetrystore-migrator Stopping 
+ Container signoz-mcp Stopping 
+ Container signoz-signoz-0 Stopping 
  Container signoz-telemetrystore-migrator Stopped 
  Container signoz-telemetrystore-migrator Removing 
  Container signoz-telemetrystore-migrator Removed 
- Container signoz-signoz-0 Stopped 
- Container signoz-signoz-0 Removing 
- Container signoz-signoz-0 Removed 
  Container signoz-mcp Stopped 
  Container signoz-mcp Removing 
  Container signoz-mcp Removed 
+ Container signoz-signoz-0 Stopped 
+ Container signoz-signoz-0 Removing 
+ Container signoz-signoz-0 Removed 
  Container signoz-metastore-postgres-0 Stopped 
  Container signoz-metastore-postgres-0 Removing 
  Container signoz-metastore-postgres-0 Removed 
  Container signoz-telemetrystore-clickhouse-0-0 Stopped 
  Container signoz-telemetrystore-clickhouse-0-0 Removing 
  Container signoz-telemetrystore-clickhouse-0-0 Removed 
- Container signoz-telemetrystore-clickhouse-user-scripts Stopping 
  Container signoz-telemetrykeeper-clickhousekeeper-0 Stopping 
+ Container signoz-telemetrystore-clickhouse-user-scripts Stopping 
  Container signoz-telemetrystore-clickhouse-user-scripts Stopped 
  Container signoz-telemetrystore-clickhouse-user-scripts Removing 
  Container signoz-telemetrystore-clickhouse-user-scripts Removed 
@@ -36,44 +36,44 @@ started 2026-07-26T12:30:06Z
  Container signoz-ingester-1 Stopped 
  Container signoz-ingester-1 Removing 
  Container signoz-ingester-1 Removed 
- Volume signoz-metastore-postgres-0-data Removing 
- Volume signoz-telemetrystore-0-0-data Removing 
  Network signoz-network Removing 
- Volume signoz-telemetrystore-user-scripts Removing 
  Volume signoz-telemetrykeeper-0-data Removing 
+ Volume signoz-telemetrystore-0-0-data Removing 
+ Volume signoz-metastore-postgres-0-data Removing 
+ Volume signoz-telemetrystore-user-scripts Removing 
+ Volume signoz-telemetrystore-0-0-data Removed 
+ Volume signoz-metastore-postgres-0-data Removed 
+ Volume signoz-telemetrykeeper-0-data Removed 
  Volume signoz-telemetrystore-user-scripts Removed 
  Network signoz-network Removed 
- Volume signoz-telemetrystore-0-0-data Removed 
- Volume signoz-telemetrykeeper-0-data Removed 
- Volume signoz-metastore-postgres-0-data Removed 
- Container flightrules-demo-agent Stopping 
  Container flightrules-postgres Stopping 
+ Container flightrules-demo-agent Stopping 
  Container flightrules-demo-agent Stopped 
  Container flightrules-demo-agent Removing 
- Container flightrules-demo-agent Removed 
- Container flightrules-order-service Stopping 
- Container flightrules-fraud-service Stopping 
- Container flightrules-notification-service Stopping 
- Container flightrules-policy-service Stopping 
- Container flightrules-payment-service Stopping 
  Container flightrules-postgres Stopped 
  Container flightrules-postgres Removing 
+ Container flightrules-demo-agent Removed 
+ Container flightrules-order-service Stopping 
+ Container flightrules-payment-service Stopping 
+ Container flightrules-notification-service Stopping 
+ Container flightrules-policy-service Stopping 
+ Container flightrules-fraud-service Stopping 
  Container flightrules-postgres Removed 
- Container flightrules-order-service Stopped 
- Container flightrules-order-service Removing 
- Container flightrules-order-service Removed 
- Container flightrules-policy-service Stopped 
- Container flightrules-policy-service Removing 
- Container flightrules-policy-service Removed 
- Container flightrules-fraud-service Stopped 
- Container flightrules-fraud-service Removing 
- Container flightrules-fraud-service Removed 
- Container flightrules-notification-service Stopped 
- Container flightrules-notification-service Removing 
- Container flightrules-notification-service Removed 
  Container flightrules-payment-service Stopped 
  Container flightrules-payment-service Removing 
  Container flightrules-payment-service Removed 
+ Container flightrules-fraud-service Stopped 
+ Container flightrules-fraud-service Removing 
+ Container flightrules-fraud-service Removed 
+ Container flightrules-policy-service Stopped 
+ Container flightrules-policy-service Removing 
+ Container flightrules-policy-service Removed 
+ Container flightrules-notification-service Stopped 
+ Container flightrules-notification-service Removing 
+ Container flightrules-notification-service Removed 
+ Container flightrules-order-service Stopped 
+ Container flightrules-order-service Removing 
+ Container flightrules-order-service Removed 
  Network flightrules-network Removing 
  Volume flightrules_flightrules-postgres-data Removing 
  Volume flightrules_flightrules-postgres-data Removed 
@@ -81,7 +81,7 @@ started 2026-07-26T12:30:06Z
   ok    SigNoz and application volumes destroyed
 
 [1m== 1  clone, committed files only[0m
-  run   git clone --quiet /Users/mac/flightrules /private/tmp/flightrules-fresh2
+  run   git clone --quiet /Users/mac/flightrules /private/tmp/flightrules-fresh3
   ok    git clone
   ok    absent, as it must be: .env
   ok    absent, as it must be: .demo-state.json
@@ -106,23 +106,24 @@ Environment OK.
   run   make install
 pnpm install --frozen-lockfile
 Scope: all 24 workspace projects
- WARN  There are cyclic workspace dependencies: /private/tmp/flightrules-fresh2/apps/api, /private/tmp/flightrules-fresh2/packages/baseline-miner, /private/tmp/flightrules-fresh2/packages/test-fixtures
+ WARN  There are cyclic workspace dependencies: /private/tmp/flightrules-fresh3/apps/api, /private/tmp/flightrules-fresh3/packages/baseline-miner, /private/tmp/flightrules-fresh3/packages/test-fixtures
 Lockfile is up to date, resolution step is skipped
 Progress: resolved 1, reused 0, downloaded 0, added 0
 Packages: +316
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Progress: resolved 316, reused 316, downloaded 0, added 166
 Progress: resolved 316, reused 316, downloaded 0, added 315
+Progress: resolved 316, reused 316, downloaded 0, added 316
 Progress: resolved 316, reused 316, downloaded 0, added 316, done
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/apps/cli/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/apps/worker/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/apps/api/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/apps/web/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/packages/artifact-compiler/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/packages/baseline-miner/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/packages/contract-engine/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/packages/db/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/packages/test-fixtures/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/apps/api/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/apps/cli/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/apps/web/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/apps/worker/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/packages/artifact-compiler/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/packages/baseline-miner/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/packages/contract-engine/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/packages/db/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/packages/test-fixtures/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/contract-schema/dist/cli.js'
 
 devDependencies:
 + @axe-core/playwright 4.11.2
@@ -139,16 +140,16 @@ devDependencies:
 + typescript 7.0.2
 + vitest 4.1.10
 
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/packages/artifact-compiler/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/artifact-compiler/node_modules/@flightrules/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/apps/web/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/apps/web/node_modules/@flightrules/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/apps/api/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/apps/api/node_modules/@flightrules/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/packages/baseline-miner/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/baseline-miner/node_modules/@flightrules/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/packages/test-fixtures/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/test-fixtures/node_modules/@flightrules/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/packages/contract-engine/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/contract-engine/node_modules/@flightrules/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/apps/cli/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/apps/cli/node_modules/@flightrules/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/packages/db/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/packages/db/node_modules/@flightrules/contract-schema/dist/cli.js'
- WARN  Failed to create bin at /private/tmp/flightrules-fresh2/apps/worker/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh2/apps/worker/node_modules/@flightrules/contract-schema/dist/cli.js'
-Done in 3.1s using pnpm v10.33.0
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/apps/web/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/apps/web/node_modules/@flightrules/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/packages/artifact-compiler/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/artifact-compiler/node_modules/@flightrules/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/apps/api/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/apps/api/node_modules/@flightrules/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/packages/test-fixtures/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/test-fixtures/node_modules/@flightrules/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/packages/baseline-miner/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/baseline-miner/node_modules/@flightrules/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/packages/contract-engine/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/contract-engine/node_modules/@flightrules/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/packages/db/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/packages/db/node_modules/@flightrules/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/apps/cli/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/apps/cli/node_modules/@flightrules/contract-schema/dist/cli.js'
+ WARN  Failed to create bin at /private/tmp/flightrules-fresh3/apps/worker/node_modules/.bin/flightrules-contract. ENOENT: no such file or directory, open '/private/tmp/flightrules-fresh3/apps/worker/node_modules/@flightrules/contract-schema/dist/cli.js'
+Done in 6s using pnpm v10.33.0
   ok    make install
 
 [1m== 4  environment configuration, exactly as the README documents it[0m
@@ -166,48 +167,48 @@ foundryctl forge -f casting.yaml --format text --no-ledger --no-updater
 foundryctl cast -f casting.yaml --format text --no-ledger --no-updater
  Network signoz-network Creating 
  Network signoz-network Created 
- Volume signoz-telemetrystore-0-0-data Creating 
- Volume signoz-telemetrystore-0-0-data Created 
  Volume signoz-telemetrystore-user-scripts Creating 
  Volume signoz-telemetrystore-user-scripts Created 
  Volume signoz-metastore-postgres-0-data Creating 
  Volume signoz-metastore-postgres-0-data Created 
  Volume signoz-telemetrykeeper-0-data Creating 
  Volume signoz-telemetrykeeper-0-data Created 
+ Volume signoz-telemetrystore-0-0-data Creating 
+ Volume signoz-telemetrystore-0-0-data Created 
  Container signoz-telemetrystore-migrator Creating 
- Container signoz-signoz-0 Creating 
- Container signoz-metastore-postgres-0 Creating 
- Container signoz-mcp Creating 
- Container signoz-ingester-1 Creating 
- Container signoz-telemetrystore-clickhouse-user-scripts Creating 
  Container signoz-telemetrykeeper-clickhousekeeper-0 Creating 
+ Container signoz-signoz-0 Creating 
+ Container signoz-ingester-1 Creating 
+ Container signoz-mcp Creating 
+ Container signoz-telemetrystore-clickhouse-user-scripts Creating 
+ Container signoz-metastore-postgres-0 Creating 
  Container signoz-telemetrystore-migrator Created 
  Container signoz-ingester-1 Created 
  Container signoz-signoz-0 Created 
  Container signoz-mcp Created 
- Container signoz-metastore-postgres-0 Created 
  Container signoz-telemetrykeeper-clickhousekeeper-0 Created 
+ Container signoz-metastore-postgres-0 Created 
  Container signoz-telemetrystore-clickhouse-user-scripts Created 
  Container signoz-telemetrystore-clickhouse-0-0 Creating 
  Container signoz-telemetrystore-clickhouse-0-0 Created 
- Container signoz-signoz-0 Starting 
- Container signoz-telemetrystore-clickhouse-user-scripts Starting 
  Container signoz-metastore-postgres-0 Starting 
- Container signoz-telemetrykeeper-clickhousekeeper-0 Starting 
- Container signoz-ingester-1 Starting 
+ Container signoz-telemetrystore-clickhouse-user-scripts Starting 
+ Container signoz-signoz-0 Starting 
  Container signoz-mcp Starting 
+ Container signoz-ingester-1 Starting 
  Container signoz-telemetrystore-migrator Starting 
- Container signoz-signoz-0 Started 
- Container signoz-telemetrystore-clickhouse-user-scripts Started 
- Container signoz-telemetrykeeper-clickhousekeeper-0 Started 
- Container signoz-telemetrykeeper-clickhousekeeper-0 Waiting 
- Container signoz-telemetrystore-clickhouse-user-scripts Waiting 
+ Container signoz-telemetrykeeper-clickhousekeeper-0 Starting 
  Container signoz-mcp Started 
  Container signoz-telemetrystore-migrator Started 
- Container signoz-ingester-1 Started 
  Container signoz-metastore-postgres-0 Started 
- Container signoz-telemetrykeeper-clickhousekeeper-0 Healthy 
+ Container signoz-signoz-0 Started 
+ Container signoz-telemetrystore-clickhouse-user-scripts Started 
+ Container signoz-ingester-1 Started 
+ Container signoz-telemetrykeeper-clickhousekeeper-0 Started 
+ Container signoz-telemetrystore-clickhouse-user-scripts Waiting 
+ Container signoz-telemetrykeeper-clickhousekeeper-0 Waiting 
  Container signoz-telemetrystore-clickhouse-user-scripts Exited 
+ Container signoz-telemetrykeeper-clickhousekeeper-0 Healthy 
  Container signoz-telemetrystore-clickhouse-0-0 Starting 
  Container signoz-telemetrystore-clickhouse-0-0 Started 
   ok    make signoz-up
@@ -238,10 +239,10 @@ Image pinning in the generated Compose file
 Deployment matches the pinned images
   ok    signoz-telemetrystore-clickhouse-0-0 runs clickhouse/clickhouse-server:25.12.5, which the casting pins
   ok    signoz-metastore-postgres-0 runs postgres:16, which the casting pins
-  ok    signoz-telemetrykeeper-clickhousekeeper-0 runs clickhouse/clickhouse-keeper:25.12.5, which the casting pins
   ok    signoz-mcp runs signoz/signoz-mcp-server:v0.9.0, which the casting pins
-  ok    signoz-ingester-1 runs signoz/signoz-otel-collector:v0.144.6, which the casting pins
+  ok    signoz-telemetrykeeper-clickhousekeeper-0 runs clickhouse/clickhouse-keeper:25.12.5, which the casting pins
   ok    signoz-signoz-0 runs signoz/signoz:v0.134.0, which the casting pins
+  ok    signoz-ingester-1 runs signoz/signoz-otel-collector:v0.144.6, which the casting pins
   ok    signoz-telemetrystore-migrator runs signoz/signoz-otel-collector:v0.144.6, which the casting pins
 
 Reproducibility verified.
@@ -254,40 +255,36 @@ SigNoz is healthy.
 SigNoz v0.134.0 (setupCompleted=False)
 
 ==> Ensuring the first organisation and root user exist
-Created the root user and organisation.
-
-==> Discovering the organisation ID
-Organisation 019f9e67-ec0e-7b07-b48f-b38ce225ec52
-
-==> Authenticating
-Authenticated.
-
-==> Ensuring the flightrules-mcp service account exists
-Created service account 019f9e67-edbc-7912-93c1-3f37476d558c
-
-==> Ensuring the signoz-admin role is assigned
-Assigned signoz-admin.
-
-==> Minting an API key
-Minted a key valid for 90 days.
-
-==> Writing the key into .env
-SIGNOZ_API_KEY written to .env (mode 600, git-ignored).
-
-==> Waiting for OTLP ingestion to become available
-OTLP ingestion is accepting spans.
-
-SigNoz bootstrap complete.
-  UI            http://localhost:8080
-  MCP           http://localhost:8000/mcp
-  OTLP HTTP     http://localhost:4318
-  admin user    admin@flightrules.local
-  organisation  019f9e67-ec0e-7b07-b48f-b38ce225ec52
-
-Run scripts/verify-signoz.sh to confirm every surface.
-  ok    make signoz-bootstrap
-  ok    a SigNoz API key was minted into .env
-  ok    credential length 44
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+   registration returned HTTP 400; retrying
+Registration failed with HTTP 400:
+{"status":"error","error":{"type":"invalid-input","code":"invalid_password","message":"password must be at least 12 characters long, should contain at least one uppercase letter [A-Z], one lowercase letter [a-z], one number [0-9], and one symbol [[~ ! @ # $ % ^ \u0026 * ( ) _ + ` - = { } | [ ] \\ : \" \u003c \u003e ? , . /]].","errors":[],"suggestions":[]}}
+make: *** [signoz-bootstrap] Error 4
+  FAIL  make signoz-bootstrap
+  FAIL  no SigNoz API key in .env after bootstrap
+  FAIL  credential too short
   run   make signoz-verify
 SigNoz verification
 
@@ -300,24 +297,24 @@ Deployment
 SigNoz API
   ok    GET /api/v1/health reports ok
   ok    SigNoz reports v0.134.0
-  ok    first-user setup is complete
+  FAIL  setup is not complete; run scripts/bootstrap-signoz.sh (OTLP will not ingest until it is)
 
 SigNoz MCP Server
   ok    GET /livez returns 200
   ok    GET /readyz returns 200
-  ok    MCP initialize succeeds and reports v0.9.0
-  ok    an invalid API key is rejected
+  FAIL  SIGNOZ_API_KEY is not set; run scripts/bootstrap-signoz.sh
 
 OTLP ingestion
-  ok    POST http://localhost:4318/v1/traces returns 200
-  ok    the collector is listening on OTLP gRPC 4317
+  FAIL  POST http://localhost:4318/v1/traces returned 000000 (not a port check: the receiver is not accepting spans)
+  FAIL  the collector is not listening on OTLP gRPC 4317 (state: no)
 
 Production safety
   note  the MCP port is published on the host. Correct for local development;
         it must not be published in a production deployment (PRD section 18.2).
 
-All SigNoz checks passed.
-  ok    make signoz-verify
+4 SigNoz check(s) failed.
+make: *** [signoz-verify] Error 1
+  FAIL  make signoz-verify (exit 2)
 
 [1m== 7  PostgreSQL and migrations[0m
   run   make up
@@ -326,62 +323,62 @@ docker compose -f compose.app.yaml up -d --wait
  Network flightrules-network Created 
  Volume flightrules_flightrules-postgres-data Creating 
  Volume flightrules_flightrules-postgres-data Created 
- Container flightrules-payment-service Creating 
- Container flightrules-postgres Creating 
- Container flightrules-policy-service Creating 
  Container flightrules-order-service Creating 
+ Container flightrules-policy-service Creating 
  Container flightrules-notification-service Creating 
  Container flightrules-fraud-service Creating 
- Container flightrules-fraud-service Created 
- Container flightrules-payment-service Created 
+ Container flightrules-postgres Creating 
+ Container flightrules-payment-service Creating 
  Container flightrules-order-service Created 
- Container flightrules-policy-service Created 
  Container flightrules-notification-service Created 
+ Container flightrules-payment-service Created 
+ Container flightrules-policy-service Created 
+ Container flightrules-fraud-service Created 
  Container flightrules-demo-agent Creating 
  Container flightrules-postgres Created 
  Container flightrules-demo-agent Created 
- Container flightrules-policy-service Starting 
- Container flightrules-notification-service Starting 
  Container flightrules-order-service Starting 
  Container flightrules-fraud-service Starting 
  Container flightrules-payment-service Starting 
+ Container flightrules-notification-service Starting 
  Container flightrules-postgres Starting 
- Container flightrules-payment-service Started 
+ Container flightrules-policy-service Starting 
  Container flightrules-fraud-service Started 
- Container flightrules-notification-service Started 
+ Container flightrules-order-service Started 
  Container flightrules-policy-service Started 
  Container flightrules-postgres Started 
- Container flightrules-order-service Started 
+ Container flightrules-payment-service Started 
+ Container flightrules-notification-service Started 
  Container flightrules-payment-service Waiting 
  Container flightrules-notification-service Waiting 
  Container flightrules-policy-service Waiting 
  Container flightrules-order-service Waiting 
  Container flightrules-fraud-service Waiting 
  Container flightrules-fraud-service Healthy 
- Container flightrules-notification-service Healthy 
- Container flightrules-payment-service Healthy 
  Container flightrules-policy-service Healthy 
+ Container flightrules-notification-service Healthy 
  Container flightrules-order-service Healthy 
+ Container flightrules-payment-service Healthy 
  Container flightrules-demo-agent Starting 
  Container flightrules-demo-agent Started 
- Container flightrules-order-service Waiting 
- Container flightrules-fraud-service Waiting 
- Container flightrules-payment-service Waiting 
- Container flightrules-notification-service Waiting 
  Container flightrules-demo-agent Waiting 
  Container flightrules-postgres Waiting 
  Container flightrules-policy-service Waiting 
- Container flightrules-policy-service Healthy 
- Container flightrules-order-service Healthy 
- Container flightrules-postgres Healthy 
+ Container flightrules-order-service Waiting 
+ Container flightrules-fraud-service Waiting 
+ Container flightrules-payment-service Waiting 
+ Container flightrules-notification-service Waiting 
  Container flightrules-payment-service Healthy 
- Container flightrules-fraud-service Healthy 
+ Container flightrules-policy-service Healthy 
  Container flightrules-notification-service Healthy 
+ Container flightrules-order-service Healthy 
+ Container flightrules-fraud-service Healthy 
+ Container flightrules-postgres Healthy 
  Container flightrules-demo-agent Healthy 
   ok    make up
   run   make db-migrate
 
-> @flightrules/db@0.1.0 migrate /private/tmp/flightrules-fresh2/packages/db
+> @flightrules/db@0.1.0 migrate /private/tmp/flightrules-fresh3/packages/db
 > tsx src/cli.ts up
 
 applied: 0001, 0002, 0003, 0004
@@ -389,7 +386,7 @@ already applied: 0
   ok    make db-migrate
   run   make db-status
 
-> @flightrules/db@0.1.0 migrate:status /private/tmp/flightrules-fresh2/packages/db
+> @flightrules/db@0.1.0 migrate:status /private/tmp/flightrules-fresh3/packages/db
 > tsx src/cli.ts status
 
 0001_foundation
@@ -402,7 +399,7 @@ already applied: 0
   run   make build
 pnpm run build
 
-> flightrules@0.1.0 build /private/tmp/flightrules-fresh2
+> flightrules@0.1.0 build /private/tmp/flightrules-fresh3
 > pnpm -r --if-present run build
 
 Scope: 23 of 24 workspace projects
@@ -411,33 +408,33 @@ packages/domain build$ tsc --build
 packages/domain build: Done
 packages/config build: Done
 packages/contract-schema build$ tsc --build
-packages/signoz-mcp build$ tsc --build
-packages/telemetry build$ tsc --build
 packages/normaliser build$ tsc --build
-packages/contract-schema build: Done
-packages/signoz-mcp build: Done
-packages/ui build$ tsc --build
+packages/telemetry build$ tsc --build
+packages/signoz-mcp build$ tsc --build
 packages/normaliser build: Done
+packages/contract-schema build: Done
+packages/ui build$ tsc --build
+packages/signoz-mcp build: Done
 packages/telemetry build: Done
 packages/ui build: Done
-apps/demo-services/fraud-service build$ tsc --build
-apps/demo-services/payment-service build$ tsc --build
-apps/demo-services/order-service build$ tsc --build
 apps/demo-services/notification-service build$ tsc --build
+apps/demo-services/fraud-service build$ tsc --build
+apps/demo-services/order-service build$ tsc --build
+apps/demo-services/payment-service build$ tsc --build
 apps/demo-services/notification-service build: Done
 apps/demo-services/policy-service build$ tsc --build
-apps/demo-services/fraud-service build: Done
-apps/web build$ pnpm run typecheck && next build
 apps/demo-services/payment-service build: Done
+apps/web build$ pnpm run typecheck && next build
+apps/demo-services/fraud-service build: Done
 packages/artifact-compiler build$ tsc --build
 apps/demo-services/order-service build: Done
 packages/artifact-compiler build: Done
-apps/web build: > @flightrules/web@0.1.0 typecheck /private/tmp/flightrules-fresh2/apps/web
+apps/web build: > @flightrules/web@0.1.0 typecheck /private/tmp/flightrules-fresh3/apps/web
 apps/web build: > tsc -p tsconfig.json --noEmit
 apps/demo-services/policy-service build: Done
 apps/web build: ▲ Next.js 16.2.11 (Turbopack)
 apps/web build:   Creating an optimized production build ...
-apps/web build: ✓ Compiled successfully in 1896ms
+apps/web build: ✓ Compiled successfully in 1926ms
 apps/web build:   Skipping validation of types
 apps/web build: It looks like you're trying to use TypeScript but do not have the required package(s) installed.
 apps/web build: Installing dependencies
@@ -445,17 +442,16 @@ apps/web build: If you are not trying to use TypeScript, please remove the tscon
 apps/web build: Installing devDependencies (pnpm):
 apps/web build: - typescript
 apps/web build: ../..                                    | Progress: resolved 1, reused 0, downloaded 0, added 0
-apps/web build: ../..                                    | Progress: resolved 367, reused 0, downloaded 0, added 0
+apps/web build: ../..                                    | Progress: resolved 117, reused 0, downloaded 0, added 0
 apps/web build: ../..                                    | Progress: resolved 368, reused 0, downloaded 0, added 0
 apps/web build: ../..                                    | Progress: resolved 369, reused 0, downloaded 0, added 0
-apps/web build: ../..                                    | Progress: resolved 400, reused 0, downloaded 0, added 0
-apps/web build: ../..                                    | Progress: resolved 402, reused 0, downloaded 0, added 0
+apps/web build: ../..                                    | Progress: resolved 370, reused 0, downloaded 0, added 0
 apps/web build: ../..                                    | Progress: resolved 403, reused 0, downloaded 0, added 0, done
-apps/web build: Done in 8.5s using pnpm v10.33.0
-apps/web build:   Finished TypeScript config validation in 8.7s ...
+apps/web build: Done in 7.1s using pnpm v10.33.0
+apps/web build:   Finished TypeScript config validation in 7.3s ...
 apps/web build:   Collecting page data using 7 workers ...
 apps/web build:   Generating static pages using 7 workers (0/3) ...
-apps/web build: ✓ Generating static pages using 7 workers (3/3) in 80ms
+apps/web build: ✓ Generating static pages using 7 workers (3/3) in 86ms
 apps/web build:   Finalizing page optimization ...
 apps/web build: Route (app)
 apps/web build: ┌ ○ /
@@ -502,1418 +498,3 @@ apps/worker build: Done
 
 [1m== 9  the worker survives an idle period[0m
         leaving the worker idle for 90 seconds
-  ok    worker still alive after 90 idle seconds
-  ok    queue depth reports ok
-
-[1m== 10  the demo, end to end[0m
-  run   make demo-up
-docker compose -f compose.app.yaml up -d --build --wait
- Image flightrules-policy-service Building 
- Image flightrules-order-service Building 
- Image flightrules-fraud-service Building 
- Image flightrules-payment-service Building 
- Image flightrules-notification-service Building 
- Image flightrules-demo-agent Building 
-#1 [internal] load local bake definitions
-#1 reading from stdin 3.42kB done
-#1 DONE 0.0s
-
-#2 [demo-agent internal] load build definition from Dockerfile.demo
-#2 transferring dockerfile: 1.16kB done
-#2 DONE 0.0s
-
-#3 [notification-service internal] load metadata for docker.io/library/node:24.14.1-alpine
-#3 DONE 1.7s
-
-#4 [payment-service internal] load .dockerignore
-#4 transferring context: 2B done
-#4 DONE 0.0s
-
-#5 [demo-agent build 1/8] FROM docker.io/library/node:24.14.1-alpine@sha256:8510330d3eb72c804231a834b1a8ebb55cb3796c3e4431297a24d246b8add4d5
-#5 resolve docker.io/library/node:24.14.1-alpine@sha256:8510330d3eb72c804231a834b1a8ebb55cb3796c3e4431297a24d246b8add4d5 0.0s done
-#5 DONE 0.0s
-
-#6 [payment-service internal] load build context
-#6 transferring context: 22.59MB 0.4s done
-#6 DONE 0.4s
-
-#7 [payment-service build 2/8] WORKDIR /app
-#7 CACHED
-
-#8 [payment-service build 3/8] RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
-#8 CACHED
-
-#9 [policy-service build 4/8] COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json tsconfig.build.json ./
-#9 CACHED
-
-#10 [policy-service build 5/8] COPY packages ./packages
-#10 DONE 0.2s
-
-#11 [notification-service build 6/8] COPY apps ./apps
-#11 DONE 0.2s
-
-#12 [payment-service build 7/8] RUN pnpm install --frozen-lockfile
-#12 0.770 Scope: all 24 workspace projects
-#12 0.798  WARN  There are cyclic workspace dependencies: /app/apps/api, /app/packages/baseline-miner, /app/packages/test-fixtures
-#12 0.855 Lockfile is up to date, resolution step is skipped
-#12 0.926 Progress: resolved 1, reused 0, downloaded 0, added 0
-#12 1.181 Packages: +314
-#12 1.181 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#12 1.929 Progress: resolved 314, reused 0, downloaded 9, added 8
-#12 2.682 
-#12 2.682    ╭───────────────────────────────────────────────╮
-#12 2.682    │                                               │
-#12 2.682    │     Update available! 10.33.0 → 11.17.0.      │
-#12 2.682    │     Changelog: https://pnpm.io/v/11.17.0      │
-#12 2.682    │   To update, run: corepack use pnpm@11.17.0   │
-#12 2.682    │                                               │
-#12 2.682    ╰───────────────────────────────────────────────╯
-#12 2.682 
-#12 2.930 Progress: resolved 314, reused 0, downloaded 52, added 52
-#12 3.930 Progress: resolved 314, reused 0, downloaded 81, added 81
-#12 4.933 Progress: resolved 314, reused 0, downloaded 136, added 136
-#12 5.927  WARN  Tarball download average speed 3 KiB/s (size 8 KiB) is below 50 KiB/s: https://registry.npmjs.org/@playwright/test/-/test-1.62.0.tgz (GET)
-#12 5.934 Progress: resolved 314, reused 0, downloaded 159, added 159
-#12 6.542  WARN  Tarball download average speed 32 KiB/s (size 34 KiB) is below 50 KiB/s: https://registry.npmjs.org/avvio/-/avvio-9.3.0.tgz (GET)
-#12 6.935 Progress: resolved 314, reused 0, downloaded 179, added 179
-#12 7.935 Progress: resolved 314, reused 0, downloaded 228, added 228
-#12 8.937 Progress: resolved 314, reused 0, downloaded 269, added 269
-#12 9.938 Progress: resolved 314, reused 0, downloaded 299, added 299
-#12 10.94 Progress: resolved 314, reused 0, downloaded 306, added 306
-#12 11.94 Progress: resolved 314, reused 0, downloaded 307, added 307
-#12 15.96 Progress: resolved 314, reused 0, downloaded 308, added 307
-#12 16.96 Progress: resolved 314, reused 0, downloaded 308, added 308
-#12 17.96 Progress: resolved 314, reused 0, downloaded 309, added 309
-#12 22.85 Progress: resolved 314, reused 0, downloaded 310, added 309
-#12 23.85 Progress: resolved 314, reused 0, downloaded 311, added 311
-#12 37.21 Progress: resolved 314, reused 0, downloaded 312, added 311
-#12 38.21 Progress: resolved 314, reused 0, downloaded 312, added 312
-#12 59.93 Progress: resolved 314, reused 0, downloaded 313, added 312
-#12 60.94 Progress: resolved 314, reused 0, downloaded 313, added 313
-#12 77.78 Progress: resolved 314, reused 0, downloaded 314, added 313
-#12 77.79 Progress: resolved 314, reused 0, downloaded 314, added 314, done
-#12 77.93 .../esbuild@0.28.1/node_modules/esbuild postinstall$ node install.js
-#12 78.02 .../esbuild@0.28.1/node_modules/esbuild postinstall: Done
-#12 78.20 
-#12 78.20 devDependencies:
-#12 78.20 + @axe-core/playwright 4.11.2
-#12 78.20 + @biomejs/biome 2.5.5
-#12 78.20 + @flightrules/domain 0.1.0 <- packages/domain
-#12 78.20 + @flightrules/signoz-mcp 0.1.0 <- packages/signoz-mcp
-#12 78.20 + @modelcontextprotocol/sdk 1.29.0
-#12 78.20 + @playwright/test 1.62.0
-#12 78.20 + @secretlint/secretlint-rule-preset-recommend 13.0.4
-#12 78.20 + @types/node 24.13.3
-#12 78.20 + secretlint 13.0.4
-#12 78.20 + semver 7.8.5
-#12 78.20 + tsx 4.23.1
-#12 78.20 + typescript 7.0.2
-#12 78.20 + vitest 4.1.10
-#12 78.20 
-#12 78.32 Done in 1m 17.9s using pnpm v10.33.0
-#12 DONE 79.1s
-
-#13 [order-service build 8/8] RUN pnpm run build
-#13 0.938 
-#13 0.938 > flightrules@0.1.0 build /app
-#13 0.938 > pnpm -r --if-present run build
-#13 0.938 
-#13 1.425 Scope: 23 of 24 workspace projects
-#13 1.452 packages/config build$ tsc --build
-#13 1.453 packages/domain build$ tsc --build
-#13 1.628 packages/domain build: Done
-#13 1.638 packages/config build: Done
-#13 1.639 packages/contract-schema build$ tsc --build
-#13 1.639 packages/normaliser build$ tsc --build
-#13 1.639 packages/signoz-mcp build$ tsc --build
-#13 1.640 packages/telemetry build$ tsc --build
-#13 1.928 packages/normaliser build: Done
-#13 1.928 packages/ui build$ tsc --build
-#13 1.977 packages/contract-schema build: Done
-#13 2.125 packages/ui build: Done
-#13 2.141 packages/telemetry build: Done
-#13 2.142 packages/signoz-mcp build: Done
-#13 2.142 apps/demo-services/fraud-service build$ tsc --build
-#13 2.143 apps/demo-services/notification-service build$ tsc --build
-#13 2.143 apps/demo-services/order-service build$ tsc --build
-#13 2.143 apps/demo-services/payment-service build$ tsc --build
-#13 2.592 apps/demo-services/order-service build: Done
-#13 2.593 apps/demo-services/policy-service build$ tsc --build
-#13 2.661 apps/demo-services/payment-service build: Done
-#13 2.662 apps/web build$ pnpm run typecheck && next build
-#13 2.670 apps/demo-services/notification-service build: Done
-#13 2.671 packages/artifact-compiler build$ tsc --build
-#13 2.677 apps/demo-services/fraud-service build: Done
-#13 2.907 packages/artifact-compiler build: Done
-#13 2.940 apps/demo-services/policy-service build: Done
-#13 3.004 apps/web build: > @flightrules/web@0.1.0 typecheck /app/apps/web
-#13 3.004 apps/web build: > tsc -p tsconfig.json --noEmit
-#13 4.106 apps/web build: Attention: Next.js now collects completely anonymous telemetry regarding usage.
-#13 4.107 apps/web build: This information is used to shape Next.js' roadmap and prioritize features.
-#13 4.107 apps/web build: You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
-#13 4.107 apps/web build: https://nextjs.org/telemetry
-#13 4.186 apps/web build: ▲ Next.js 16.2.11 (Turbopack)
-#13 4.216 apps/web build:   Creating an optimized production build ...
-#13 7.645 apps/web build: ✓ Compiled successfully in 3.2s
-#13 7.649 apps/web build:   Skipping validation of types
-#13 7.663 apps/web build: It looks like you're trying to use TypeScript but do not have the required package(s) installed.
-#13 7.664 apps/web build: Installing dependencies
-#13 7.664 apps/web build: If you are not trying to use TypeScript, please remove the tsconfig.json file from your package root (and any TypeScript files in your app and pages directories).
-#13 7.680 apps/web build: Installing devDependencies (pnpm):
-#13 7.680 apps/web build: - typescript
-#13 8.403 apps/web build: ../..                                    | Progress: resolved 1, reused 0, downloaded 0, added 0
-#13 9.406 apps/web build: ../..                                    | Progress: resolved 303, reused 0, downloaded 0, added 0
-#13 10.41 apps/web build: ../..                                    | Progress: resolved 311, reused 0, downloaded 0, added 0
-#13 11.44 apps/web build: ../..                                    | Progress: resolved 323, reused 0, downloaded 0, added 0
-#13 12.41 apps/web build: ../..                                    | Progress: resolved 360, reused 0, downloaded 0, added 0
-#13 13.41 apps/web build: ../..                                    | Progress: resolved 365, reused 0, downloaded 0, added 0
-#13 14.41 apps/web build: ../..                                    | Progress: resolved 367, reused 0, downloaded 0, added 0
-#13 17.85 apps/web build: ../..                                    | Progress: resolved 368, reused 0, downloaded 0, added 0
-#13 18.85 apps/web build: ../..                                    | Progress: resolved 369, reused 0, downloaded 0, added 0
-#13 20.68 apps/web build: ../..                                    | Progress: resolved 370, reused 0, downloaded 0, added 0
-#13 21.68 apps/web build: ../..                                    | Progress: resolved 384, reused 0, downloaded 0, added 0
-#13 22.68 apps/web build: ../..                                    | Progress: resolved 391, reused 0, downloaded 0, added 0
-#13 23.68 apps/web build: ../..                                    | Progress: resolved 396, reused 0, downloaded 0, added 0
-#13 24.81 apps/web build: ../..                                    | Progress: resolved 397, reused 0, downloaded 0, added 0
-#13 25.81 apps/web build: ../..                                    | Progress: resolved 398, reused 0, downloaded 0, added 0
-#13 26.81 apps/web build: ../..                                    | Progress: resolved 402, reused 0, downloaded 0, added 0
-#13 27.81 apps/web build: ../..                                    | Progress: resolved 403, reused 0, downloaded 0, added 0
-#13 29.70 apps/web build: ../..                                    | Progress: resolved 403, reused 0, downloaded 0, added 0, done
-#13 30.16 apps/web build: Done in 22.3s using pnpm v10.33.0
-#13 30.22 apps/web build:   Finished TypeScript config validation in 22.6s ...
-#13 30.22 apps/web build:   Collecting page data using 7 workers ...
-#13 30.87 apps/web build:   Generating static pages using 7 workers (0/3) ...
-#13 31.00 apps/web build: ✓ Generating static pages using 7 workers (3/3) in 131ms
-#13 31.01 apps/web build:   Finalizing page optimization ...
-#13 31.03 apps/web build: Route (app)
-#13 31.03 apps/web build: ┌ ○ /
-#13 31.03 apps/web build: ├ ○ /_not-found
-#13 31.03 apps/web build: ├ ƒ /demo
-#13 31.03 apps/web build: ├ ƒ /projects
-#13 31.03 apps/web build: ├ ƒ /projects/[projectId]/agents
-#13 31.03 apps/web build: ├ ƒ /projects/[projectId]/agents/[agentId]
-#13 31.03 apps/web build: ├ ƒ /projects/[projectId]/agents/[agentId]/baselines/new
-#13 31.03 apps/web build: ├ ƒ /projects/[projectId]/agents/[agentId]/contracts/[contractId]
-#13 31.03 apps/web build: ├ ƒ /projects/[projectId]/agents/[agentId]/contracts/[contractId]/export
-#13 31.03 apps/web build: ├ ƒ /projects/[projectId]/agents/[agentId]/releases
-#13 31.03 apps/web build: ├ ƒ /projects/[projectId]/agents/[agentId]/releases/[releaseId]
-#13 31.03 apps/web build: ├ ƒ /projects/[projectId]/agents/[agentId]/releases/[releaseId]/evidence
-#13 31.03 apps/web build: ├ ƒ /projects/[projectId]/agents/[agentId]/routes/[routeFamilyId]
-#13 31.03 apps/web build: ├ ƒ /projects/[projectId]/integrations/signoz
-#13 31.03 apps/web build: ├ ƒ /projects/[projectId]/overview
-#13 31.03 apps/web build: ├ ƒ /projects/[projectId]/violations/[violationId]
-#13 31.03 apps/web build: └ ƒ /setup
-#13 31.03 apps/web build: ○  (Static)   prerendered as static content
-#13 31.03 apps/web build: ƒ  (Dynamic)  server-rendered on demand
-#13 31.56 apps/web build: Done
-#13 31.57 apps/demo-agent build$ tsc --build
-#13 32.22 apps/demo-agent build: Done
-#13 32.23 apps/api build$ tsc --build
-#13 32.23 packages/baseline-miner build$ tsc --build
-#13 32.23 packages/test-fixtures build$ tsc --build
-#13 32.52 packages/baseline-miner build: Done
-#13 33.93 apps/api build: Done
-#13 33.98 packages/test-fixtures build: Done
-#13 33.98 packages/trace-graph build$ tsc --build
-#13 34.03 packages/trace-graph build: Done
-#13 34.03 packages/contract-engine build$ tsc --build
-#13 34.08 packages/contract-engine build: Done
-#13 34.08 apps/cli build$ tsc --build
-#13 34.08 packages/db build$ tsc --build
-#13 34.14 packages/db build: Done
-#13 34.40 apps/cli build: Done
-#13 34.40 apps/worker build$ tsc --build
-#13 34.46 apps/worker build: Done
-#13 DONE 34.7s
-
-#14 [demo-agent runtime 4/7] COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
-#14 CACHED
-
-#15 [demo-agent runtime 5/7] COPY --from=build /app/packages ./packages
-#15 CACHED
-
-#14 [notification-service runtime 4/7] COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
-#14 CACHED
-
-#16 [notification-service runtime 6/7] COPY --from=build /app/apps ./apps
-#16 DONE 0.2s
-
-#17 [notification-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#17 0.954 Scope: all 24 workspace projects
-#17 0.998  WARN  There are cyclic workspace dependencies: /app/apps/api, /app/packages/baseline-miner, /app/packages/test-fixtures
-#17 1.110 Lockfile is up to date, resolution step is skipped
-#17 1.169 Progress: resolved 1, reused 0, downloaded 0, added 0
-#17 2.027 Packages: +180
-#17 2.027 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#17 2.365 Progress: resolved 180, reused 0, downloaded 0, added 0
-#17 3.365 Progress: resolved 180, reused 0, downloaded 8, added 8
-#17 4.414 Progress: resolved 180, reused 0, downloaded 23, added 23
-#17 5.415 Progress: resolved 180, reused 0, downloaded 38, added 38
-#17 ...
-
-#18 [demo-agent runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#18 1.033 Scope: all 24 workspace projects
-#18 1.090  WARN  There are cyclic workspace dependencies: /app/apps/api, /app/packages/baseline-miner, /app/packages/test-fixtures
-#18 1.319 Lockfile is up to date, resolution step is skipped
-#18 1.593 Progress: resolved 1, reused 0, downloaded 0, added 0
-#18 2.145 Packages: +180
-#18 2.145 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#18 2.596 Progress: resolved 180, reused 0, downloaded 0, added 0
-#18 3.596 Progress: resolved 180, reused 0, downloaded 13, added 13
-#18 4.598 Progress: resolved 180, reused 0, downloaded 33, added 33
-#18 4.750  WARN  Tarball download average speed 6 KiB/s (size 7 KiB) is below 50 KiB/s: https://registry.npmjs.org/@fastify/fast-json-stringify-compiler/-/fast-json-stringify-compiler-5.1.0.tgz (GET)
-#18 5.330  WARN  Tarball download average speed 13 KiB/s (size 15 KiB) is below 50 KiB/s: https://registry.npmjs.org/sonic-boom/-/sonic-boom-4.2.1.tgz (GET)
-#18 5.572  WARN  Tarball download average speed 8 KiB/s (size 13 KiB) is below 50 KiB/s: https://registry.npmjs.org/cookie/-/cookie-1.1.1.tgz (GET)
-#18 5.603 Progress: resolved 180, reused 0, downloaded 41, added 41
-#18 ...
-
-#17 [notification-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#17 6.089 
-#17 6.089    ╭───────────────────────────────────────────────╮
-#17 6.089    │                                               │
-#17 6.089    │     Update available! 10.33.0 → 11.17.0.      │
-#17 6.089    │     Changelog: https://pnpm.io/v/11.17.0      │
-#17 6.089    │   To update, run: corepack use pnpm@11.17.0   │
-#17 6.089    │                                               │
-#17 6.089    ╰───────────────────────────────────────────────╯
-#17 6.089 
-#17 6.415 Progress: resolved 180, reused 0, downloaded 47, added 47
-#17 7.583 Progress: resolved 180, reused 0, downloaded 54, added 53
-#17 7.805  WARN  Tarball download average speed 18 KiB/s (size 28 KiB) is below 50 KiB/s: https://registry.npmjs.org/@hono/node-server/-/node-server-1.19.15.tgz (GET)
-#17 7.817  WARN  Tarball download average speed 34 KiB/s (size 46 KiB) is below 50 KiB/s: https://registry.npmjs.org/postgres/-/postgres-3.4.9.tgz (GET)
-#17 7.856  WARN  Tarball download average speed 14 KiB/s (size 40 KiB) is below 50 KiB/s: https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.11.3.tgz (GET)
-#17 8.542 Progress: resolved 180, reused 0, downloaded 71, added 71
-#17 9.542 Progress: resolved 180, reused 0, downloaded 85, added 85
-#17 ...
-
-#19 [order-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#19 0.936 Scope: all 24 workspace projects
-#19 1.002  WARN  There are cyclic workspace dependencies: /app/apps/api, /app/packages/baseline-miner, /app/packages/test-fixtures
-#19 1.117 Lockfile is up to date, resolution step is skipped
-#19 1.245 Progress: resolved 1, reused 0, downloaded 0, added 0
-#19 1.521 Packages: +180
-#19 1.521 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#19 2.363 Progress: resolved 180, reused 0, downloaded 0, added 0
-#19 3.364 Progress: resolved 180, reused 0, downloaded 18, added 18
-#19 4.378 Progress: resolved 180, reused 0, downloaded 36, added 36
-#19 5.383 Progress: resolved 180, reused 0, downloaded 42, added 42
-#19 5.866  WARN  Tarball download average speed 4 KiB/s (size 5 KiB) is below 50 KiB/s: https://registry.npmjs.org/nanoid/-/nanoid-3.3.16.tgz (GET)
-#19 6.172  WARN  Tarball download average speed 4 KiB/s (size 4 KiB) is below 50 KiB/s: https://registry.npmjs.org/reusify/-/reusify-1.1.0.tgz (GET)
-#19 6.263  WARN  Tarball download average speed 17 KiB/s (size 40 KiB) is below 50 KiB/s: https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.11.3.tgz (GET)
-#19 6.383 Progress: resolved 180, reused 0, downloaded 46, added 46
-#19 6.428  WARN  Tarball download average speed 47 KiB/s (size 64 KiB) is below 50 KiB/s: https://registry.npmjs.org/fast-json-stringify/-/fast-json-stringify-7.0.1.tgz (GET)
-#19 7.199  WARN  Tarball download average speed 42 KiB/s (size 113 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/api/-/api-1.9.1.tgz (GET)
-#19 7.529 Progress: resolved 180, reused 0, downloaded 48, added 48
-#19 7.981  WARN  Tarball download average speed 4 KiB/s (size 9 KiB) is below 50 KiB/s: https://registry.npmjs.org/fastq/-/fastq-1.20.1.tgz (GET)
-#19 8.583 Progress: resolved 180, reused 0, downloaded 60, added 56
-#19 9.582 Progress: resolved 180, reused 0, downloaded 74, added 74
-#19 ...
-
-#20 [fraud-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#20 0.904 Scope: all 24 workspace projects
-#20 0.977  WARN  There are cyclic workspace dependencies: /app/apps/api, /app/packages/baseline-miner, /app/packages/test-fixtures
-#20 1.052 Lockfile is up to date, resolution step is skipped
-#20 1.106 Progress: resolved 1, reused 0, downloaded 0, added 0
-#20 1.949 Packages: +180
-#20 1.949 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#20 2.248 Progress: resolved 180, reused 0, downloaded 0, added 0
-#20 3.247 Progress: resolved 180, reused 0, downloaded 8, added 8
-#20 4.257 Progress: resolved 180, reused 0, downloaded 25, added 25
-#20 5.255 Progress: resolved 180, reused 0, downloaded 32, added 32
-#20 5.849  WARN  Tarball download average speed 16 KiB/s (size 18 KiB) is below 50 KiB/s: https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz (GET)
-#20 6.080  WARN  Tarball download average speed 4 KiB/s (size 6 KiB) is below 50 KiB/s: https://registry.npmjs.org/toad-cache/-/toad-cache-3.7.4.tgz (GET)
-#20 6.256 Progress: resolved 180, reused 0, downloaded 39, added 39
-#20 6.913  WARN  Tarball download average speed 36 KiB/s (size 50 KiB) is below 50 KiB/s: https://registry.npmjs.org/postcss/-/postcss-8.5.23.tgz (GET)
-#20 7.257 Progress: resolved 180, reused 0, downloaded 42, added 42
-#20 7.349  WARN  Tarball download average speed 23 KiB/s (size 52 KiB) is below 50 KiB/s: https://registry.npmjs.org/@swc/helpers/-/helpers-0.5.15.tgz (GET)
-#20 8.261  WARN  Tarball download average speed 28 KiB/s (size 113 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/api/-/api-1.9.1.tgz (GET)
-#20 8.434 Progress: resolved 180, reused 0, downloaded 48, added 48
-#20 8.434  WARN  Tarball download average speed 6 KiB/s (size 8 KiB) is below 50 KiB/s: https://registry.npmjs.org/@playwright/test/-/test-1.62.0.tgz (GET)
-#20 9.192 
-#20 9.192    ╭───────────────────────────────────────────────╮
-#20 9.192    │                                               │
-#20 9.192    │     Update available! 10.33.0 → 11.17.0.      │
-#20 9.192    │     Changelog: https://pnpm.io/v/11.17.0      │
-#20 9.192    │   To update, run: corepack use pnpm@11.17.0   │
-#20 9.192    │                                               │
-#20 9.192    ╰───────────────────────────────────────────────╯
-#20 9.192 
-#20 9.195  WARN  Tarball download average speed 10 KiB/s (size 29 KiB) is below 50 KiB/s: https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.4.tgz (GET)
-#20 9.391 Progress: resolved 180, reused 0, downloaded 60, added 60
-#20 10.17  WARN  Tarball download average speed 42 KiB/s (size 212 KiB) is below 50 KiB/s: https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz (GET)
-#20 ...
-
-#21 [payment-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#21 0.942 Scope: all 24 workspace projects
-#21 0.995  WARN  There are cyclic workspace dependencies: /app/apps/api, /app/packages/baseline-miner, /app/packages/test-fixtures
-#21 1.101 Lockfile is up to date, resolution step is skipped
-#21 1.155 Progress: resolved 1, reused 0, downloaded 0, added 0
-#21 1.558 Packages: +180
-#21 1.558 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#21 2.312 Progress: resolved 180, reused 0, downloaded 0, added 0
-#21 3.313 Progress: resolved 180, reused 0, downloaded 24, added 23
-#21 4.316 Progress: resolved 180, reused 0, downloaded 38, added 38
-#21 5.316 Progress: resolved 180, reused 0, downloaded 48, added 48
-#21 5.841  WARN  Tarball download average speed 4 KiB/s (size 7 KiB) is below 50 KiB/s: https://registry.npmjs.org/@fastify/error/-/error-4.2.0.tgz (GET)
-#21 6.318 Progress: resolved 180, reused 0, downloaded 62, added 62
-#21 7.041  WARN  Tarball download average speed 1 KiB/s (size 1 KiB) is below 50 KiB/s: https://registry.npmjs.org/shebang-command/-/shebang-command-2.0.0.tgz (GET)
-#21 7.323 Progress: resolved 180, reused 0, downloaded 72, added 70
-#21 7.905  WARN  Tarball download average speed 4 KiB/s (size 4 KiB) is below 50 KiB/s: https://registry.npmjs.org/bytes/-/bytes-3.1.2.tgz (GET)
-#21 7.969  WARN  Tarball download average speed 8 KiB/s (size 24 KiB) is below 50 KiB/s: https://registry.npmjs.org/react/-/react-19.2.8.tgz (GET)
-#21 8.338 Progress: resolved 180, reused 0, downloaded 81, added 80
-#21 9.039 
-#21 9.039    ╭───────────────────────────────────────────────╮
-#21 9.039    │                                               │
-#21 9.039    │     Update available! 10.33.0 → 11.17.0.      │
-#21 9.039    │     Changelog: https://pnpm.io/v/11.17.0      │
-#21 9.039    │   To update, run: corepack use pnpm@11.17.0   │
-#21 9.039    │                                               │
-#21 9.039    ╰───────────────────────────────────────────────╯
-#21 9.039 
-#21 9.298 Progress: resolved 180, reused 0, downloaded 88, added 88
-#21 9.512  WARN  Tarball download average speed 5 KiB/s (size 13 KiB) is below 50 KiB/s: https://registry.npmjs.org/debug/-/debug-4.4.3.tgz (GET)
-#21 10.30 Progress: resolved 180, reused 0, downloaded 108, added 108
-#21 10.38  WARN  Tarball download average speed 1 KiB/s (size 4 KiB) is below 50 KiB/s: https://registry.npmjs.org/statuses/-/statuses-2.0.2.tgz (GET)
-#21 ...
-
-#22 [policy-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#22 0.929 Scope: all 24 workspace projects
-#22 0.996  WARN  There are cyclic workspace dependencies: /app/apps/api, /app/packages/baseline-miner, /app/packages/test-fixtures
-#22 1.129 Lockfile is up to date, resolution step is skipped
-#22 1.197 Progress: resolved 1, reused 0, downloaded 0, added 0
-#22 1.584 Packages: +180
-#22 1.584 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#22 2.418 Progress: resolved 180, reused 0, downloaded 0, added 0
-#22 3.423 Progress: resolved 180, reused 0, downloaded 12, added 12
-#22 4.501 Progress: resolved 180, reused 0, downloaded 28, added 28
-#22 5.500 Progress: resolved 180, reused 0, downloaded 44, added 44
-#22 5.698  WARN  Tarball download average speed 17 KiB/s (size 29 KiB) is below 50 KiB/s: https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.4.tgz (GET)
-#22 6.502 Progress: resolved 180, reused 0, downloaded 55, added 55
-#22 7.514 Progress: resolved 180, reused 0, downloaded 62, added 62
-#22 8.503 Progress: resolved 180, reused 0, downloaded 77, added 76
-#22 8.923  WARN  Tarball download average speed 9 KiB/s (size 28 KiB) is below 50 KiB/s: https://registry.npmjs.org/@hono/node-server/-/node-server-1.19.15.tgz (GET)
-#22 9.508 Progress: resolved 180, reused 0, downloaded 92, added 92
-#22 10.16  WARN  Tarball download average speed 48 KiB/s (size 60 KiB) is below 50 KiB/s: https://registry.npmjs.org/find-my-way/-/find-my-way-9.7.0.tgz (GET)
-#22 10.43  WARN  Tarball download average speed 4 KiB/s (size 5 KiB) is below 50 KiB/s: https://registry.npmjs.org/side-channel-map/-/side-channel-map-1.0.1.tgz (GET)
-#22 10.51 Progress: resolved 180, reused 0, downloaded 117, added 117
-#22 ...
-
-#21 [payment-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#21 10.51  WARN  Tarball download average speed 1 KiB/s (size 2 KiB) is below 50 KiB/s: https://registry.npmjs.org/ee-first/-/ee-first-1.1.1.tgz (GET)
-#21 11.30 Progress: resolved 180, reused 0, downloaded 129, added 129
-#21 11.97  WARN  Tarball download average speed 2 KiB/s (size 3 KiB) is below 50 KiB/s: https://registry.npmjs.org/media-typer/-/media-typer-1.1.1.tgz (GET)
-#21 12.30 Progress: resolved 180, reused 0, downloaded 137, added 137
-#21 12.88  WARN  Tarball download average speed 19 KiB/s (size 36 KiB) is below 50 KiB/s: https://registry.npmjs.org/json-schema-typed/-/json-schema-typed-8.0.2.tgz (GET)
-#21 13.16  WARN  Tarball download average speed 2 KiB/s (size 15 KiB) is below 50 KiB/s: https://registry.npmjs.org/ajv-formats/-/ajv-formats-3.0.1.tgz (GET)
-#21 13.30 Progress: resolved 180, reused 0, downloaded 148, added 148
-#21 13.80  WARN  Tarball download average speed 19 KiB/s (size 45 KiB) is below 50 KiB/s: https://registry.npmjs.org/zod-to-json-schema/-/zod-to-json-schema-3.25.2.tgz (GET)
-#21 14.30 Progress: resolved 180, reused 0, downloaded 164, added 164
-#21 15.29  WARN  Tarball download average speed 41 KiB/s (size 103 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/otlp-transformer/-/otlp-transformer-0.221.0.tgz (GET)
-#21 15.30 Progress: resolved 180, reused 0, downloaded 168, added 168
-#21 ...
-
-#22 [policy-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#22 11.39  WARN  Tarball download average speed 2 KiB/s (size 6 KiB) is below 50 KiB/s: https://registry.npmjs.org/call-bound/-/call-bound-1.0.4.tgz (GET)
-#22 11.51 Progress: resolved 180, reused 0, downloaded 131, added 131
-#22 12.51 Progress: resolved 180, reused 0, downloaded 137, added 137
-#22 12.70  WARN  Tarball download average speed 38 KiB/s (size 143 KiB) is below 50 KiB/s: https://registry.npmjs.org/pino/-/pino-10.3.1.tgz (GET)
-#22 12.94  WARN  Tarball download average speed 14 KiB/s (size 28 KiB) is below 50 KiB/s: https://registry.npmjs.org/mime-db/-/mime-db-1.54.0.tgz (GET)
-#22 13.06  WARN  Tarball download average speed 20 KiB/s (size 31 KiB) is below 50 KiB/s: https://registry.npmjs.org/express-rate-limit/-/express-rate-limit-8.6.0.tgz (GET)
-#22 13.44  WARN  Tarball download average speed 49 KiB/s (size 72 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/otlp-exporter-base/-/otlp-exporter-base-0.221.0.tgz (GET)
-#22 13.51 Progress: resolved 180, reused 0, downloaded 144, added 144
-#22 13.92  WARN  Tarball download average speed 13 KiB/s (size 36 KiB) is below 50 KiB/s: https://registry.npmjs.org/json-schema-typed/-/json-schema-typed-8.0.2.tgz (GET)
-#22 14.46  WARN  Tarball download average speed 0 KiB/s (size 2 KiB) is below 50 KiB/s: https://registry.npmjs.org/toidentifier/-/toidentifier-1.0.1.tgz (GET)
-#22 14.51 Progress: resolved 180, reused 0, downloaded 151, added 151
-#22 14.64  WARN  Tarball download average speed 38 KiB/s (size 103 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/otlp-transformer/-/otlp-transformer-0.221.0.tgz (GET)
-#22 14.93  WARN  Request took 13989ms: https://registry.npmjs.org/pnpm
-#22 14.96 
-#22 14.96    ╭───────────────────────────────────────────────╮
-#22 14.96    │                                               │
-#22 14.96    │     Update available! 10.33.0 → 11.17.0.      │
-#22 14.96    │     Changelog: https://pnpm.io/v/11.17.0      │
-#22 14.96    │   To update, run: corepack use pnpm@11.17.0   │
-#22 14.96    │                                               │
-#22 14.96    ╰───────────────────────────────────────────────╯
-#22 14.96 
-#22 15.52 Progress: resolved 180, reused 0, downloaded 164, added 164
-#22 15.74  WARN  Tarball download average speed 20 KiB/s (size 69 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/core/-/core-2.10.0.tgz (GET)
-#22 ...
-
-#18 [demo-agent runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#18 6.430  WARN  Tarball download average speed 21 KiB/s (size 34 KiB) is below 50 KiB/s: https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz (GET)
-#18 6.443  WARN  Tarball download average speed 25 KiB/s (size 40 KiB) is below 50 KiB/s: https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.11.3.tgz (GET)
-#18 6.603 Progress: resolved 180, reused 0, downloaded 49, added 49
-#18 6.880  WARN  Tarball download average speed 5 KiB/s (size 9 KiB) is below 50 KiB/s: https://registry.npmjs.org/scheduler/-/scheduler-0.27.0.tgz (GET)
-#18 7.666 Progress: resolved 180, reused 0, downloaded 51, added 51
-#18 8.299  WARN  Tarball download average speed 4 KiB/s (size 9 KiB) is below 50 KiB/s: https://registry.npmjs.org/secure-json-parse/-/secure-json-parse-4.1.0.tgz (GET)
-#18 8.514  WARN  Tarball download average speed 39 KiB/s (size 46 KiB) is below 50 KiB/s: https://registry.npmjs.org/postgres/-/postgres-3.4.9.tgz (GET)
-#18 8.980 
-#18 8.980    ╭───────────────────────────────────────────────╮
-#18 8.980    │                                               │
-#18 8.980    │     Update available! 10.33.0 → 11.17.0.      │
-#18 8.980    │     Changelog: https://pnpm.io/v/11.17.0      │
-#18 8.980    │   To update, run: corepack use pnpm@11.17.0   │
-#18 8.980    │                                               │
-#18 8.980    ╰───────────────────────────────────────────────╯
-#18 8.980 
-#18 8.982 Progress: resolved 180, reused 0, downloaded 56, added 55
-#18 9.992 Progress: resolved 180, reused 0, downloaded 76, added 76
-#18 10.10  WARN  Tarball download average speed 1 KiB/s (size 1 KiB) is below 50 KiB/s: https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz (GET)
-#18 10.19  WARN  Tarball download average speed 8 KiB/s (size 24 KiB) is below 50 KiB/s: https://registry.npmjs.org/react/-/react-19.2.8.tgz (GET)
-#18 10.99 Progress: resolved 180, reused 0, downloaded 100, added 100
-#18 11.99 Progress: resolved 180, reused 0, downloaded 121, added 121
-#18 12.99 Progress: resolved 180, reused 0, downloaded 129, added 129
-#18 13.40  WARN  Tarball download average speed 2 KiB/s (size 6 KiB) is below 50 KiB/s: https://registry.npmjs.org/negotiator/-/negotiator-1.0.0.tgz (GET)
-#18 13.83  WARN  Tarball download average speed 38 KiB/s (size 48 KiB) is below 50 KiB/s: https://registry.npmjs.org/jose/-/jose-6.2.4.tgz (GET)
-#18 14.00 Progress: resolved 180, reused 0, downloaded 140, added 140
-#18 14.36  WARN  Tarball download average speed 43 KiB/s (size 185 KiB) is below 50 KiB/s: https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.7.3.tgz (GET)
-#18 14.99 Progress: resolved 180, reused 0, downloaded 150, added 150
-#18 15.45  WARN  Tarball download average speed 15 KiB/s (size 45 KiB) is below 50 KiB/s: https://registry.npmjs.org/zod-to-json-schema/-/zod-to-json-schema-3.25.2.tgz (GET)
-#18 15.74  WARN  Tarball download average speed 23 KiB/s (size 31 KiB) is below 50 KiB/s: https://registry.npmjs.org/express-rate-limit/-/express-rate-limit-8.6.0.tgz (GET)
-#18 15.99 Progress: resolved 180, reused 0, downloaded 160, added 159
-#18 ...
-
-#22 [policy-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#22 16.52 Progress: resolved 180, reused 0, downloaded 168, added 168
-#22 17.03  WARN  Tarball download average speed 3 KiB/s (size 19 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/api-logs/-/api-logs-0.221.0.tgz (GET)
-#22 17.52 Progress: resolved 180, reused 0, downloaded 170, added 170
-#22 18.31  WARN  Tarball download average speed 0 KiB/s (size 6 KiB) is below 50 KiB/s: https://registry.npmjs.org/type-is/-/type-is-2.1.0.tgz (GET)
-#22 18.52 Progress: resolved 180, reused 0, downloaded 171, added 171
-#22 18.85  WARN  Tarball download average speed 15 KiB/s (size 85 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/sdk-trace/-/sdk-trace-2.10.0.tgz (GET)
-#22 19.35  WARN  Tarball download average speed 6 KiB/s (size 49 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/resources/-/resources-2.10.0.tgz (GET)
-#22 19.52 Progress: resolved 180, reused 0, downloaded 173, added 173
-#22 19.67  WARN  Tarball download average speed 12 KiB/s (size 83 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/instrumentation/-/instrumentation-0.221.0.tgz (GET)
-#22 ...
-
-#17 [notification-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#17 10.44  WARN  Tarball download average speed 6 KiB/s (size 13 KiB) is below 50 KiB/s: https://registry.npmjs.org/debug/-/debug-4.4.3.tgz (GET)
-#17 10.54 Progress: resolved 180, reused 0, downloaded 113, added 113
-#17 11.50  WARN  Tarball download average speed 6 KiB/s (size 6 KiB) is below 50 KiB/s: https://registry.npmjs.org/type-is/-/type-is-2.1.0.tgz (GET)
-#17 11.54 Progress: resolved 180, reused 0, downloaded 130, added 130
-#17 12.55 Progress: resolved 180, reused 0, downloaded 134, added 134
-#17 13.15  WARN  Tarball download average speed 0 KiB/s (size 2 KiB) is below 50 KiB/s: https://registry.npmjs.org/unpipe/-/unpipe-1.0.0.tgz (GET)
-#17 13.23  WARN  Tarball download average speed 49 KiB/s (size 62 KiB) is below 50 KiB/s: https://registry.npmjs.org/ip-address/-/ip-address-10.2.2.tgz (GET)
-#17 13.55 Progress: resolved 180, reused 0, downloaded 144, added 144
-#17 13.62  WARN  Tarball download average speed 24 KiB/s (size 48 KiB) is below 50 KiB/s: https://registry.npmjs.org/jose/-/jose-6.2.4.tgz (GET)
-#17 14.55 Progress: resolved 180, reused 0, downloaded 149, added 149
-#17 15.31  WARN  Tarball download average speed 38 KiB/s (size 45 KiB) is below 50 KiB/s: https://registry.npmjs.org/cjs-module-lexer/-/cjs-module-lexer-2.2.0.tgz (GET)
-#17 15.57 Progress: resolved 180, reused 0, downloaded 154, added 154
-#17 15.85  WARN  Tarball download average speed 25 KiB/s (size 72 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/sdk-logs/-/sdk-logs-0.221.0.tgz (GET)
-#17 15.90  WARN  Tarball download average speed 16 KiB/s (size 37 KiB) is below 50 KiB/s: https://registry.npmjs.org/import-in-the-middle/-/import-in-the-middle-3.3.2.tgz (GET)
-#17 16.33  WARN  Tarball download average speed 3 KiB/s (size 14 KiB) is below 50 KiB/s: https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-8.4.2.tgz (GET)
-#17 16.41  WARN  Tarball download average speed 17 KiB/s (size 49 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/resources/-/resources-2.10.0.tgz (GET)
-#17 16.57 Progress: resolved 180, reused 0, downloaded 166, added 166
-#17 17.29  WARN  Tarball download average speed 29 KiB/s (size 185 KiB) is below 50 KiB/s: https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.7.3.tgz (GET)
-#17 17.48  WARN  Tarball download average speed 30 KiB/s (size 103 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/otlp-transformer/-/otlp-transformer-0.221.0.tgz (GET)
-#17 17.57 Progress: resolved 180, reused 0, downloaded 170, added 170
-#17 17.58  WARN  Tarball download average speed 22 KiB/s (size 83 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/instrumentation/-/instrumentation-0.221.0.tgz (GET)
-#17 17.91  WARN  Tarball download average speed 17 KiB/s (size 57 KiB) is below 50 KiB/s: https://registry.npmjs.org/es-module-lexer/-/es-module-lexer-2.3.1.tgz (GET)
-#17 18.21  WARN  Tarball download average speed 34 KiB/s (size 179 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/sdk-metrics/-/sdk-metrics-2.10.0.tgz (GET)
-#17 18.57 Progress: resolved 180, reused 0, downloaded 173, added 173
-#17 19.57 Progress: resolved 180, reused 0, downloaded 174, added 174
-#17 ...
-
-#20 [fraud-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#20 10.39 Progress: resolved 180, reused 0, downloaded 84, added 84
-#20 11.39 Progress: resolved 180, reused 0, downloaded 99, added 99
-#20 12.39 Progress: resolved 180, reused 0, downloaded 115, added 115
-#20 12.45  WARN  Tarball download average speed 4 KiB/s (size 7 KiB) is below 50 KiB/s: https://registry.npmjs.org/side-channel/-/side-channel-1.1.1.tgz (GET)
-#20 13.00  WARN  Tarball download average speed 2 KiB/s (size 4 KiB) is below 50 KiB/s: https://registry.npmjs.org/gopd/-/gopd-1.2.0.tgz (GET)
-#20 13.39 Progress: resolved 180, reused 0, downloaded 129, added 129
-#20 13.83  WARN  Tarball download average speed 38 KiB/s (size 327 KiB) is below 50 KiB/s: https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001806.tgz (GET)
-#20 13.87  WARN  Tarball download average speed 35 KiB/s (size 69 KiB) is below 50 KiB/s: https://registry.npmjs.org/qs/-/qs-6.15.3.tgz (GET)
-#20 14.21  WARN  Tarball download average speed 8 KiB/s (size 13 KiB) is below 50 KiB/s: https://registry.npmjs.org/router/-/router-2.2.0.tgz (GET)
-#20 14.39 Progress: resolved 180, reused 0, downloaded 137, added 137
-#20 14.54  WARN  Tarball download average speed 21 KiB/s (size 31 KiB) is below 50 KiB/s: https://registry.npmjs.org/express-rate-limit/-/express-rate-limit-8.6.0.tgz (GET)
-#20 14.99  WARN  Tarball download average speed 14 KiB/s (size 14 KiB) is below 50 KiB/s: https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-8.4.2.tgz (GET)
-#20 15.32  WARN  Tarball download average speed 48 KiB/s (size 69 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/core/-/core-2.10.0.tgz (GET)
-#20 15.39 Progress: resolved 180, reused 0, downloaded 145, added 145
-#20 15.42  WARN  Tarball download average speed 0 KiB/s (size 4 KiB) is below 50 KiB/s: https://registry.npmjs.org/get-proto/-/get-proto-1.0.1.tgz (GET)
-#20 15.46  WARN  Tarball download average speed 6 KiB/s (size 13 KiB) is below 50 KiB/s: https://registry.npmjs.org/@fastify/ajv-compiler/-/ajv-compiler-4.0.5.tgz (GET)
-#20 15.87  WARN  Tarball download average speed 5 KiB/s (size 34 KiB) is below 50 KiB/s: https://registry.npmjs.org/avvio/-/avvio-9.3.0.tgz (GET)
-#20 15.96  WARN  Tarball download average speed 49 KiB/s (size 103 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/otlp-transformer/-/otlp-transformer-0.221.0.tgz (GET)
-#20 16.39 Progress: resolved 180, reused 0, downloaded 160, added 160
-#20 16.81  WARN  Tarball download average speed 6 KiB/s (size 19 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/api-logs/-/api-logs-0.221.0.tgz (GET)
-#20 17.25  WARN  Tarball download average speed 14 KiB/s (size 37 KiB) is below 50 KiB/s: https://registry.npmjs.org/import-in-the-middle/-/import-in-the-middle-3.3.2.tgz (GET)
-#20 17.39 Progress: resolved 180, reused 0, downloaded 172, added 172
-#20 18.40 Progress: resolved 180, reused 0, downloaded 173, added 173
-#20 ...
-
-#19 [order-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#19 10.58 Progress: resolved 180, reused 0, downloaded 101, added 101
-#19 11.33  WARN  Tarball download average speed 3 KiB/s (size 12 KiB) is below 50 KiB/s: https://registry.npmjs.org/@fastify/merge-json-schemas/-/merge-json-schemas-0.2.1.tgz (GET)
-#19 11.58 Progress: resolved 180, reused 0, downloaded 117, added 117
-#19 12.59 Progress: resolved 180, reused 0, downloaded 131, added 130
-#19 13.54  WARN  Request took 12595ms: https://registry.npmjs.org/pnpm
-#19 13.55 
-#19 13.55    ╭───────────────────────────────────────────────╮
-#19 13.55    │                                               │
-#19 13.55    │     Update available! 10.33.0 → 11.17.0.      │
-#19 13.55    │     Changelog: https://pnpm.io/v/11.17.0      │
-#19 13.55    │   To update, run: corepack use pnpm@11.17.0   │
-#19 13.55    │                                               │
-#19 13.55    ╰───────────────────────────────────────────────╯
-#19 13.55 
-#19 13.60 Progress: resolved 180, reused 0, downloaded 136, added 136
-#19 14.33  WARN  Tarball download average speed 32 KiB/s (size 48 KiB) is below 50 KiB/s: https://registry.npmjs.org/jose/-/jose-6.2.4.tgz (GET)
-#19 14.60 Progress: resolved 180, reused 0, downloaded 144, added 144
-#19 15.60 Progress: resolved 180, reused 0, downloaded 152, added 152
-#19 15.74  WARN  Tarball download average speed 31 KiB/s (size 69 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/core/-/core-2.10.0.tgz (GET)
-#19 16.60 Progress: resolved 180, reused 0, downloaded 166, added 166
-#19 17.60 Progress: resolved 180, reused 0, downloaded 168, added 168
-#19 18.58  WARN  Tarball download average speed 12 KiB/s (size 28 KiB) is below 50 KiB/s: https://registry.npmjs.org/semver/-/semver-7.8.5.tgz (GET)
-#19 18.60 Progress: resolved 180, reused 0, downloaded 169, added 169
-#19 19.86  WARN  Tarball download average speed 11 KiB/s (size 72 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/sdk-logs/-/sdk-logs-0.221.0.tgz (GET)
-#19 19.89 Progress: resolved 180, reused 0, downloaded 170, added 169
-#19 ...
-
-#22 [policy-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#22 20.53 Progress: resolved 180, reused 0, downloaded 174, added 174
-#22 21.53 Progress: resolved 180, reused 0, downloaded 175, added 175
-#22 ...
-
-#20 [fraud-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#20 22.90  WARN  Tarball download average speed 1 KiB/s (size 12 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/context-async-hooks/-/context-async-hooks-2.10.0.tgz (GET)
-#20 22.91 Progress: resolved 180, reused 0, downloaded 174, added 173
-#20 23.63  WARN  Tarball download average speed 2 KiB/s (size 11 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/exporter-trace-otlp-http/-/exporter-trace-otlp-http-0.221.0.tgz (GET)
-#20 23.91 Progress: resolved 180, reused 0, downloaded 175, added 175
-#20 ...
-
-#21 [payment-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#21 16.30 Progress: resolved 180, reused 0, downloaded 171, added 171
-#21 16.50  WARN  Tarball download average speed 42 KiB/s (size 47 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/instrumentation-http/-/instrumentation-http-0.221.0.tgz (GET)
-#21 17.30 Progress: resolved 180, reused 0, downloaded 172, added 172
-#21 17.73  WARN  Tarball download average speed 1 KiB/s (size 2 KiB) is below 50 KiB/s: https://registry.npmjs.org/@fastify/forwarded/-/forwarded-3.0.1.tgz (GET)
-#21 18.30 Progress: resolved 180, reused 0, downloaded 173, added 173
-#21 18.41  WARN  Tarball download average speed 17 KiB/s (size 83 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/instrumentation/-/instrumentation-0.221.0.tgz (GET)
-#21 19.31 Progress: resolved 180, reused 0, downloaded 174, added 174
-#21 ...
-
-#19 [order-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#19 20.89 Progress: resolved 180, reused 0, downloaded 170, added 170
-#19 21.14  WARN  Tarball download average speed 1 KiB/s (size 13 KiB) is below 50 KiB/s: https://registry.npmjs.org/router/-/router-2.2.0.tgz (GET)
-#19 21.41  WARN  Tarball download average speed 1 KiB/s (size 14 KiB) is below 50 KiB/s: https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-8.4.2.tgz (GET)
-#19 21.89 Progress: resolved 180, reused 0, downloaded 172, added 172
-#19 23.19 Progress: resolved 180, reused 0, downloaded 173, added 172
-#19 24.19 Progress: resolved 180, reused 0, downloaded 173, added 173
-#19 26.41  WARN  Tarball download average speed 0 KiB/s (size 7 KiB) is below 50 KiB/s: https://registry.npmjs.org/has-symbols/-/has-symbols-1.1.0.tgz (GET)
-#19 26.42 Progress: resolved 180, reused 0, downloaded 174, added 173
-#19 ...
-
-#18 [demo-agent runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#18 17.00 Progress: resolved 180, reused 0, downloaded 167, added 167
-#18 17.23  WARN  Tarball download average speed 14 KiB/s (size 18 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/sdk-trace-base/-/sdk-trace-base-2.10.0.tgz (GET)
-#18 17.48  WARN  Tarball download average speed 10 KiB/s (size 37 KiB) is below 50 KiB/s: https://registry.npmjs.org/import-in-the-middle/-/import-in-the-middle-3.3.2.tgz (GET)
-#18 17.54  WARN  Tarball download average speed 16 KiB/s (size 72 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/otlp-exporter-base/-/otlp-exporter-base-0.221.0.tgz (GET)
-#18 17.89  WARN  Tarball download average speed 26 KiB/s (size 69 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/core/-/core-2.10.0.tgz (GET)
-#18 18.00 Progress: resolved 180, reused 0, downloaded 172, added 171
-#18 19.00 Progress: resolved 180, reused 0, downloaded 172, added 172
-#18 20.52  WARN  Tarball download average speed 2 KiB/s (size 16 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/exporter-metrics-otlp-http/-/exporter-metrics-otlp-http-0.221.0.tgz (GET)
-#18 20.53 Progress: resolved 180, reused 0, downloaded 173, added 172
-#18 21.53 Progress: resolved 180, reused 0, downloaded 173, added 173
-#18 22.54 Progress: resolved 180, reused 0, downloaded 174, added 174
-#18 ...
-
-#19 [order-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#19 27.42 Progress: resolved 180, reused 0, downloaded 174, added 174
-#19 28.81  WARN  Tarball download average speed 26 KiB/s (size 559 KiB) is below 50 KiB/s: https://registry.npmjs.org/@modelcontextprotocol/sdk/-/sdk-1.29.0.tgz (GET)
-#19 28.90 Progress: resolved 180, reused 0, downloaded 175, added 174
-#19 29.90 Progress: resolved 180, reused 0, downloaded 175, added 175
-#19 30.90 Progress: resolved 180, reused 0, downloaded 176, added 176
-#19 ...
-
-#17 [notification-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#17 23.18  WARN  Tarball download average speed 5 KiB/s (size 69 KiB) is below 50 KiB/s: https://registry.npmjs.org/qs/-/qs-6.15.3.tgz (GET)
-#17 23.21 Progress: resolved 180, reused 0, downloaded 175, added 174
-#17 24.21 Progress: resolved 180, reused 0, downloaded 175, added 175
-#17 28.46 Progress: resolved 180, reused 0, downloaded 176, added 175
-#17 29.47 Progress: resolved 180, reused 0, downloaded 177, added 177
-#17 ...
-
-#18 [demo-agent runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#18 27.87 Progress: resolved 180, reused 0, downloaded 175, added 174
-#18 28.87 Progress: resolved 180, reused 0, downloaded 175, added 175
-#18 29.09  WARN  Tarball download average speed 2 KiB/s (size 60 KiB) is below 50 KiB/s: https://registry.npmjs.org/find-my-way/-/find-my-way-9.7.0.tgz (GET)
-#18 29.87 Progress: resolved 180, reused 0, downloaded 176, added 176
-#18 30.10  WARN  Tarball download average speed 49 KiB/s (size 1246 KiB) is below 50 KiB/s: https://registry.npmjs.org/react-dom/-/react-dom-19.2.8.tgz (GET)
-#18 30.87 Progress: resolved 180, reused 0, downloaded 177, added 177
-#18 33.16 Progress: resolved 180, reused 0, downloaded 178, added 177
-#18 34.16 Progress: resolved 180, reused 0, downloaded 178, added 178
-#18 ...
-
-#17 [notification-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#17 35.02 Progress: resolved 180, reused 0, downloaded 178, added 177
-#17 36.03 Progress: resolved 180, reused 0, downloaded 178, added 178
-#17 ...
-
-#21 [payment-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#21 27.64 Progress: resolved 180, reused 0, downloaded 175, added 174
-#21 28.62  WARN  Tarball download average speed 0 KiB/s (size 10 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/exporter-logs-otlp-http/-/exporter-logs-otlp-http-0.221.0.tgz (GET)
-#21 28.64 Progress: resolved 180, reused 0, downloaded 175, added 175
-#21 29.64 Progress: resolved 180, reused 0, downloaded 178, added 178
-#21 ...
-
-#22 [policy-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#22 29.07 Progress: resolved 180, reused 0, downloaded 176, added 175
-#22 30.07 Progress: resolved 180, reused 0, downloaded 176, added 176
-#22 31.07 Progress: resolved 180, reused 0, downloaded 177, added 177
-#22 32.07 Progress: resolved 180, reused 0, downloaded 178, added 178
-#22 ...
-
-#20 [fraud-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#20 28.33 Progress: resolved 180, reused 0, downloaded 176, added 175
-#20 29.34 Progress: resolved 180, reused 0, downloaded 176, added 176
-#20 33.20 Progress: resolved 180, reused 0, downloaded 177, added 176
-#20 34.20 Progress: resolved 180, reused 0, downloaded 178, added 178
-#20 ...
-
-#19 [order-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#19 42.37 Progress: resolved 180, reused 0, downloaded 177, added 176
-#19 43.37 Progress: resolved 180, reused 0, downloaded 177, added 177
-#19 47.69 Progress: resolved 180, reused 0, downloaded 178, added 177
-#19 48.69 Progress: resolved 180, reused 0, downloaded 178, added 178
-#19 ...
-
-#21 [payment-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#21 108.2 Progress: resolved 180, reused 0, downloaded 179, added 178
-#21 109.2 Progress: resolved 180, reused 0, downloaded 179, added 179
-#21 ...
-
-#17 [notification-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#17 117.6 Progress: resolved 180, reused 0, downloaded 179, added 178
-#17 ...
-
-#18 [demo-agent runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#18 108.3 Progress: resolved 180, reused 0, downloaded 179, added 178
-#18 109.5 Progress: resolved 180, reused 0, downloaded 179, added 179
-#18 ...
-
-#17 [notification-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#17 118.6 Progress: resolved 180, reused 0, downloaded 179, added 179
-#17 ...
-
-#19 [order-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#19 122.8 Progress: resolved 180, reused 0, downloaded 179, added 178
-#19 123.8 Progress: resolved 180, reused 0, downloaded 179, added 179
-#19 ...
-
-#22 [policy-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#22 119.8 Progress: resolved 180, reused 0, downloaded 179, added 178
-#22 120.8 Progress: resolved 180, reused 0, downloaded 179, added 179
-#22 ...
-
-#20 [fraud-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#20 133.4 Progress: resolved 180, reused 0, downloaded 179, added 178
-#20 134.6 Progress: resolved 180, reused 0, downloaded 179, added 179
-#20 ...
-
-#17 [notification-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#17 137.5 Progress: resolved 180, reused 0, downloaded 180, added 179
-#17 137.7 Progress: resolved 180, reused 0, downloaded 180, added 180, done
-#17 ...
-
-#18 [demo-agent runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#18 142.9 Progress: resolved 180, reused 0, downloaded 180, added 179
-#18 143.0 Progress: resolved 180, reused 0, downloaded 180, added 180, done
-#18 ...
-
-#17 [notification-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#17 143.6 
-#17 143.6 devDependencies: skipped
-#17 143.6 
-#17 144.3 Done in 2m 23.9s using pnpm v10.33.0
-#17 DONE 146.3s
-
-#18 [demo-agent runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#18 146.4 
-#18 146.4 devDependencies: skipped
-#18 146.4 
-#18 146.9 Done in 2m 26.5s using pnpm v10.33.0
-#18 ...
-
-#21 [payment-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#21 143.6 Progress: resolved 180, reused 0, downloaded 180, added 179
-#21 143.7 Progress: resolved 180, reused 0, downloaded 180, added 180, done
-#21 146.7 
-#21 146.7 devDependencies: skipped
-#21 146.7 
-#21 147.6 Done in 2m 27.2s using pnpm v10.33.0
-#21 DONE 148.4s
-
-#18 [demo-agent runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#18 DONE 148.4s
-
-#23 [demo-agent] exporting to image
-#23 exporting layers
-#23 ...
-
-#22 [policy-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#22 146.3 Progress: resolved 180, reused 0, downloaded 180, added 179
-#22 146.3 Progress: resolved 180, reused 0, downloaded 180, added 180, done
-#22 148.5 
-#22 148.5 devDependencies: skipped
-#22 148.5 
-#22 148.7 Done in 2m 28.3s using pnpm v10.33.0
-#22 DONE 149.5s
-
-#19 [order-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#19 146.5 Progress: resolved 180, reused 0, downloaded 180, added 179
-#19 146.6 Progress: resolved 180, reused 0, downloaded 180, added 180, done
-#19 148.6 
-#19 148.6 devDependencies: skipped
-#19 148.6 
-#19 148.8 Done in 2m 28.4s using pnpm v10.33.0
-#19 DONE 149.5s
-
-#20 [fraud-service runtime 7/7] RUN pnpm install --frozen-lockfile --prod
-#20 149.6 Progress: resolved 180, reused 0, downloaded 180, added 179
-#20 150.1 Progress: resolved 180, reused 0, downloaded 180, added 180, done
-#20 150.4 
-#20 150.4 devDependencies: skipped
-#20 150.4 
-#20 150.7 Done in 2m 30.3s using pnpm v10.33.0
-#20 DONE 151.3s
-
-#24 [order-service] exporting to image
-#24 ...
-
-#25 [fraud-service] exporting to image
-#25 ...
-
-#26 [notification-service] exporting to image
-#26 ...
-
-#27 [policy-service] exporting to image
-#27 ...
-
-#28 [payment-service] exporting to image
-#28 ...
-
-#26 [notification-service] exporting to image
-#26 exporting layers 25.5s done
-#26 exporting manifest sha256:2343beabe86092a23a04f35401053e750f96db108b9e9f4dc10d96bce9d9f358
-#26 exporting manifest sha256:2343beabe86092a23a04f35401053e750f96db108b9e9f4dc10d96bce9d9f358 0.3s done
-#26 exporting config sha256:4bb31c3f85d1647670fde0a0d8880f91d7eee42e57c5dc78cd75b62965215aa0
-#26 exporting config sha256:4bb31c3f85d1647670fde0a0d8880f91d7eee42e57c5dc78cd75b62965215aa0 0.1s done
-#26 exporting attestation manifest sha256:a21c88f99536791703d9a4d1232c24a8a05a2768d8ad81ab62b2d8f53e6781fb 0.0s done
-#26 exporting manifest list sha256:006dd4519524b6ab99907e81d3abf668417a071d9286909dba4e9b886eaa423d
-#26 exporting manifest list sha256:006dd4519524b6ab99907e81d3abf668417a071d9286909dba4e9b886eaa423d 0.0s done
-#26 naming to docker.io/library/flightrules-notification-service:latest done
-#26 unpacking to docker.io/library/flightrules-notification-service:latest
-#26 ...
-
-#25 [fraud-service] exporting to image
-#25 exporting layers 25.5s done
-#25 exporting manifest sha256:96c74ec244bdca262cdfd841789f68511c0f2731de77cec6e9938b652f3cdfcd 0.0s done
-#25 exporting config sha256:9d43730f5d41acebeb549b2e99a549d180354851b1ae57173eeaaf45fcd78e56 0.0s done
-#25 exporting attestation manifest sha256:95e2d14f3ade711f57b0e19f1b3417e0f851383cc576d25542e6f006dfaab206 0.1s done
-#25 exporting manifest list sha256:99c0a39ffb7d2867774f8d7c3697762f0f76a10e73a48a04fdc49c92406992ad
-#25 exporting manifest list sha256:99c0a39ffb7d2867774f8d7c3697762f0f76a10e73a48a04fdc49c92406992ad 0.3s done
-#25 naming to docker.io/library/flightrules-fraud-service:latest
-#25 naming to docker.io/library/flightrules-fraud-service:latest done
-#25 unpacking to docker.io/library/flightrules-fraud-service:latest
-#25 ...
-
-#23 [demo-agent] exporting to image
-#23 exporting layers 26.4s done
-#23 exporting manifest sha256:80fca1f7d455411ca3624b86446bfc99c95747a8fc73d3120274c2bfa30f5366 0.1s done
-#23 exporting config sha256:0c47b628dfea672b978a7d15e55cdc129f08a6157f68fec298776ec4a9ce192b 0.4s done
-#23 exporting attestation manifest sha256:7e4c3c9afe98db9c83ef7ee9ce23e24686413b52228d51b9ebeb8a70201d343f 0.1s done
-#23 exporting manifest list sha256:c0372b7cab9772d1995238c5b2ea3385cfdda998a6cbcaefe2b0ce94756f3d06 0.0s done
-#23 naming to docker.io/library/flightrules-demo-agent:latest 0.0s done
-#23 unpacking to docker.io/library/flightrules-demo-agent:latest
-#23 ...
-
-#28 [payment-service] exporting to image
-#28 exporting layers 26.4s done
-#28 exporting manifest sha256:80acd2249d6a550b55d4204973146dbb23dd12d3e88c3848e7030c46f5dd0728 0.3s done
-#28 exporting config sha256:768655cd330e69d1d919e07e129ffd6a07489dae6422475e5553ecdaa6abfb2c 0.2s done
-#28 exporting attestation manifest sha256:8dfe15f83197398f3b2c7777a0663d4d8e01cf1a2cf0338595500f7e58fa1655 0.1s done
-#28 exporting manifest list sha256:f25c171cc8f558df1dc30204017c521817f4d2ac8221b30784c433025b765fd2 0.0s done
-#28 naming to docker.io/library/flightrules-payment-service:latest done
-#28 unpacking to docker.io/library/flightrules-payment-service:latest
-#28 ...
-
-#27 [policy-service] exporting to image
-#27 exporting layers 26.3s done
-#27 exporting manifest sha256:d4a027f879f44bbaabe05c562b6f9bde00fbd82ebfc6e18d91088e6fe66dae03 0.0s done
-#27 exporting config sha256:73d49504f30e4b0503b515d0e5fbc8b824ad079806f5c988a3da134c1b6d6826 0.1s done
-#27 exporting attestation manifest sha256:2e6e9bd76db79e6d5b6e673aa225ebdaa0470b0e20d3072263611b99a8be7d54 0.3s done
-#27 exporting manifest list sha256:61b53125d0055c3e0a4a2fe95add73cfdc8b7bb2cc8128ee97854a3d75f989f3 0.0s done
-#27 naming to docker.io/library/flightrules-policy-service:latest done
-#27 unpacking to docker.io/library/flightrules-policy-service:latest
-#27 ...
-
-#24 [order-service] exporting to image
-#24 exporting layers 25.8s done
-#24 exporting manifest sha256:e28e44994ae42956fff93d3d5200b891b8fd11fa8938a42f852fa929df0865e8 0.0s done
-#24 exporting config sha256:6b25b06a84e90de7cc3429c7b4d6c52a806258a0de40049ba352da3557d3d107 0.0s done
-#24 exporting attestation manifest sha256:f397becb9c442de171699c0b8c4ecbecb1dc7f14805f6ca0633c486521f01f71 0.1s done
-#24 exporting manifest list sha256:f9146bacc35f818f48e06f801030209a79435786b8037b29aacc5854dbfb442f 0.0s done
-#24 naming to docker.io/library/flightrules-order-service:latest 0.0s done
-#24 unpacking to docker.io/library/flightrules-order-service:latest
-#24 ...
-
-#26 [notification-service] exporting to image
-#26 unpacking to docker.io/library/flightrules-notification-service:latest 19.9s done
-#26 DONE 46.1s
-
-#28 [payment-service] exporting to image
-#28 ...
-
-#29 [notification-service] resolving provenance for metadata file
-#29 DONE 0.2s
-
-#28 [payment-service] exporting to image
-#28 ...
-
-#23 [demo-agent] exporting to image
-#23 unpacking to docker.io/library/flightrules-demo-agent:latest 21.0s done
-#23 DONE 48.1s
-
-#28 [payment-service] exporting to image
-#28 unpacking to docker.io/library/flightrules-payment-service:latest 21.1s done
-#28 DONE 48.4s
-
-#24 [order-service] exporting to image
-#24 unpacking to docker.io/library/flightrules-order-service:latest 20.7s done
-#24 DONE 47.3s
-
-#27 [policy-service] exporting to image
-#27 unpacking to docker.io/library/flightrules-policy-service:latest 20.5s done
-#27 DONE 47.3s
-
-#25 [fraud-service] exporting to image
-#25 unpacking to docker.io/library/flightrules-fraud-service:latest 19.4s done
-#25 DONE 46.4s
-
-#30 [order-service] resolving provenance for metadata file
-#30 ...
-
-#31 [demo-agent] resolving provenance for metadata file
-#31 DONE 0.3s
-
-#32 [policy-service] resolving provenance for metadata file
-#32 DONE 0.2s
-
-#33 [payment-service] resolving provenance for metadata file
-#33 DONE 0.1s
-
-#30 [order-service] resolving provenance for metadata file
-#30 DONE 0.2s
-
-#34 [fraud-service] resolving provenance for metadata file
-#34 DONE 0.1s
- Image flightrules-fraud-service Built 
- Image flightrules-notification-service Built 
- Image flightrules-order-service Built 
- Image flightrules-payment-service Built 
- Image flightrules-policy-service Built 
- Image flightrules-demo-agent Built 
- Container flightrules-postgres Running 
- Container flightrules-fraud-service Recreate 
- Container flightrules-order-service Recreate 
- Container flightrules-payment-service Recreate 
- Container flightrules-policy-service Recreate 
- Container flightrules-notification-service Recreate 
- Container flightrules-order-service Recreated 
- Container flightrules-policy-service Recreated 
- Container flightrules-notification-service Recreated 
- Container flightrules-fraud-service Recreated 
- Container flightrules-payment-service Recreated 
- Container flightrules-demo-agent Recreate 
- Container flightrules-demo-agent Recreated 
- Container flightrules-payment-service Starting 
- Container flightrules-fraud-service Starting 
- Container flightrules-policy-service Starting 
- Container flightrules-notification-service Starting 
- Container flightrules-order-service Starting 
- Container flightrules-order-service Started 
- Container flightrules-policy-service Started 
- Container flightrules-notification-service Started 
- Container flightrules-payment-service Started 
- Container flightrules-fraud-service Started 
- Container flightrules-notification-service Waiting 
- Container flightrules-policy-service Waiting 
- Container flightrules-order-service Waiting 
- Container flightrules-fraud-service Waiting 
- Container flightrules-payment-service Waiting 
- Container flightrules-order-service Healthy 
- Container flightrules-policy-service Healthy 
- Container flightrules-fraud-service Healthy 
- Container flightrules-payment-service Healthy 
- Container flightrules-notification-service Healthy 
- Container flightrules-demo-agent Starting 
- Container flightrules-demo-agent Started 
- Container flightrules-order-service Waiting 
- Container flightrules-fraud-service Waiting 
- Container flightrules-payment-service Waiting 
- Container flightrules-notification-service Waiting 
- Container flightrules-demo-agent Waiting 
- Container flightrules-postgres Waiting 
- Container flightrules-policy-service Waiting 
- Container flightrules-order-service Healthy 
- Container flightrules-policy-service Healthy 
- Container flightrules-payment-service Healthy 
- Container flightrules-postgres Healthy 
- Container flightrules-notification-service Healthy 
- Container flightrules-fraud-service Healthy 
- Container flightrules-demo-agent Healthy 
-  ok    make demo-up
-
-[1m== 1/8  known-good telemetry: 25 runs of refund-agent-v1[0m
-{
-    "releaseId": "refund-agent-v1",
-    "orderId": "ord-98271",
-    "completedRuns": 25,
-    "runIds": [
-        "run_467b2c879ea94108b5f4",
-        "run_731b76ae83154b3a98e5",
-        "run_ef01887363ff4275a567",
-        "run_a71a8dc5df404bc890aa",
-        "run_869874485a1649af9bd9",
-        "run_a84804ddf382452a8867",
-        "run_fcdf6e2771b544babea4",
-        "run_cc6e9498802b4c5d9c8c",
-        "run_20fe22ff5d244b8e8f27",
-        "run_d904fa5ff12d4442bfc5",
-        "run_588f3ce86ee346f1b4c5",
-        "run_5074d8bf0258423e8667",
-        "run_91f14ff6326a4f3eae00",
-        "run_0ed4283e2cb44a73bad0",
-        "run_a88453284483437eb5e5",
-        "run_28885d0261e847dd867f",
-        "run_5bfa52b5bd4f46f297ab",
-        "run_62518e77749641d88a44",
-        "run_a916521c21fd4c798f65",
-        "run_1991efd0ad56477fad94",
-        "run_ef0dc81d74f9465486a9",
-        "run_818d3ec762b244c1b3be",
-        "run_e8f0d465a7be4b278e9a",
-        "run_ac5cb7b1c75e40d4864b",
-        "run_bef8225753544dd7b458"
-    ]
-}
-
-[1m== 2/8  seed the project, mine the baseline, activate the contract, sync SigNoz[0m
-
-== API http://localhost:4000
-   ready, migrations 0001, 0002, 0003, 0004
-
-== project demo-commerce
-   created 019f9e70-0131-724d-9d2c-10105606728c
-
-== agent refund-agent
-   created 019f9e70-0145-7079-a01b-022a38cb2eda
-
-== baseline from live refund-agent-v1 telemetry
-   baseline: proposing_contract_rules
-   bl-33249e8da953153cecad64c400b4f696 — 0 route family(ies) from ? run(s)
-   no route family yet; waiting 10s for telemetry to become queryable
-   baseline: fetching_span_trees
-   baseline: proposing_contract_rules
-   bl-ff7deb5344a1caf713232672950dc6b0 — 1 route family(ies) from ? run(s)
-
-== route-family review
-   approved 43070aa4af4f6c2c912a… (25 run(s))
-
-== contract proposal
-   proposal: fetching_span_trees
-   proposal: proposing_contract_rules
-   019f9e70-4c35-73d6-b5dd-129b3a50b322
-
-== validate, approve, activate
-   valid
-   approved
-   active
-
-== SigNoz artefact sync
-   sync 019f9e70-0145-7079-a01b-022a38cb2eda: syncing
-   created 10, updated 0, unchanged 0, conflicts 0
-   register: {"total":10,"synced":10,"drifted":0,"failed":0,"conflict":0}
-
-== seeded
-   project    demo-commerce  019f9e70-0131-724d-9d2c-10105606728c
-   agent      refund-agent  019f9e70-0145-7079-a01b-022a38cb2eda
-   contract   019f9e70-4c35-73d6-b5dd-129b3a50b322
-
-Next:
-   FLIGHTRULES_PROJECT=demo-commerce FLIGHTRULES_AGENT=refund-agent \
-     FLIGHTRULES_RELEASE=refund-agent-v1 make gate
-
-[1m== 3/8  evaluate the approved release[0m
-evaluating refund-agent-v1 against 019f9e70-4c35-73d6-b5dd-129b3a50b322
-  fetching_span_trees
-  evaluating_runs
-
-Evaluation
-----------
-  evaluation                  019f9e70-5911-7046-ba64-f536c007cab9
-  status                      pass
-  contractContentHash         "63c00a5cb77ae2e7d15472ecd2392d58fd6755fbfcf8a7b6934f7808871a1848"
-  duplicateSideEffects        0
-  erroredRuns                 0
-  evaluatorVersion            "1.0.0"
-  failedRuns                  0
-  insufficientRuns            0
-  runs                        25
-  violations                  0
-  zeroToleranceViolations     0
-
-Run `flightrules gate check` for the release decision.
-
-[1m== 4/8  release gate on the approved release — expecting exit 0[0m
-reading the release gate for 019f9e70-065f-712e-ae49-c9f677a939ae
-PASS: This release stayed within the approved trajectory contract.
-
-Release
--------
-  release                     refund-agent-v1
-  environment                 local
-  contract                    refund-agent-local 0.1.0 (active)
-  contract hash               63c00a5cb77ae2e7d15472ecd2392d58fd6755fbfcf8a7b6934f7808871a1848
-  evaluation                  019f9e70-5911-7046-ba64-f536c007cab9
-  evaluator                   1.0.0
-  baseline release            refund-agent-v1
-  decision hash               f98b4901aa0260c5105d5bcac61a22e7edc2ea5a38e585e686b7821c52e17ab5
-
-Runs
-----
-  evaluated                   25
-  passed                      25
-  failed                      0
-  errored                     0
-  insufficient                0
-  minimum required            20
-
-Rates
------
-  violation                   0.000000%  (limit 0.5%)
-  unknown route               0.000000%  (limit 1%)
-  duplicate side effect       0.000000%
-  missing prerequisite        0.000000%
-
-Change from baseline
---------------------
-  run.duration_ms             0.000000%  (19 -> 19)
-  gen_ai.usage.total_tokens   not measured
-  agent.retry.count           not measured
-
-Violations
-----------
-  total                       0
-  critical                    0
-  zero tolerance              0
-  by severity                 critical 0, high 0, medium 0, low 0
-
-Release-scoped rules
---------------------
-  budget-release-duration-ms-90268c56 [pass] p95 of run.duration_ms was 19, within 23.
-
-Disclosures
------------
-  RETRY_CHANGE_NOT_MEASURED
-    No usable baseline value for agent.retry.count, so its change could not be measured.
-  TOKEN_REGRESSION_NOT_MEASURED
-    No usable baseline value for gen_ai.usage.total_tokens, so its change could not be measured.
-
-exit code: 0
-
-[1m== 5/8  unsafe canary telemetry: 8 runs of refund-agent-v2[0m
-{
-    "releaseId": "refund-agent-v2",
-    "orderId": "ord-98271",
-    "completedRuns": 8,
-    "runIds": [
-        "run_8f437ab3146e410bbce8",
-        "run_f2f4920946c64c699e97",
-        "run_945f7e9990fe4e3e92d1",
-        "run_7e64c3818a00460bb4fc",
-        "run_9047080d04c94f3888e0",
-        "run_6449137665a14e8b93f2",
-        "run_7700111ecc6f402293f6",
-        "run_eddd7ca3045a4c7cb5f3"
-    ]
-}
-
-[1m== 6/8  evaluate the canary[0m
-evaluating refund-agent-v2 against 019f9e70-4c35-73d6-b5dd-129b3a50b322
-  discovering_traces
-  evaluating_runs
-
-Evaluation
-----------
-  evaluation                  019f9e70-8057-7294-bb53-b5f3d9c95a30
-  status                      fail
-  contractContentHash         "63c00a5cb77ae2e7d15472ecd2392d58fd6755fbfcf8a7b6934f7808871a1848"
-  duplicateSideEffects        6
-  erroredRuns                 0
-  evaluatorVersion            "1.0.0"
-  failedRuns                  6
-  insufficientRuns            0
-  runs                        6
-  violations                  60
-  zeroToleranceViolations     18
-
-Run `flightrules gate check` for the release decision.
-
-[1m== 7/8  release gate on the canary — expecting exit 2[0m
-reading the release gate for 019f9e70-804a-71bc-b1d8-a1214e438300
-FAIL: This release exceeded one or more trajectory thresholds.
-
-Release
--------
-  release                     refund-agent-v2
-  environment                 local
-  contract                    refund-agent-local 0.1.0 (active)
-  contract hash               63c00a5cb77ae2e7d15472ecd2392d58fd6755fbfcf8a7b6934f7808871a1848
-  evaluation                  019f9e70-8057-7294-bb53-b5f3d9c95a30
-  evaluator                   1.0.0
-  baseline release            refund-agent-v1
-  decision hash               ab336ecfd0149c6168cefb3d458674ccd07c35bfc994cee7d5d8e1ed475c6cd5
-
-Runs
-----
-  evaluated                   6
-  passed                      0
-  failed                      6
-  errored                     0
-  insufficient                0
-  minimum required            20
-
-Rates
------
-  violation                   100.000000%  (limit 0.5%)
-  unknown route               100.000000%  (limit 1%)
-  duplicate side effect       100.000000%
-  missing prerequisite        100.000000%
-
-Change from baseline
---------------------
-  run.duration_ms             4384.210526%  (19 -> 852)
-  gen_ai.usage.total_tokens   not measured
-  agent.retry.count           not measured
-
-Violations
-----------
-  total                       60
-  critical                    18
-  zero tolerance              18
-  by severity                 critical 18, high 36, medium 6, low 0
-
-Release-scoped rules
---------------------
-  budget-release-duration-ms-90268c56 [violation] p95 of run.duration_ms was 852, exceeding 23.
-
-Findings
---------
-  ZERO_TOLERANCE_VIOLATION (fail)
-    18 zero-tolerance violation(s) were observed. A zero-tolerance rule has no permitted rate.
-    expected 0 zero-tolerance violation(s); observed 18 violation(s)
-  VIOLATION_RATE_EXCEEDED (fail)
-    100.000000% of runs violated the contract; the gate permits at most 0.5%.
-    expected at most 0.5%; observed 100.000000% (6 of 6)
-  UNKNOWN_ROUTE_RATE_EXCEEDED (fail)
-    100.000000% of runs followed a route the contract does not approve; the gate permits at most 1%.
-    expected at most 1%; observed 100.000000% (6 of 6)
-  LATENCY_REGRESSION_EXCEEDED (fail)
-    p95 latency moved 4384.210526% against the baseline; the gate permits at most 20%.
-    expected at most 20%; observed 4384.210526% (19 ms to 852 ms)
-  RELEASE_BUDGET_EXCEEDED (fail)
-    Release-wide p95 of run.duration_ms was 852, over the budget of 23.
-    expected at most 23; observed 852
-  MIN_RUNS_NOT_MET (insufficient_data)
-    6 completed run(s) were evaluated; the contract requires at least 20 before a release decision.
-    expected at least 20 run(s); observed 6 run(s)
-
-Disclosures
------------
-  RETRY_CHANGE_NOT_MEASURED
-    No usable baseline value for agent.retry.count, so its change could not be measured.
-  TOKEN_REGRESSION_NOT_MEASURED
-    No usable baseline value for gen_ai.usage.total_tokens, so its change could not be measured.
-
-Evidence
---------
-  failing traces              3958b3de102f1e1c8300d1548f94c239, 4abe44ad808a623e0b87b783c74d2498, a54c981f252ab16bb779746e179d790b, d214cb3da14b24ee3c68209ee9cebae9, d9cea7ab7385d029f0ff04b5cd78f29c
-  zero-tolerance rules        require-fraud-check-4dccc488, require-policy-retrieve-98fbf144, single-payment-refund-write-8846bedd
-  violated rules              budget-run-duration-ms-69ef06b5, require-fraud-check-4dccc488, require-payment-refund-a4f9c9ee, require-policy-retrieve-98fbf144, require-refund-calculate-973f0a45, retries-bounded-73060ad7, route-approved-family-5e4bcff6, single-payment-refund-write-8846bedd
-
-exit code: 2
-
-[1m== 8/8  export the evidence[0m
-wrote 38617 bytes to docs/evidence/phase-11/canary-gate.json
-  evidence written            docs/evidence/phase-11/canary-gate.json
-wrote 3587 bytes to docs/evidence/phase-11/baseline-gate.json
-  evidence written            docs/evidence/phase-11/baseline-gate.json
-
-[1m== result[0m
-  approved release refund-agent-v1      exit 0
-  unsafe canary    refund-agent-v2      exit 2
-  evidence         docs/evidence/phase-11/
-
-A release pipeline failed because of trajectory evidence from SigNoz.
-  ok    make demo-full — approved exit 0, unsafe canary exit 2
-
-[1m== 11  the release gate, read back independently[0m
-reading the release gate for 019f9e70-065f-712e-ae49-c9f677a939ae
-PASS: This release stayed within the approved trajectory contract.
-
-Release
--------
-  release                     refund-agent-v1
-  environment                 local
-  contract                    refund-agent-local 0.1.0 (active)
-  contract hash               63c00a5cb77ae2e7d15472ecd2392d58fd6755fbfcf8a7b6934f7808871a1848
-  evaluation                  019f9e70-5911-7046-ba64-f536c007cab9
-  evaluator                   1.0.0
-  baseline release            refund-agent-v1
-  decision hash               f98b4901aa0260c5105d5bcac61a22e7edc2ea5a38e585e686b7821c52e17ab5
-
-Runs
-----
-  evaluated                   25
-  passed                      25
-  failed                      0
-  errored                     0
-  insufficient                0
-  minimum required            20
-
-Rates
------
-  violation                   0.000000%  (limit 0.5%)
-  unknown route               0.000000%  (limit 1%)
-  duplicate side effect       0.000000%
-  missing prerequisite        0.000000%
-
-Change from baseline
---------------------
-  run.duration_ms             0.000000%  (19 -> 19)
-  gen_ai.usage.total_tokens   not measured
-  agent.retry.count           not measured
-
-Violations
-----------
-  total                       0
-  critical                    0
-  zero tolerance              0
-  by severity                 critical 0, high 0, medium 0, low 0
-
-Release-scoped rules
---------------------
-  budget-release-duration-ms-90268c56 [pass] p95 of run.duration_ms was 19, within 23.
-
-Disclosures
------------
-  RETRY_CHANGE_NOT_MEASURED
-    No usable baseline value for agent.retry.count, so its change could not be measured.
-  TOKEN_REGRESSION_NOT_MEASURED
-    No usable baseline value for gen_ai.usage.total_tokens, so its change could not be measured.
-reading the release gate for 019f9e70-804a-71bc-b1d8-a1214e438300
-FAIL: This release exceeded one or more trajectory thresholds.
-
-Release
--------
-  release                     refund-agent-v2
-  environment                 local
-  contract                    refund-agent-local 0.1.0 (active)
-  contract hash               63c00a5cb77ae2e7d15472ecd2392d58fd6755fbfcf8a7b6934f7808871a1848
-  evaluation                  019f9e70-8057-7294-bb53-b5f3d9c95a30
-  evaluator                   1.0.0
-  baseline release            refund-agent-v1
-  decision hash               ab336ecfd0149c6168cefb3d458674ccd07c35bfc994cee7d5d8e1ed475c6cd5
-
-Runs
-----
-  evaluated                   6
-  passed                      0
-  failed                      6
-  errored                     0
-  insufficient                0
-  minimum required            20
-
-Rates
------
-  violation                   100.000000%  (limit 0.5%)
-  unknown route               100.000000%  (limit 1%)
-  duplicate side effect       100.000000%
-  missing prerequisite        100.000000%
-
-Change from baseline
---------------------
-  run.duration_ms             4384.210526%  (19 -> 852)
-  gen_ai.usage.total_tokens   not measured
-  agent.retry.count           not measured
-
-Violations
-----------
-  total                       60
-  critical                    18
-  zero tolerance              18
-  by severity                 critical 18, high 36, medium 6, low 0
-
-Release-scoped rules
---------------------
-  budget-release-duration-ms-90268c56 [violation] p95 of run.duration_ms was 852, exceeding 23.
-
-Findings
---------
-  ZERO_TOLERANCE_VIOLATION (fail)
-    18 zero-tolerance violation(s) were observed. A zero-tolerance rule has no permitted rate.
-    expected 0 zero-tolerance violation(s); observed 18 violation(s)
-  VIOLATION_RATE_EXCEEDED (fail)
-    100.000000% of runs violated the contract; the gate permits at most 0.5%.
-    expected at most 0.5%; observed 100.000000% (6 of 6)
-  UNKNOWN_ROUTE_RATE_EXCEEDED (fail)
-    100.000000% of runs followed a route the contract does not approve; the gate permits at most 1%.
-    expected at most 1%; observed 100.000000% (6 of 6)
-  LATENCY_REGRESSION_EXCEEDED (fail)
-    p95 latency moved 4384.210526% against the baseline; the gate permits at most 20%.
-    expected at most 20%; observed 4384.210526% (19 ms to 852 ms)
-  RELEASE_BUDGET_EXCEEDED (fail)
-    Release-wide p95 of run.duration_ms was 852, over the budget of 23.
-    expected at most 23; observed 852
-  MIN_RUNS_NOT_MET (insufficient_data)
-    6 completed run(s) were evaluated; the contract requires at least 20 before a release decision.
-    expected at least 20 run(s); observed 6 run(s)
-
-Disclosures
------------
-  RETRY_CHANGE_NOT_MEASURED
-    No usable baseline value for agent.retry.count, so its change could not be measured.
-  TOKEN_REGRESSION_NOT_MEASURED
-    No usable baseline value for gen_ai.usage.total_tokens, so its change could not be measured.
-
-Evidence
---------
-  failing traces              3958b3de102f1e1c8300d1548f94c239, 4abe44ad808a623e0b87b783c74d2498, a54c981f252ab16bb779746e179d790b, d214cb3da14b24ee3c68209ee9cebae9, d9cea7ab7385d029f0ff04b5cd78f29c
-  zero-tolerance rules        require-fraud-check-4dccc488, require-policy-retrieve-98fbf144, single-payment-refund-write-8846bedd
-  violated rules              budget-run-duration-ms-69ef06b5, require-fraud-check-4dccc488, require-payment-refund-a4f9c9ee, require-policy-retrieve-98fbf144, require-refund-calculate-973f0a45, retries-bounded-73060ad7, route-approved-family-5e4bcff6, single-payment-refund-write-8846bedd
-make: *** [gate] Error 2
-  ok    approved release exit 0
-  ok    unsafe canary exit 2
-
-[1m== 12  ten managed SigNoz artefacts, verified by read-back[0m
-        artefact register: 
-  FAIL  the artefact register does not report ten synced artefacts
-
-[1m== 13  exported metrics and logs reach SigNoz[0m
-  run   make verify-telemetry
-
-Exported logs
-  FAIL  no trace to correlate against. Run `make demo-full` then `make demo-urls`.
-
-Metric dimensions
-file:///private/tmp/flightrules-fresh2/scripts/verify-telemetry.mjs:51
-  if (!match) throw new Error(`no JSON document in the MCP response: ${text.slice(0, 200)}`);
-                    ^
-
-Error: no JSON document in the MCP response: Metric "flight_rules.duplicate_side_effects" not found via signoz_list_metrics. Check the metric name or provide metricType manually.
-    at parseEnvelope (file:///private/tmp/flightrules-fresh2/scripts/verify-telemetry.mjs:51:21)
-    at call (file:///private/tmp/flightrules-fresh2/scripts/verify-telemetry.mjs:83:3)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async file:///private/tmp/flightrules-fresh2/scripts/verify-telemetry.mjs:166:3
-
-Node.js v24.14.1
-make: *** [verify-telemetry] Error 1
-  FAIL  make verify-telemetry (exit 2)

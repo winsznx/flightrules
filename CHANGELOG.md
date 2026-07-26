@@ -844,3 +844,87 @@ All notable changes to FlightRules are recorded here, one section per phase.
   The two other `unref()` calls in the worker are correct and unchanged: the lease heartbeat and the
   shutdown timeout each have something else keeping the process alive while they run.
 
+
+## Phase 16 — Hardening, performance, and adversarial validation (2026-07-26)
+
+### Added
+
+- `packages/contract-engine/src/incomplete.test.ts` — 16 cases covering a missing root, a missing
+  parent, a parent link into another trace, a self-parented span, contradictory duplicate records,
+  every prefix of a head-sampled trace, an orphaned leaf, and a missing release, run, service or
+  operation identifier. Each asserts that a gap in the telemetry becomes a violation the evidence
+  supports or an explicit "cannot decide" — never a pass.
+- `packages/contract-engine/src/missing-attributes.test.ts` — 51 cases putting every
+  attribute-reading rule in front of the nine ways a value can fail to be the expected one: absent,
+  `null`, `false`, `0`, empty string, wrong type, negative, out of range, and the `null` SL-046
+  produces from an omitted `dataType`.
+- `apps/worker/src/artifact-races.integration.test.ts` — 17 cases against real PostgreSQL: repeated
+  syncs, concurrent syncs, a create whose response was lost, a register commit that failed after the
+  remote create, unmanaged name conflicts, a resource deleted, renamed or edited by hand, a stale
+  resource from a superseded contract, and two syncs racing through the saved-view
+  delete-and-recreate.
+- `apps/worker/src/signoz-outage.integration.test.ts` — 14 cases interrupting SigNoz before the
+  first call, during a list, between a create and its read-back, during trace discovery, mid
+  pagination and during a trace fetch, as a transport failure, a declared error, an empty response
+  and the SPA shell of SL-012.
+- `@flightrules/signoz-mcp/testing` — an in-memory MCP transport reproducing the pinned server's
+  response envelopes, including SL-056's per-type identifier and name keys and SL-058's non-uniform
+  delete responses. Used only by tests; every layer above the socket is the product's own.
+- `packages/db/src/advisory-lock.ts` — `withAdvisoryLock`, a named cluster-wide exclusion on a
+  reserved connection, and `artifactSyncLockKey`.
+- `jobQueueDepth` in `packages/db`, surfaced by `GET /health/dependencies` as `jobs.status`,
+  `queued`, `running`, `oldestQueuedSeconds` and `expiredLeases`, with `JOB_STALLED_AFTER_SECONDS`.
+- `scripts/verify-alert-lifecycle.mjs` and `make verify-alerts` — every managed alert's
+  configuration, firing transition, recovery transition and post-cycle configuration, read from
+  SigNoz's own alert history.
+- `scripts/verify-fresh-machine.sh` and `make verify-fresh-machine` — a clone outside the working
+  tree, from committed files only, through fifteen stages to the two gate exit codes.
+- 12 further worker lifecycle cases: lease expiry, stale-job recovery, a crash after the claim, a
+  lease lost mid-run, no duplicate committed output, and shutdown while idle.
+
+### Fixed
+
+- **A negative `agent.retry.number` subtracted from the retry budget.** A run of nine retries and
+  one mislabelled span reporting −5 totalled four against a limit of four and reported a clean run.
+  A negative attempt index is not an attempt index; the normaliser now rejects it, which also
+  protects the release-level summed retries.
+- **The CLI printed terminal control sequences it received from telemetry.** A span name carrying
+  `ESC [ 2 J ESC [ 1 ; 1 H PASS…` cleared the reader's screen and reprinted the opposite verdict.
+  Every line the CLI writes now passes through a filter applied once at the entry point.
+- **A hostile release key escaped the evidence download's `content-disposition` filename.** A quote
+  closed the `filename` parameter; a newline was a header injection. The key is reduced to a
+  filename segment and still travels intact inside the bundle.
+- **`assertNameSegment` accepted the C1 control range**, so `0x9b` — a control-sequence introducer
+  on its own — was a legal managed resource name segment.
+- **Two concurrent syncs of one agent created duplicate saved views.** The register was written
+  outside any exclusion, so a waiting sync could plan from a register that predated the one it was
+  waiting for. Read-register, sync and persist-register now run under a per-agent advisory lock.
+- **A managed artefact edited by hand was recreated rather than replaced**, leaving two resources of
+  the same managed name. Drift is now distinguished from a stale identifier and replaces in both
+  cases.
+- **`make signoz-bootstrap` failed on a fresh deployment with `Error 22` and no other information.**
+  `/api/v1/health` reports ok before `/api/v1/register` is servable, and `curl -sf` discards the
+  response body on an HTTP error. Registration is retried for two minutes and the body is printed.
+- **`make db-migrate` failed on a clean clone** with `ERR_MODULE_NOT_FOUND`: the migrator imports
+  `@flightrules/domain` by its package entry point, which resolves to `dist/`. The database targets
+  now build the package's project references first.
+- **`make demo-full` mined its baseline before the telemetry was queryable**, failing intermittently
+  with "the baseline mined no route families". Mining is retried for up to a minute.
+- `scripts/measure-performance.mjs` was committed unformatted, so `make verify` exited 2 at entry.
+
+### Verified
+
+- Alert **firing and recovery** observed for every alert that fired: the violation-rate alert at
+  12:09:49Z value 220 recovering at 12:14:49Z, and the duplicate-side-effect alert at 12:09:33Z
+  value 22 recovering at 12:14:33Z — exactly 300 s apart, matching the configured `evalWindow`.
+  Every query and threshold is byte-identical before and after.
+- Fresh-machine reproduction from a clean clone through Foundry, bootstrap, migrations, build,
+  idle-survival, the demo, and both gate exit codes.
+- 1,415 unit tests, 286 integration tests, five security scans at exit 0.
+
+### Discovered
+
+- **SL-065** — `signoz_get_alert_history` answers `{"data":{"items":[…],"total":n}}` rather than the
+  `{"data":[…]}` envelope every other list tool uses.
+- **SL-066** — an alert history row carries the rule's state under `overallState` and the sample's
+  under `state`, and `state` takes values a rule never takes, `nodata` among them.
