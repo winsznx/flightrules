@@ -45,6 +45,13 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
+      # Built on its own, first. `pnpm run -r build` multiplexes every package's output and drops a
+      # child's stderr when it exits immediately, which turned the first real CI run's web-build
+      # failure into the single word "Failed" with no diagnosis. Running this package alone keeps
+      # its stderr attached.
+      - name: Build the web application
+        run: pnpm --filter @flightrules/web run build
+
       - name: Build
         run: pnpm run build
 
@@ -65,6 +72,13 @@ jobs:
 
       - name: Install from lockfile
         run: pnpm install --frozen-lockfile
+
+      # Every workspace package resolves through its `exports`, which point at `dist/`. Nothing is
+      # built by installing, so without this the suite fails at import with
+      # `Failed to resolve entry for package "@flightrules/telemetry"`. Locally `dist/` is always
+      # warm, which is why this only appeared on the first real CI run.
+      - name: Build the workspace packages the suite imports
+        run: pnpm run build
 
       - name: Unit tests
         run: pnpm run test
@@ -106,8 +120,10 @@ jobs:
       # The migrator runs from source through `tsx` and imports `@flightrules/domain` by its package
       # entry point, which resolves to `dist/`. Nothing is built in this job, so without this the
       # migration steps fail with ERR_MODULE_NOT_FOUND. `make db-migrate` does the same locally.
-      - name: Build the migrator's project references
-        run: pnpm --filter @flightrules/db run build
+      # The whole workspace, not just the migrator: the integration suite imports packages by
+      # their `exports`, which point at `dist/`.
+      - name: Build
+        run: pnpm run build
 
       - name: Apply migrations
         run: pnpm --filter @flightrules/db run migrate
@@ -138,6 +154,9 @@ jobs:
 
       - name: Install from lockfile
         run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
 
       - name: Install foundryctl
         run: |
