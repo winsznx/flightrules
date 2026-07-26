@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import postgres, { type Sql } from "postgres";
 
+export { artifactSyncLockKey, withAdvisoryLock } from "./advisory-lock.js";
 export type { JsonValue } from "./canonical.js";
 export { canonicalHash, canonicalise, canonicalJson, canonicalObject } from "./canonical.js";
 export type { PostgresFailure } from "./errors.js";
