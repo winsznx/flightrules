@@ -1,8 +1,9 @@
 name: Diagnose web build
 
-# Temporary Phase 17 instrument. Manually dispatched only, never on push, and deleted once the
-# silent `next build` exit on Linux is understood. It changes nothing about the product; it runs
-# the same command CI runs, with every diagnostic Node and Next expose at the pinned versions.
+# Temporary Phase 17 instrument. Manually dispatched, or pushed to a disposable `diagnose/**`
+# branch. Never runs on `main` or a phase branch, and is deleted once the silent `next build` exit
+# on Linux is understood. It changes nothing about the product; it runs the same command CI runs,
+# with every diagnostic Node and Next expose at the pinned versions.
 
 on:
   workflow_dispatch:
@@ -36,6 +37,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Environment
+        working-directory: apps/web
         run: |
           set -x
           uname -a
@@ -43,15 +45,16 @@ jobs:
           pnpm --version
           nproc
           free -m
-          ulimit -a
           df -h .
           cat /etc/os-release
-          node -p "require('next/package.json').version" || true
-          node -p "require('typescript/package.json').version" || true
-          env | grep -iE 'node|next|npm|pnpm|ci|turbo' | sort
+          node -p "require('next/package.json').version"
+          node -p "require('typescript/package.json').version"
+          ls -la node_modules/.pnpm 2>/dev/null | head -5 || true
+          ls -d ../../node_modules/.pnpm/@next+swc* 2>/dev/null || echo "no @next/swc packages"
+          env | grep -iE 'node|next|npm|pnpm|^ci|turbo' | sort
 
-      - name: Workspace build
-        run: pnpm run build
+      - name: Build every workspace package except the web application
+        run: pnpm -r --if-present --filter '!@flightrules/web' run build
 
       - name: apps/web typecheck alone
         working-directory: apps/web
@@ -71,22 +74,25 @@ jobs:
           NEXT_BIN="$(node -p "require.resolve('next/dist/bin/next')")"
           echo "next bin: $NEXT_BIN"
           ls -la .next 2>/dev/null || echo "no .next yet"
-          node "$NEXT_BIN" build 2>build.err.log | tee build.out.log
+          node "$NEXT_BIN" build > build.out.log 2> build.err.log
           code=$?
           echo "=== next build exit code: $code ==="
+          echo "=== stdout ==="
+          cat build.out.log || true
           echo "=== stderr ==="
           cat build.err.log || true
-          echo "=== end stderr ==="
+          echo "=== end ==="
           exit 0
 
-      - name: Same build through a shell so the signal is visible
+      - name: Same build through a shell so a signal would be visible
         working-directory: apps/web
         env:
           NEXT_TELEMETRY_DISABLED: "1"
         run: |
           set +e
           rm -rf .next
-          bash -c 'next build; echo "raw exit=$?"' 2>&1 | tail -40
+          next build
+          echo "raw exit=$?"
           exit 0
 
       - name: Inspect what the build produced
@@ -95,12 +101,11 @@ jobs:
           set -x
           ls -la .next 2>/dev/null || echo "no .next"
           find .next -maxdepth 2 2>/dev/null | head -60 || true
-          cat .next/trace 2>/dev/null | tail -5 || true
+          tail -c 2000 .next/trace 2>/dev/null || true
 
       - name: Kernel ring buffer for OOM or segfault evidence
         if: always()
-        run: |
-          sudo dmesg 2>/dev/null | tail -40 || echo "dmesg unavailable"
+        run: sudo dmesg 2>/dev/null | tail -40 || echo "dmesg unavailable"
 
       - name: Webpack builder for comparison
         working-directory: apps/web
@@ -109,6 +114,6 @@ jobs:
         run: |
           set +e
           rm -rf .next
-          next build --webpack 2>&1 | tail -40
-          echo "webpack exit=$?"
+          next build --webpack 2>&1 | tail -60
+          echo "webpack exit=${PIPESTATUS[0]}"
           exit 0
