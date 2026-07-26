@@ -249,6 +249,18 @@ describe("classify", () => {
     // #given no retry attribute; zero would claim a first attempt was explicitly recorded
     expect(classify({}, config).retryNumber).toBeNull();
   });
+
+  it("rejects a negative retry number rather than reading it as a retry count", () => {
+    // #given a span claiming a negative attempt index, which no zero-based counter can produce
+    // #then it carries no retry evidence, so it can neither add to nor subtract from a retry budget
+    expect(classify({ "agent.retry.number": -1 }, config).retryNumber).toBeNull();
+    expect(classify({ "agent.retry.number": -5 }, config).retryNumber).toBeNull();
+  });
+
+  it("keeps zero as an explicitly recorded first attempt", () => {
+    // #given the value the instrumented demo actually emits for an unretried step
+    expect(classify({ "agent.retry.number": 0 }, config).retryNumber).toBe(0);
+  });
 });
 
 describe("configuration identity", () => {
