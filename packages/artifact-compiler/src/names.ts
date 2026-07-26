@@ -46,7 +46,10 @@ const MAX_NAME = 200;
 function hasControlCharacter(value: string): boolean {
   for (let index = 0; index < value.length; index += 1) {
     const code = value.charCodeAt(index);
-    if (code < 0x20 || code === 0x7f) return true;
+    // C0, DEL and C1. The C1 range matters as much as C0 here: a terminal in an eight-bit mode reads
+    // `0x9b` as a control-sequence introducer without a preceding escape, so a resource name
+    // containing one is an instruction wherever it is echoed.
+    if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) return true;
   }
   return false;
 }
