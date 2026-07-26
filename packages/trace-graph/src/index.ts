@@ -13,7 +13,12 @@ export {
   serialiseCanonicalGraph,
 } from "./canonical.js";
 export type { GraphChange, GraphChangeKind, GraphDiff } from "./diff.js";
-export { diffGraphs, GRAPH_CHANGE_KINDS, unknownRouteChange } from "./diff.js";
+export {
+  diffCanonicalGraphs,
+  diffGraphs,
+  GRAPH_CHANGE_KINDS,
+  unknownRouteChange,
+} from "./diff.js";
 export type { ExportedGraph, GraphExportOptions } from "./export.js";
 export { exportGraph, exportGraphJson } from "./export.js";
 export type { Feature, FeatureKind, FeatureOptions, FeatureSet } from "./features.js";

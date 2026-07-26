@@ -739,3 +739,46 @@ All notable changes to FlightRules are recorded here, one section per phase.
   does exactly that, and `docs/DEMO_SCRIPT.md` says so.
 - A long-running API or worker process can outlive its own `dist`. Both had to be restarted before a
   route registered since Phase 12 appeared in `GET /api/openapi.json`.
+
+## Phase 14 — Release Diff UI (2026-07-26)
+
+### Added
+
+- `GET /api/releases/:releaseId/diff`, closing the Phase 12 handoff's unresolved limitation 1. A
+  read: no job, no trace fetch, no row written. It compares the release's representative run against
+  the approved route family the **evaluator itself** judged it nearest to, using the deterministic
+  engine, and returns the twelve PRD section 8.11 change labels. A release with no completed
+  evaluation returns `RELEASE_INSUFFICIENT_DATA` rather than an empty diff.
+- `diffCanonicalGraphs` in `@flightrules/trace-graph`, extracted from `diffGraphs` — which only ever
+  used the raw graph for span-ID lookup. The database stores only canonical graphs, so this is what
+  lets the diff read persisted evidence rather than re-fetching two traces from SigNoz. All fifty
+  existing tests pass unchanged.
+- `packages/signoz-mcp/src/web-url.ts` — browser-reachable SigNoz links, built from a runtime-verified
+  path and the operator's configured origin (SL-061).
+- `apps/web/src/components/graph-diff.tsx` — the narrative in sentences, the side-by-side ordered
+  comparison, and the typed change list. Rendering only; the page contains no comparison code.
+- Decision filters on the releases list, as links, so every filtered view is a URL.
+- `releases/[releaseId]/evidence/route.ts` — the evidence download, assembled from the gate decision
+  and the diff so it can carry nothing they do not.
+- `reEvaluateRelease` — the `Re-run evaluation` action. The decision is never updated optimistically:
+  the gate reads the most recent *completed* evaluation, so the previous decision stands until the
+  new job finishes and the prior evidence is preserved either way.
+- `listApprovedRouteGraphs` and `listCandidateRunGraphs` in `@flightrules/db`.
+- A `workflow` Playwright project, declared last, holding the destructive Phase 13 exit-gate spec.
+
+### Fixed
+
+- **Every `trace_runs.signoz_web_url` was `null`, so no SigNoz link worked** — PRD section 8.11's
+  `Open in SigNoz`, FR-017's evidence linking and acceptance A9 all depended on one. The cause is
+  SL-061: the builder query FlightRules must use for custom attributes returns no `webUrl` at all,
+  and the URL `signoz_get_trace_details` does return names SigNoz's internal container host, which no
+  browser can resolve. Links are now built as **SigNoz's path, the operator's origin**.
+- **The browser suite was not isolated.** Phase 13's workflow spec resets the demo, correctly, and ran
+  before the read-only specs — failing twenty of them for a reason unrelated to what they assert.
+  Destructive and read-only specs are now separate Playwright projects with the destructive one last.
+
+### Discovered
+
+- **A running worker steals the integration suite's queued jobs.** `runner.integration.test.ts`'s
+  shutdown test expects one job to remain queued; a worker sharing the database claims it first.
+  Stop the worker before `make test-integration`.

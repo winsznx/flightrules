@@ -408,3 +408,38 @@ from a client component is a build error.
 | `next build` reports it cannot find TypeScript and then crashes | Next.js 16.2.11 cannot drive TypeScript 7.0.2 (SL-060) | Already handled: `pnpm --filter @flightrules/web run build` runs `tsc -p` first and `next build` second. Do not re-enable Next's own TypeScript step |
 | A page renders but its table is empty | The API answered with no rows. That is the empty state, not a failure | Seed with `make demo-seed`, or evaluate a release |
 | `make verify` fails on `scan-design` | A colour, size or font entered the product that `design.md` does not define | Use a `var(--…)` token. `design.md` is authoritative (ADR-0011) |
+
+## Running the test suites
+
+Two facts about this repository's suites are easy to lose an hour to, and both are properties of the
+suites talking to real services rather than mocks.
+
+1. **Stop the worker before `make test-integration`.** `apps/worker/src/runner.integration.test.ts`
+   asserts that a queued job is still queued after a shutdown. A worker process sharing the same
+   database claims it first, and the test fails for a reason that has nothing to do with the runner.
+
+   ```bash
+   pkill -f 'apps/worker/dist/index.js'
+   make test-integration
+   ```
+
+2. **`make test-e2e` needs a seeded demo, and leaves it reset.** The read-only browser projects assert
+   against `make demo-full`'s state; the `workflow` project — Phase 13's exit gate — purges the
+   managed SigNoz artefacts and resets the database, because "from reset demo state" is what that
+   gate requires. Run the demo before, and again after if the full state is wanted back.
+
+   ```bash
+   make demo-full          # seed
+   make test-e2e           # read-only projects, then the destructive workflow project
+   make demo-full          # restore
+   ```
+
+3. **A demo reset alone is not a clean state.** `POST /api/demo/reset` clears the FlightRules
+   database and leaves SigNoz untouched by design (FR-020), so the ten managed resources outlive the
+   register rows that recorded owning them and the next sync correctly reports ten conflicts. A
+   genuinely clean start is:
+
+   ```bash
+   make signoz-purge       # delete the managed SigNoz resources by name prefix
+   make demo-full          # rebuild everything from live telemetry
+   ```

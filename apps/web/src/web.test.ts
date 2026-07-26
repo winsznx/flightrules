@@ -354,6 +354,29 @@ describe("prohibitions", () => {
       }
     });
 
+    it("ships no comparison engine to the browser", async () => {
+      // #given PRD Phase 14's last test: "no graph data is fabricated client-side"
+      // #then no module in this application imports the graph engine at all, so there is no code
+      // here that *could* compute a diff — the API computes it and this application renders it
+      // Comments are stripped first: a module may explain which engine computed what it renders,
+      // and prose imports nothing.
+      for (const file of await sourceFiles()) {
+        const source = (await readFile(file, "utf8")).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
+        for (const forbidden of [
+          "@flightrules/trace-graph",
+          "diffGraphs",
+          "diffCanonicalGraphs",
+          "canonicaliseGraph",
+          "@flightrules/contract-engine",
+          "@flightrules/baseline-miner",
+        ]) {
+          expect(source, `${path.relative(WEB_ROOT, file)} imports ${forbidden}`).not.toContain(
+            forbidden,
+          );
+        }
+      }
+    });
+
     it("applies the design-token rule inside client components too", async () => {
       // #then a client component cannot invent a colour, a size or a font either
       const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-fA-F])/;

@@ -1,69 +1,69 @@
 {
   "schemaVersion": "flightrules.dev/release-gate/v1",
-  "exportedAt": "2026-07-26T00:25:31.428Z",
+  "exportedAt": "2026-07-26T01:13:58.165Z",
   "decision": "fail",
-  "decisionHash": "61f3de091c240a7f63b7e3e01907271ca147e8247ba06369043ed080b2841848",
+  "decisionHash": "4d53b283f80c25eada77ca785b3e29ac75fb8b3c3f700cb928f894f70151c2a6",
   "release": {
-    "id": "019f9bd0-04a3-739e-96d3-300e54ce4e5f",
+    "id": "019f9bfc-5725-7290-ba11-99864504b1ea",
     "key": "refund-agent-v2",
     "environment": "local"
   },
   "contract": {
-    "id": "019f9bcf-9b9d-72ae-8507-f0f9c3f5cd03",
+    "id": "019f9bfb-9915-71ad-bdde-912dd5b2612a",
     "key": "refund-agent-local",
     "version": "0.1.0",
-    "contentHash": "dd95ca37d8974586da557fa59efa0d9278581cbb5f1d0ff5b6c86cc0dedfbd3d",
+    "contentHash": "920ab41ddbd094bd7c3527bc2d2f794032c9e8e5e6a4369d10ab5167a2d9be22",
     "state": "active"
   },
   "evaluation": {
-    "id": "019f9bd0-04aa-7055-a5b7-c19f120c2710",
+    "id": "019f9bfc-5728-70c4-9f8e-3b75ee423708",
     "status": "fail"
   },
   "counts": {
-    "evaluatedRuns": 22,
+    "evaluatedRuns": 40,
     "passedRuns": 0,
-    "failedRuns": 22,
+    "failedRuns": 40,
     "erroredRuns": 0,
     "insufficientRuns": 0,
-    "violations": 220,
-    "criticalViolations": 66,
-    "zeroToleranceViolations": 66,
-    "unknownRouteRuns": 22,
-    "duplicateSideEffectRuns": 22,
-    "missingPrerequisiteRuns": 22,
+    "violations": 400,
+    "criticalViolations": 120,
+    "zeroToleranceViolations": 120,
+    "unknownRouteRuns": 40,
+    "duplicateSideEffectRuns": 40,
+    "missingPrerequisiteRuns": 40,
     "degradedTraceRuns": 0,
     "severities": {
       "low": 0,
-      "medium": 22,
-      "high": 132,
-      "critical": 66
+      "medium": 40,
+      "high": 240,
+      "critical": 120
     },
-    "observedRouteFamilies": 2,
+    "observedRouteFamilies": 1,
     "approvedRouteFamiliesCovered": 0,
     "approvedRouteFamiliesDeclared": 1
   },
   "rates": {
     "violation": {
-      "numerator": 22,
-      "denominator": 22,
+      "numerator": 40,
+      "denominator": 40,
       "decimal": "1.000000",
       "percent": "100.000000"
     },
     "unknownRoute": {
-      "numerator": 22,
-      "denominator": 22,
+      "numerator": 40,
+      "denominator": 40,
       "decimal": "1.000000",
       "percent": "100.000000"
     },
     "duplicateSideEffect": {
-      "numerator": 22,
-      "denominator": 22,
+      "numerator": 40,
+      "denominator": 40,
       "decimal": "1.000000",
       "percent": "100.000000"
     },
     "missingPrerequisite": {
-      "numerator": 22,
-      "denominator": 22,
+      "numerator": 40,
+      "denominator": 40,
       "decimal": "1.000000",
       "percent": "100.000000"
     }
@@ -86,7 +86,7 @@
     "retries": {
       "metric": "agent.retry.count",
       "baseline": 0,
-      "candidate": 1,
+      "candidate": 2,
       "changePercent": null,
       "measured": false
     }
@@ -101,7 +101,7 @@
       "metric": "run.duration_ms",
       "observed": 821,
       "limit": 27,
-      "runsReporting": 22,
+      "runsReporting": 40,
       "summary": "p95 of run.duration_ms was 821, exceeding 27."
     }
   ],
@@ -110,9 +110,9 @@
       "code": "ZERO_TOLERANCE_VIOLATION",
       "implies": "fail",
       "severity": "critical",
-      "summary": "66 zero-tolerance violation(s) were observed. A zero-tolerance rule has no permitted rate.",
+      "summary": "120 zero-tolerance violation(s) were observed. A zero-tolerance rule has no permitted rate.",
       "expected": "0 zero-tolerance violation(s)",
-      "observed": "66 violation(s)",
+      "observed": "120 violation(s)",
       "ruleId": null
     },
     {
@@ -121,7 +121,7 @@
       "severity": "critical",
       "summary": "100.000000% of runs violated the contract; the gate permits at most 0.5%.",
       "expected": "at most 0.5%",
-      "observed": "100.000000% (22 of 22)",
+      "observed": "100.000000% (40 of 40)",
       "ruleId": null
     },
     {
@@ -130,7 +130,7 @@
       "severity": "high",
       "summary": "100.000000% of runs followed a route the contract does not approve; the gate permits at most 1%.",
       "expected": "at most 1%",
-      "observed": "100.000000% (22 of 22)",
+      "observed": "100.000000% (40 of 40)",
       "ruleId": null
     },
     {
@@ -166,11 +166,11 @@
   ],
   "evidence": {
     "representativeFailingTraceIds": [
-      "0447295b6995221cf79ee7349316bc1a",
+      "07dd2ec86b00cab63ce472a0d8378f1f",
       "095fdc597e8863084e4d0a737e4f029d",
-      "1e1e68071e446ca4f03661e06978cd0e",
-      "217c8bf755863b92d7c17546525d61a0",
-      "2c9f89484a6eb837b3ff49aa3de85b88"
+      "143d338f2e9a2e6db7386b1bf56124d9",
+      "14b458070426524b6446b2e99e090bfc",
+      "1e1e68071e446ca4f03661e06978cd0e"
     ],
     "representativePassingTraceIds": [],
     "zeroToleranceRuleIds": [
@@ -189,13 +189,152 @@
       "single-payment-refund-write-8846bedd"
     ],
     "observedRouteFingerprints": [
-      "22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466",
-      "c39b3564d1261266b4ef17bba9c861b468758514dba6c47613d1260483b8606f"
+      "22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466"
     ]
   },
   "violations": [
     {
-      "id": "019f9bd0-0c39-709f-bb19-13a277ada4aa",
+      "id": "019f9bfc-656b-71eb-b887-67d1adf29ed7",
+      "ruleKey": "budget-run-duration-ms-69ef06b5",
+      "ruleType": "numeric_budget",
+      "violationType": "NUMERIC_BUDGET_EXCEEDED",
+      "severity": "medium",
+      "zeroTolerance": false,
+      "message": "run.duration_ms (max) was 824, exceeding the budget of 90.",
+      "expected": "at most 90",
+      "observed": "824",
+      "traceId": "fc2c28a9f33c4510d71493b012336a6c",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-656a-73c3-a763-850ac205ca9e",
+      "ruleKey": "route-approved-family-5e4bcff6",
+      "ruleType": "approved_routes",
+      "violationType": "ROUTE_NOT_APPROVED",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "The route is not approved and is materially different: similarity 0.619047 is below the 0.92 threshold.",
+      "expected": "one of 1 approved route fingerprint(s)",
+      "observed": "22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466",
+      "traceId": "fc2c28a9f33c4510d71493b012336a6c",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-656a-71c9-8d34-d3589ce2a14a",
+      "ruleKey": "retries-bounded-73060ad7",
+      "ruleType": "retry_budget",
+      "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "The side-effecting step issue_refund was retried 1 time(s); at most 0 are permitted.",
+      "expected": "at most 0 retries of a side-effecting step",
+      "observed": "1",
+      "traceId": "fc2c28a9f33c4510d71493b012336a6c",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6569-73b9-bf2d-f10eb17486a4",
+      "ruleKey": "retries-bounded-73060ad7",
+      "ruleType": "retry_budget",
+      "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "This run performed 1 retries; at most 0 are permitted.",
+      "expected": "at most 0 retries per run",
+      "observed": "1",
+      "traceId": "fc2c28a9f33c4510d71493b012336a6c",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6569-71bf-af0b-8a6a7dd4c07e",
+      "ruleKey": "retries-bounded-73060ad7",
+      "ruleType": "retry_budget",
+      "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "issue_refund was retried 1 time(s); at most 0 are permitted per tool.",
+      "expected": "at most 0 retries of issue_refund",
+      "observed": "1",
+      "traceId": "fc2c28a9f33c4510d71493b012336a6c",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6568-73a9-ac67-0c81b0af9014",
+      "ruleKey": "require-refund-calculate-973f0a45",
+      "ruleType": "required_span",
+      "violationType": "REQUIRED_SPAN_MISSING",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "refund.calculate is required at least 1 time(s) but occurred 0 time(s).",
+      "expected": "at least 1",
+      "observed": "0",
+      "traceId": "fc2c28a9f33c4510d71493b012336a6c",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6568-71b8-a266-9345419486a6",
+      "ruleKey": "require-payment-refund-a4f9c9ee",
+      "ruleType": "required_span",
+      "violationType": "REQUIRED_SPAN_TOO_MANY",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "payment.refund occurred 2 times; the contract permits at most 1.",
+      "expected": "at most 1",
+      "observed": "2",
+      "traceId": "fc2c28a9f33c4510d71493b012336a6c",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6567-73dd-b46f-9f9d0c2e6fd5",
+      "ruleKey": "single-payment-refund-write-8846bedd",
+      "ruleType": "cardinality",
+      "violationType": "CARDINALITY_ABOVE_MAX",
+      "severity": "critical",
+      "zeroTolerance": true,
+      "message": "payment.refund, agent.side_effect = write occurred 2 times; the contract permits at most 1 per run.",
+      "expected": "at most 1 per run",
+      "observed": "2",
+      "traceId": "fc2c28a9f33c4510d71493b012336a6c",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6567-71de-83c4-269661280f87",
+      "ruleKey": "require-policy-retrieve-98fbf144",
+      "ruleType": "required_span",
+      "violationType": "REQUIRED_SPAN_MISSING",
+      "severity": "critical",
+      "zeroTolerance": true,
+      "message": "policy.retrieve is required at least 1 time(s) but occurred 0 time(s).",
+      "expected": "at least 1",
+      "observed": "0",
+      "traceId": "fc2c28a9f33c4510d71493b012336a6c",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6566-73bd-9c5f-4a379fcb1bda",
+      "ruleKey": "require-fraud-check-4dccc488",
+      "ruleType": "required_span",
+      "violationType": "REQUIRED_SPAN_MISSING",
+      "severity": "critical",
+      "zeroTolerance": true,
+      "message": "fraud.check is required at least 1 time(s) but occurred 0 time(s).",
+      "expected": "at least 1",
+      "observed": "0",
+      "traceId": "fc2c28a9f33c4510d71493b012336a6c",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6562-721c-a8e8-04db06706a7c",
       "ruleKey": "budget-run-duration-ms-69ef06b5",
       "ruleType": "numeric_budget",
       "violationType": "NUMERIC_BUDGET_EXCEEDED",
@@ -209,21 +348,21 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c38-7207-90e6-b385795c9dec",
+      "id": "019f9bfc-6562-7068-91ff-6f53b9d1ee9e",
       "ruleKey": "route-approved-family-5e4bcff6",
       "ruleType": "approved_routes",
       "violationType": "ROUTE_NOT_APPROVED",
       "severity": "high",
       "zeroTolerance": false,
-      "message": "The route is not approved and is materially different: similarity 0.390476 is below the 0.92 threshold.",
+      "message": "The route is not approved and is materially different: similarity 0.619047 is below the 0.92 threshold.",
       "expected": "one of 1 approved route fingerprint(s)",
-      "observed": "c39b3564d1261266b4ef17bba9c861b468758514dba6c47613d1260483b8606f",
+      "observed": "22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466",
       "traceId": "fbf1df201432cf029d2ac2e58461c01a",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c37-7385-84a5-63bab9f01791",
+      "id": "019f9bfc-6561-7283-924a-8f4e55f0e099",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
@@ -237,7 +376,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c37-70d2-9405-22e94748fbfd",
+      "id": "019f9bfc-6561-7101-9b91-3764162a8ce0",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
@@ -251,7 +390,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c36-724d-b327-9def1dba9d12",
+      "id": "019f9bfc-6560-7310-a92a-e300cbf51596",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
@@ -265,7 +404,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c35-7384-80e6-b847542aae46",
+      "id": "019f9bfc-6560-7160-a291-2e5bd8e8dc1f",
       "ruleKey": "require-refund-calculate-973f0a45",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -279,7 +418,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c35-702c-a867-be17425dee0d",
+      "id": "019f9bfc-655f-7391-bdd4-a512f37144b9",
       "ruleKey": "require-payment-refund-a4f9c9ee",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_TOO_MANY",
@@ -293,7 +432,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c34-7181-b981-99579805765e",
+      "id": "019f9bfc-655f-71af-9e6a-f76fc00e65f4",
       "ruleKey": "single-payment-refund-write-8846bedd",
       "ruleType": "cardinality",
       "violationType": "CARDINALITY_ABOVE_MAX",
@@ -307,7 +446,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c33-7178-adb7-b7b627205f00",
+      "id": "019f9bfc-655e-7384-8ce7-860cee93dd1c",
       "ruleKey": "require-policy-retrieve-98fbf144",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -321,7 +460,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c32-7345-b3c9-8a8419e5d0c0",
+      "id": "019f9bfc-655e-714c-9051-29b6b41d0856",
       "ruleKey": "require-fraud-check-4dccc488",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -335,7 +474,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c2c-7085-a0c6-488617ad9a93",
+      "id": "019f9bfc-655a-715e-978f-57ef6473a09b",
       "ruleKey": "budget-run-duration-ms-69ef06b5",
       "ruleType": "numeric_budget",
       "violationType": "NUMERIC_BUDGET_EXCEEDED",
@@ -349,7 +488,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c2b-712c-9514-06699743f2c0",
+      "id": "019f9bfc-6559-7391-aa2b-b64989446199",
       "ruleKey": "route-approved-family-5e4bcff6",
       "ruleType": "approved_routes",
       "violationType": "ROUTE_NOT_APPROVED",
@@ -363,7 +502,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c2a-7285-b5c8-99be6e86cffe",
+      "id": "019f9bfc-6559-71bc-8028-4224e44d4ace",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
@@ -377,7 +516,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c2a-7083-8695-35a8bd471c19",
+      "id": "019f9bfc-6558-73c8-b0a9-dd24fb449f26",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
@@ -391,7 +530,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c29-722e-8546-d8d818cb6a7c",
+      "id": "019f9bfc-6558-71eb-a91a-c9aa59a10b7e",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
@@ -405,7 +544,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c29-7023-b88c-456e445a5119",
+      "id": "019f9bfc-6558-7002-bd58-faff2b4f8a01",
       "ruleKey": "require-refund-calculate-973f0a45",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -419,7 +558,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c28-7200-ab1a-4b1a3c63b4dd",
+      "id": "019f9bfc-6557-71f1-90c0-e4e2066ba222",
       "ruleKey": "require-payment-refund-a4f9c9ee",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_TOO_MANY",
@@ -433,7 +572,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c28-7029-9cb7-9114f9924ddc",
+      "id": "019f9bfc-6557-700c-9a7d-e906518b6112",
       "ruleKey": "single-payment-refund-write-8846bedd",
       "ruleType": "cardinality",
       "violationType": "CARDINALITY_ABOVE_MAX",
@@ -447,7 +586,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c27-71fd-873f-d65928a51497",
+      "id": "019f9bfc-6556-71f4-946c-43fd9907fc88",
       "ruleKey": "require-policy-retrieve-98fbf144",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -461,7 +600,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c27-7028-b43e-abfa09017759",
+      "id": "019f9bfc-6555-73db-8807-2606b2a16f88",
       "ruleKey": "require-fraud-check-4dccc488",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -475,7 +614,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c1f-7374-a191-f2230cfb9239",
+      "id": "019f9bfc-6551-7207-8707-ef5fd0b0109c",
       "ruleKey": "budget-run-duration-ms-69ef06b5",
       "ruleType": "numeric_budget",
       "violationType": "NUMERIC_BUDGET_EXCEEDED",
@@ -489,7 +628,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c1f-70f5-81b7-f28f06513bf2",
+      "id": "019f9bfc-6550-73c5-8589-921ddb78b931",
       "ruleKey": "route-approved-family-5e4bcff6",
       "ruleType": "approved_routes",
       "violationType": "ROUTE_NOT_APPROVED",
@@ -503,7 +642,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c1e-7232-9111-20ec7468d62c",
+      "id": "019f9bfc-6550-7182-9e3a-2bc3561a486d",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
@@ -517,7 +656,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c1d-737a-af85-d548fb5f3b34",
+      "id": "019f9bfc-654f-7326-9da5-840092001d06",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
@@ -531,7 +670,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c1c-733f-b717-a989b97b8a84",
+      "id": "019f9bfc-654f-7143-bb2e-e8020d86c71c",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
@@ -545,7 +684,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c1b-736a-8b0b-d0abbdb4d425",
+      "id": "019f9bfc-654e-72ef-94df-3399c2b2f68d",
       "ruleKey": "require-refund-calculate-973f0a45",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -559,7 +698,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c1b-70d2-916a-d2d3b79c714d",
+      "id": "019f9bfc-654e-70aa-9cbb-1744c5acf06e",
       "ruleKey": "require-payment-refund-a4f9c9ee",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_TOO_MANY",
@@ -573,7 +712,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c1a-7229-a2ba-a9b4e5f3ed80",
+      "id": "019f9bfc-654d-7233-8917-9319f4cd2bc9",
       "ruleKey": "single-payment-refund-write-8846bedd",
       "ruleType": "cardinality",
       "violationType": "CARDINALITY_ABOVE_MAX",
@@ -587,7 +726,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c19-7354-b3c9-77285df13b24",
+      "id": "019f9bfc-654d-700e-8d4d-ece040212276",
       "ruleKey": "require-policy-retrieve-98fbf144",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -601,7 +740,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c19-70a8-be7d-4b80173d907a",
+      "id": "019f9bfc-654c-71a5-bdba-ea4adae34952",
       "ruleKey": "require-fraud-check-4dccc488",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -615,7 +754,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c13-717c-bb22-b3bef02e40ae",
+      "id": "019f9bfc-6547-720d-9729-73f3573387de",
       "ruleKey": "budget-run-duration-ms-69ef06b5",
       "ruleType": "numeric_budget",
       "violationType": "NUMERIC_BUDGET_EXCEEDED",
@@ -629,147 +768,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c12-72f7-a0f2-df606ac4b511",
-      "ruleKey": "route-approved-family-5e4bcff6",
-      "ruleType": "approved_routes",
-      "violationType": "ROUTE_NOT_APPROVED",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "The route is not approved and is materially different: similarity 0.390476 is below the 0.92 threshold.",
-      "expected": "one of 1 approved route fingerprint(s)",
-      "observed": "c39b3564d1261266b4ef17bba9c861b468758514dba6c47613d1260483b8606f",
-      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0c12-7054-92e0-debe39a9c9b3",
-      "ruleKey": "retries-bounded-73060ad7",
-      "ruleType": "retry_budget",
-      "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "The side-effecting step issue_refund was retried 1 time(s); at most 0 are permitted.",
-      "expected": "at most 0 retries of a side-effecting step",
-      "observed": "1",
-      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0c11-71a1-8629-2f84edd7cb74",
-      "ruleKey": "retries-bounded-73060ad7",
-      "ruleType": "retry_budget",
-      "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "This run performed 1 retries; at most 0 are permitted.",
-      "expected": "at most 0 retries per run",
-      "observed": "1",
-      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0c10-72f0-a118-0a402da8549c",
-      "ruleKey": "retries-bounded-73060ad7",
-      "ruleType": "retry_budget",
-      "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "issue_refund was retried 1 time(s); at most 0 are permitted per tool.",
-      "expected": "at most 0 retries of issue_refund",
-      "observed": "1",
-      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0c10-7069-a3e0-c0ce7467a574",
-      "ruleKey": "require-refund-calculate-973f0a45",
-      "ruleType": "required_span",
-      "violationType": "REQUIRED_SPAN_MISSING",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "refund.calculate is required at least 1 time(s) but occurred 0 time(s).",
-      "expected": "at least 1",
-      "observed": "0",
-      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0c0f-714f-ba0f-9e8c27f5ae8d",
-      "ruleKey": "require-payment-refund-a4f9c9ee",
-      "ruleType": "required_span",
-      "violationType": "REQUIRED_SPAN_TOO_MANY",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "payment.refund occurred 2 times; the contract permits at most 1.",
-      "expected": "at most 1",
-      "observed": "2",
-      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0c0e-708f-97cd-671cdd505533",
-      "ruleKey": "single-payment-refund-write-8846bedd",
-      "ruleType": "cardinality",
-      "violationType": "CARDINALITY_ABOVE_MAX",
-      "severity": "critical",
-      "zeroTolerance": true,
-      "message": "payment.refund, agent.side_effect = write occurred 2 times; the contract permits at most 1 per run.",
-      "expected": "at most 1 per run",
-      "observed": "2",
-      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0c0c-71b9-af3b-da7e02bd5099",
-      "ruleKey": "require-policy-retrieve-98fbf144",
-      "ruleType": "required_span",
-      "violationType": "REQUIRED_SPAN_MISSING",
-      "severity": "critical",
-      "zeroTolerance": true,
-      "message": "policy.retrieve is required at least 1 time(s) but occurred 0 time(s).",
-      "expected": "at least 1",
-      "observed": "0",
-      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0c0b-70c7-85c0-3ac3516d42dc",
-      "ruleKey": "require-fraud-check-4dccc488",
-      "ruleType": "required_span",
-      "violationType": "REQUIRED_SPAN_MISSING",
-      "severity": "critical",
-      "zeroTolerance": true,
-      "message": "fraud.check is required at least 1 time(s) but occurred 0 time(s).",
-      "expected": "at least 1",
-      "observed": "0",
-      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0c04-7008-a40f-93359f1e2b07",
-      "ruleKey": "budget-run-duration-ms-69ef06b5",
-      "ruleType": "numeric_budget",
-      "violationType": "NUMERIC_BUDGET_EXCEEDED",
-      "severity": "medium",
-      "zeroTolerance": false,
-      "message": "run.duration_ms (max) was 825, exceeding the budget of 90.",
-      "expected": "at most 90",
-      "observed": "825",
-      "traceId": "ddca0a5930cf60be801168dad0e17ac0",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0c03-71e2-af75-be3e6d668aed",
+      "id": "019f9bfc-6547-702b-9c47-1f2a320372d5",
       "ruleKey": "route-approved-family-5e4bcff6",
       "ruleType": "approved_routes",
       "violationType": "ROUTE_NOT_APPROVED",
@@ -778,12 +777,12 @@
       "message": "The route is not approved and is materially different: similarity 0.619047 is below the 0.92 threshold.",
       "expected": "one of 1 approved route fingerprint(s)",
       "observed": "22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466",
-      "traceId": "ddca0a5930cf60be801168dad0e17ac0",
+      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c02-73a7-ae20-99586530f26c",
+      "id": "019f9bfc-6546-7218-ba40-03fc11258a93",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
@@ -792,12 +791,12 @@
       "message": "The side-effecting step issue_refund was retried 1 time(s); at most 0 are permitted.",
       "expected": "at most 0 retries of a side-effecting step",
       "observed": "1",
-      "traceId": "ddca0a5930cf60be801168dad0e17ac0",
+      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c02-717c-90ed-04e0fe246a12",
+      "id": "019f9bfc-6546-702e-b29e-4317ea33965d",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
@@ -806,12 +805,12 @@
       "message": "This run performed 1 retries; at most 0 are permitted.",
       "expected": "at most 0 retries per run",
       "observed": "1",
-      "traceId": "ddca0a5930cf60be801168dad0e17ac0",
+      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c01-732e-8c93-9b3b5ddf8cfd",
+      "id": "019f9bfc-6545-723c-b642-721ea88a9cf6",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
@@ -820,12 +819,12 @@
       "message": "issue_refund was retried 1 time(s); at most 0 are permitted per tool.",
       "expected": "at most 0 retries of issue_refund",
       "observed": "1",
-      "traceId": "ddca0a5930cf60be801168dad0e17ac0",
+      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c01-70fb-9ddc-64ae8e3052b0",
+      "id": "019f9bfc-6545-7068-a5db-f9c1f0c25bc4",
       "ruleKey": "require-refund-calculate-973f0a45",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -834,12 +833,12 @@
       "message": "refund.calculate is required at least 1 time(s) but occurred 0 time(s).",
       "expected": "at least 1",
       "observed": "0",
-      "traceId": "ddca0a5930cf60be801168dad0e17ac0",
+      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c00-729c-842c-60e5bfe389d8",
+      "id": "019f9bfc-6544-7258-9b34-e1f4f8cf2b1b",
       "ruleKey": "require-payment-refund-a4f9c9ee",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_TOO_MANY",
@@ -848,12 +847,12 @@
       "message": "payment.refund occurred 2 times; the contract permits at most 1.",
       "expected": "at most 1",
       "observed": "2",
-      "traceId": "ddca0a5930cf60be801168dad0e17ac0",
+      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0c00-7085-a11d-921585903bd4",
+      "id": "019f9bfc-6544-707e-a8b9-200d450039fd",
       "ruleKey": "single-payment-refund-write-8846bedd",
       "ruleType": "cardinality",
       "violationType": "CARDINALITY_ABOVE_MAX",
@@ -862,12 +861,12 @@
       "message": "payment.refund, agent.side_effect = write occurred 2 times; the contract permits at most 1 per run.",
       "expected": "at most 1 per run",
       "observed": "2",
-      "traceId": "ddca0a5930cf60be801168dad0e17ac0",
+      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bff-724a-b875-55cc76dc1860",
+      "id": "019f9bfc-6543-727f-be41-b857395dc6b5",
       "ruleKey": "require-policy-retrieve-98fbf144",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -876,12 +875,12 @@
       "message": "policy.retrieve is required at least 1 time(s) but occurred 0 time(s).",
       "expected": "at least 1",
       "observed": "0",
-      "traceId": "ddca0a5930cf60be801168dad0e17ac0",
+      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bff-701a-a18d-5c50ef1de6f0",
+      "id": "019f9bfc-6543-7075-92fd-83658995fe2b",
       "ruleKey": "require-fraud-check-4dccc488",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -890,12 +889,292 @@
       "message": "fraud.check is required at least 1 time(s) but occurred 0 time(s).",
       "expected": "at least 1",
       "observed": "0",
-      "traceId": "ddca0a5930cf60be801168dad0e17ac0",
+      "traceId": "f18f5bae0c5a5fd7e09cda3a6a025f0d",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bf9-7354-b0ce-9e66edb775b9",
+      "id": "019f9bfc-653e-73bd-acf9-29fb4917093a",
+      "ruleKey": "budget-run-duration-ms-69ef06b5",
+      "ruleType": "numeric_budget",
+      "violationType": "NUMERIC_BUDGET_EXCEEDED",
+      "severity": "medium",
+      "zeroTolerance": false,
+      "message": "run.duration_ms (max) was 815, exceeding the budget of 90.",
+      "expected": "at most 90",
+      "observed": "815",
+      "traceId": "d804b72f80ac3695146f6499b1867e4a",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-653e-71bf-9b2b-55c46317e519",
+      "ruleKey": "route-approved-family-5e4bcff6",
+      "ruleType": "approved_routes",
+      "violationType": "ROUTE_NOT_APPROVED",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "The route is not approved and is materially different: similarity 0.619047 is below the 0.92 threshold.",
+      "expected": "one of 1 approved route fingerprint(s)",
+      "observed": "22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466",
+      "traceId": "d804b72f80ac3695146f6499b1867e4a",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-653d-738f-b89e-ec8ba0740e5e",
+      "ruleKey": "retries-bounded-73060ad7",
+      "ruleType": "retry_budget",
+      "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "The side-effecting step issue_refund was retried 1 time(s); at most 0 are permitted.",
+      "expected": "at most 0 retries of a side-effecting step",
+      "observed": "1",
+      "traceId": "d804b72f80ac3695146f6499b1867e4a",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-653d-716d-9ba4-5403af625f54",
+      "ruleKey": "retries-bounded-73060ad7",
+      "ruleType": "retry_budget",
+      "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "This run performed 1 retries; at most 0 are permitted.",
+      "expected": "at most 0 retries per run",
+      "observed": "1",
+      "traceId": "d804b72f80ac3695146f6499b1867e4a",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-653c-735b-82e1-ef35d1550352",
+      "ruleKey": "retries-bounded-73060ad7",
+      "ruleType": "retry_budget",
+      "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "issue_refund was retried 1 time(s); at most 0 are permitted per tool.",
+      "expected": "at most 0 retries of issue_refund",
+      "observed": "1",
+      "traceId": "d804b72f80ac3695146f6499b1867e4a",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-653c-716b-92b9-004f7bea246c",
+      "ruleKey": "require-refund-calculate-973f0a45",
+      "ruleType": "required_span",
+      "violationType": "REQUIRED_SPAN_MISSING",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "refund.calculate is required at least 1 time(s) but occurred 0 time(s).",
+      "expected": "at least 1",
+      "observed": "0",
+      "traceId": "d804b72f80ac3695146f6499b1867e4a",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-653b-7370-a8d2-60bdc16b0eea",
+      "ruleKey": "require-payment-refund-a4f9c9ee",
+      "ruleType": "required_span",
+      "violationType": "REQUIRED_SPAN_TOO_MANY",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "payment.refund occurred 2 times; the contract permits at most 1.",
+      "expected": "at most 1",
+      "observed": "2",
+      "traceId": "d804b72f80ac3695146f6499b1867e4a",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-653b-714d-9da5-b57fc6644504",
+      "ruleKey": "single-payment-refund-write-8846bedd",
+      "ruleType": "cardinality",
+      "violationType": "CARDINALITY_ABOVE_MAX",
+      "severity": "critical",
+      "zeroTolerance": true,
+      "message": "payment.refund, agent.side_effect = write occurred 2 times; the contract permits at most 1 per run.",
+      "expected": "at most 1 per run",
+      "observed": "2",
+      "traceId": "d804b72f80ac3695146f6499b1867e4a",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-653a-7353-bfc9-c7e9bf65b181",
+      "ruleKey": "require-policy-retrieve-98fbf144",
+      "ruleType": "required_span",
+      "violationType": "REQUIRED_SPAN_MISSING",
+      "severity": "critical",
+      "zeroTolerance": true,
+      "message": "policy.retrieve is required at least 1 time(s) but occurred 0 time(s).",
+      "expected": "at least 1",
+      "observed": "0",
+      "traceId": "d804b72f80ac3695146f6499b1867e4a",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-653a-713a-9309-13220401d101",
+      "ruleKey": "require-fraud-check-4dccc488",
+      "ruleType": "required_span",
+      "violationType": "REQUIRED_SPAN_MISSING",
+      "severity": "critical",
+      "zeroTolerance": true,
+      "message": "fraud.check is required at least 1 time(s) but occurred 0 time(s).",
+      "expected": "at least 1",
+      "observed": "0",
+      "traceId": "d804b72f80ac3695146f6499b1867e4a",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6536-70c8-9b58-28a527ab8cfe",
+      "ruleKey": "budget-run-duration-ms-69ef06b5",
+      "ruleType": "numeric_budget",
+      "violationType": "NUMERIC_BUDGET_EXCEEDED",
+      "severity": "medium",
+      "zeroTolerance": false,
+      "message": "run.duration_ms (max) was 807, exceeding the budget of 90.",
+      "expected": "at most 90",
+      "observed": "807",
+      "traceId": "d64e4193925b14767b81c27f01cb15d0",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6535-7301-b9ff-fa2973056dbc",
+      "ruleKey": "route-approved-family-5e4bcff6",
+      "ruleType": "approved_routes",
+      "violationType": "ROUTE_NOT_APPROVED",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "The route is not approved and is materially different: similarity 0.619047 is below the 0.92 threshold.",
+      "expected": "one of 1 approved route fingerprint(s)",
+      "observed": "22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466",
+      "traceId": "d64e4193925b14767b81c27f01cb15d0",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6535-712b-b041-3915693aebc1",
+      "ruleKey": "retries-bounded-73060ad7",
+      "ruleType": "retry_budget",
+      "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "The side-effecting step issue_refund was retried 1 time(s); at most 0 are permitted.",
+      "expected": "at most 0 retries of a side-effecting step",
+      "observed": "1",
+      "traceId": "d64e4193925b14767b81c27f01cb15d0",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6534-7312-9a35-823197543bd3",
+      "ruleKey": "retries-bounded-73060ad7",
+      "ruleType": "retry_budget",
+      "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "This run performed 1 retries; at most 0 are permitted.",
+      "expected": "at most 0 retries per run",
+      "observed": "1",
+      "traceId": "d64e4193925b14767b81c27f01cb15d0",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6534-7121-bf79-095200256a74",
+      "ruleKey": "retries-bounded-73060ad7",
+      "ruleType": "retry_budget",
+      "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "issue_refund was retried 1 time(s); at most 0 are permitted per tool.",
+      "expected": "at most 0 retries of issue_refund",
+      "observed": "1",
+      "traceId": "d64e4193925b14767b81c27f01cb15d0",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6533-72e8-80c5-81a83922df1b",
+      "ruleKey": "require-refund-calculate-973f0a45",
+      "ruleType": "required_span",
+      "violationType": "REQUIRED_SPAN_MISSING",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "refund.calculate is required at least 1 time(s) but occurred 0 time(s).",
+      "expected": "at least 1",
+      "observed": "0",
+      "traceId": "d64e4193925b14767b81c27f01cb15d0",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6533-712a-9558-f8bc95b97d99",
+      "ruleKey": "require-payment-refund-a4f9c9ee",
+      "ruleType": "required_span",
+      "violationType": "REQUIRED_SPAN_TOO_MANY",
+      "severity": "high",
+      "zeroTolerance": false,
+      "message": "payment.refund occurred 2 times; the contract permits at most 1.",
+      "expected": "at most 1",
+      "observed": "2",
+      "traceId": "d64e4193925b14767b81c27f01cb15d0",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6532-7341-8dad-cc6df092da38",
+      "ruleKey": "single-payment-refund-write-8846bedd",
+      "ruleType": "cardinality",
+      "violationType": "CARDINALITY_ABOVE_MAX",
+      "severity": "critical",
+      "zeroTolerance": true,
+      "message": "payment.refund, agent.side_effect = write occurred 2 times; the contract permits at most 1 per run.",
+      "expected": "at most 1 per run",
+      "observed": "2",
+      "traceId": "d64e4193925b14767b81c27f01cb15d0",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6532-7174-b8b5-3516f84b5099",
+      "ruleKey": "require-policy-retrieve-98fbf144",
+      "ruleType": "required_span",
+      "violationType": "REQUIRED_SPAN_MISSING",
+      "severity": "critical",
+      "zeroTolerance": true,
+      "message": "policy.retrieve is required at least 1 time(s) but occurred 0 time(s).",
+      "expected": "at least 1",
+      "observed": "0",
+      "traceId": "d64e4193925b14767b81c27f01cb15d0",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-6531-7361-a78b-c76e97146b30",
+      "ruleKey": "require-fraud-check-4dccc488",
+      "ruleType": "required_span",
+      "violationType": "REQUIRED_SPAN_MISSING",
+      "severity": "critical",
+      "zeroTolerance": true,
+      "message": "fraud.check is required at least 1 time(s) but occurred 0 time(s).",
+      "expected": "at least 1",
+      "observed": "0",
+      "traceId": "d64e4193925b14767b81c27f01cb15d0",
+      "signozWebUrl": null,
+      "releaseKey": "refund-agent-v2"
+    },
+    {
+      "id": "019f9bfc-652d-7296-99d5-f812994171ae",
       "ruleKey": "budget-run-duration-ms-69ef06b5",
       "ruleType": "numeric_budget",
       "violationType": "NUMERIC_BUDGET_EXCEEDED",
@@ -909,147 +1188,7 @@
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bf9-717b-a529-d93a111aa233",
-      "ruleKey": "route-approved-family-5e4bcff6",
-      "ruleType": "approved_routes",
-      "violationType": "ROUTE_NOT_APPROVED",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "The route is not approved and is materially different: similarity 0.390476 is below the 0.92 threshold.",
-      "expected": "one of 1 approved route fingerprint(s)",
-      "observed": "c39b3564d1261266b4ef17bba9c861b468758514dba6c47613d1260483b8606f",
-      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bf8-7389-b34b-979481be9732",
-      "ruleKey": "retries-bounded-73060ad7",
-      "ruleType": "retry_budget",
-      "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "The side-effecting step issue_refund was retried 1 time(s); at most 0 are permitted.",
-      "expected": "at most 0 retries of a side-effecting step",
-      "observed": "1",
-      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bf8-71bd-b745-0a86db3d6469",
-      "ruleKey": "retries-bounded-73060ad7",
-      "ruleType": "retry_budget",
-      "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "This run performed 1 retries; at most 0 are permitted.",
-      "expected": "at most 0 retries per run",
-      "observed": "1",
-      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bf7-73ba-9c89-3adadd70a948",
-      "ruleKey": "retries-bounded-73060ad7",
-      "ruleType": "retry_budget",
-      "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "issue_refund was retried 1 time(s); at most 0 are permitted per tool.",
-      "expected": "at most 0 retries of issue_refund",
-      "observed": "1",
-      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bf7-71bc-8d99-68166980c45a",
-      "ruleKey": "require-refund-calculate-973f0a45",
-      "ruleType": "required_span",
-      "violationType": "REQUIRED_SPAN_MISSING",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "refund.calculate is required at least 1 time(s) but occurred 0 time(s).",
-      "expected": "at least 1",
-      "observed": "0",
-      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bf6-73cb-8a4f-5eed45eef639",
-      "ruleKey": "require-payment-refund-a4f9c9ee",
-      "ruleType": "required_span",
-      "violationType": "REQUIRED_SPAN_TOO_MANY",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "payment.refund occurred 2 times; the contract permits at most 1.",
-      "expected": "at most 1",
-      "observed": "2",
-      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bf6-71a1-9d47-48642df43962",
-      "ruleKey": "single-payment-refund-write-8846bedd",
-      "ruleType": "cardinality",
-      "violationType": "CARDINALITY_ABOVE_MAX",
-      "severity": "critical",
-      "zeroTolerance": true,
-      "message": "payment.refund, agent.side_effect = write occurred 2 times; the contract permits at most 1 per run.",
-      "expected": "at most 1 per run",
-      "observed": "2",
-      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bf5-73ae-ab38-0bfd2475fae7",
-      "ruleKey": "require-policy-retrieve-98fbf144",
-      "ruleType": "required_span",
-      "violationType": "REQUIRED_SPAN_MISSING",
-      "severity": "critical",
-      "zeroTolerance": true,
-      "message": "policy.retrieve is required at least 1 time(s) but occurred 0 time(s).",
-      "expected": "at least 1",
-      "observed": "0",
-      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bf5-715e-bd2a-f2f3e14734f4",
-      "ruleKey": "require-fraud-check-4dccc488",
-      "ruleType": "required_span",
-      "violationType": "REQUIRED_SPAN_MISSING",
-      "severity": "critical",
-      "zeroTolerance": true,
-      "message": "fraud.check is required at least 1 time(s) but occurred 0 time(s).",
-      "expected": "at least 1",
-      "observed": "0",
-      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bee-7191-8792-c9399553a171",
-      "ruleKey": "budget-run-duration-ms-69ef06b5",
-      "ruleType": "numeric_budget",
-      "violationType": "NUMERIC_BUDGET_EXCEEDED",
-      "severity": "medium",
-      "zeroTolerance": false,
-      "message": "run.duration_ms (max) was 818, exceeding the budget of 90.",
-      "expected": "at most 90",
-      "observed": "818",
-      "traceId": "b7b3b662b7d96a506cbc0cd9a36eeef0",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bed-7341-9f05-f8fc359d274a",
+      "id": "019f9bfc-652d-7093-bf03-fc879306e982",
       "ruleKey": "route-approved-family-5e4bcff6",
       "ruleType": "approved_routes",
       "violationType": "ROUTE_NOT_APPROVED",
@@ -1058,12 +1197,12 @@
       "message": "The route is not approved and is materially different: similarity 0.619047 is below the 0.92 threshold.",
       "expected": "one of 1 approved route fingerprint(s)",
       "observed": "22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466",
-      "traceId": "b7b3b662b7d96a506cbc0cd9a36eeef0",
+      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bed-710f-a0c6-32e1d64224d7",
+      "id": "019f9bfc-652c-7266-98ed-56134c0d66d8",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
@@ -1072,12 +1211,12 @@
       "message": "The side-effecting step issue_refund was retried 1 time(s); at most 0 are permitted.",
       "expected": "at most 0 retries of a side-effecting step",
       "observed": "1",
-      "traceId": "b7b3b662b7d96a506cbc0cd9a36eeef0",
+      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bec-7268-8041-66e3122adec9",
+      "id": "019f9bfc-652c-706e-bfbe-9afe47942252",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
@@ -1086,12 +1225,12 @@
       "message": "This run performed 1 retries; at most 0 are permitted.",
       "expected": "at most 0 retries per run",
       "observed": "1",
-      "traceId": "b7b3b662b7d96a506cbc0cd9a36eeef0",
+      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0beb-73e1-8892-8e00473e933a",
+      "id": "019f9bfc-652b-7239-a507-e5b6be45715a",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
@@ -1100,12 +1239,12 @@
       "message": "issue_refund was retried 1 time(s); at most 0 are permitted per tool.",
       "expected": "at most 0 retries of issue_refund",
       "observed": "1",
-      "traceId": "b7b3b662b7d96a506cbc0cd9a36eeef0",
+      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0beb-7184-baa7-02995a284864",
+      "id": "019f9bfc-652b-704b-a0fd-0fd2f1f39604",
       "ruleKey": "require-refund-calculate-973f0a45",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -1114,12 +1253,12 @@
       "message": "refund.calculate is required at least 1 time(s) but occurred 0 time(s).",
       "expected": "at least 1",
       "observed": "0",
-      "traceId": "b7b3b662b7d96a506cbc0cd9a36eeef0",
+      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bea-7193-b84f-72e2b0610877",
+      "id": "019f9bfc-652a-723e-96d8-f9fd1ebc7a32",
       "ruleKey": "require-payment-refund-a4f9c9ee",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_TOO_MANY",
@@ -1128,12 +1267,12 @@
       "message": "payment.refund occurred 2 times; the contract permits at most 1.",
       "expected": "at most 1",
       "observed": "2",
-      "traceId": "b7b3b662b7d96a506cbc0cd9a36eeef0",
+      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0be9-7312-92cf-e88db2c5df5b",
+      "id": "019f9bfc-652a-7049-aaab-a12502d78012",
       "ruleKey": "single-payment-refund-write-8846bedd",
       "ruleType": "cardinality",
       "violationType": "CARDINALITY_ABOVE_MAX",
@@ -1142,12 +1281,12 @@
       "message": "payment.refund, agent.side_effect = write occurred 2 times; the contract permits at most 1 per run.",
       "expected": "at most 1 per run",
       "observed": "2",
-      "traceId": "b7b3b662b7d96a506cbc0cd9a36eeef0",
+      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0be9-70de-8893-7f98808cb249",
+      "id": "019f9bfc-6529-7245-b82e-e6a2e1bfef70",
       "ruleKey": "require-policy-retrieve-98fbf144",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -1156,12 +1295,12 @@
       "message": "policy.retrieve is required at least 1 time(s) but occurred 0 time(s).",
       "expected": "at least 1",
       "observed": "0",
-      "traceId": "b7b3b662b7d96a506cbc0cd9a36eeef0",
+      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0be8-7234-b5a6-e10e0b393975",
+      "id": "019f9bfc-6529-7013-aef8-64ef1b8c6853",
       "ruleKey": "require-fraud-check-4dccc488",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -1170,12 +1309,12 @@
       "message": "fraud.check is required at least 1 time(s) but occurred 0 time(s).",
       "expected": "at least 1",
       "observed": "0",
-      "traceId": "b7b3b662b7d96a506cbc0cd9a36eeef0",
+      "traceId": "d2e919c63e73180ce88d6c08b8ab42dc",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0be3-7111-96c0-02269d877155",
+      "id": "019f9bfc-6524-72fa-ba5f-07f034691f83",
       "ruleKey": "budget-run-duration-ms-69ef06b5",
       "ruleType": "numeric_budget",
       "violationType": "NUMERIC_BUDGET_EXCEEDED",
@@ -1184,12 +1323,12 @@
       "message": "run.duration_ms (max) was 809, exceeding the budget of 90.",
       "expected": "at most 90",
       "observed": "809",
-      "traceId": "9f915642aeaa004b456994e8a8028887",
+      "traceId": "be2139332bb86bb47d4545d126e7ece0",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0be2-72e1-9f78-6ded1e796bcb",
+      "id": "019f9bfc-6524-7138-974d-36da00c968f9",
       "ruleKey": "route-approved-family-5e4bcff6",
       "ruleType": "approved_routes",
       "violationType": "ROUTE_NOT_APPROVED",
@@ -1198,12 +1337,12 @@
       "message": "The route is not approved and is materially different: similarity 0.619047 is below the 0.92 threshold.",
       "expected": "one of 1 approved route fingerprint(s)",
       "observed": "22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466",
-      "traceId": "9f915642aeaa004b456994e8a8028887",
+      "traceId": "be2139332bb86bb47d4545d126e7ece0",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0be2-7046-8eb5-0d8186665cc7",
+      "id": "019f9bfc-6523-734f-b236-e55e75affb63",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
@@ -1212,12 +1351,12 @@
       "message": "The side-effecting step issue_refund was retried 1 time(s); at most 0 are permitted.",
       "expected": "at most 0 retries of a side-effecting step",
       "observed": "1",
-      "traceId": "9f915642aeaa004b456994e8a8028887",
+      "traceId": "be2139332bb86bb47d4545d126e7ece0",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0be1-7230-814b-9340a3adeeac",
+      "id": "019f9bfc-6523-715c-a4da-da0e10b8836b",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
@@ -1226,12 +1365,12 @@
       "message": "This run performed 1 retries; at most 0 are permitted.",
       "expected": "at most 0 retries per run",
       "observed": "1",
-      "traceId": "9f915642aeaa004b456994e8a8028887",
+      "traceId": "be2139332bb86bb47d4545d126e7ece0",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0be1-702b-9fa6-502099f3e5f7",
+      "id": "019f9bfc-6522-737b-b9b5-337616091aa9",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
@@ -1240,12 +1379,12 @@
       "message": "issue_refund was retried 1 time(s); at most 0 are permitted per tool.",
       "expected": "at most 0 retries of issue_refund",
       "observed": "1",
-      "traceId": "9f915642aeaa004b456994e8a8028887",
+      "traceId": "be2139332bb86bb47d4545d126e7ece0",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0be0-7237-8719-bc5a2152d9b6",
+      "id": "019f9bfc-6522-71c3-a96a-60f213b5c0ee",
       "ruleKey": "require-refund-calculate-973f0a45",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -1254,12 +1393,12 @@
       "message": "refund.calculate is required at least 1 time(s) but occurred 0 time(s).",
       "expected": "at least 1",
       "observed": "0",
-      "traceId": "9f915642aeaa004b456994e8a8028887",
+      "traceId": "be2139332bb86bb47d4545d126e7ece0",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0be0-7046-9c1d-977ea2630623",
+      "id": "019f9bfc-6521-73a0-a8bc-d32976a1c46a",
       "ruleKey": "require-payment-refund-a4f9c9ee",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_TOO_MANY",
@@ -1268,12 +1407,12 @@
       "message": "payment.refund occurred 2 times; the contract permits at most 1.",
       "expected": "at most 1",
       "observed": "2",
-      "traceId": "9f915642aeaa004b456994e8a8028887",
+      "traceId": "be2139332bb86bb47d4545d126e7ece0",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bdf-7238-aa51-2386f747e804",
+      "id": "019f9bfc-6521-71c1-89ff-79cbe1c68dcb",
       "ruleKey": "single-payment-refund-write-8846bedd",
       "ruleType": "cardinality",
       "violationType": "CARDINALITY_ABOVE_MAX",
@@ -1282,12 +1421,12 @@
       "message": "payment.refund, agent.side_effect = write occurred 2 times; the contract permits at most 1 per run.",
       "expected": "at most 1 per run",
       "observed": "2",
-      "traceId": "9f915642aeaa004b456994e8a8028887",
+      "traceId": "be2139332bb86bb47d4545d126e7ece0",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bdf-7031-9d69-1b9fb07483dc",
+      "id": "019f9bfc-6520-73b5-89ea-82089e2ab92d",
       "ruleKey": "require-policy-retrieve-98fbf144",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -1296,12 +1435,12 @@
       "message": "policy.retrieve is required at least 1 time(s) but occurred 0 time(s).",
       "expected": "at least 1",
       "observed": "0",
-      "traceId": "9f915642aeaa004b456994e8a8028887",
+      "traceId": "be2139332bb86bb47d4545d126e7ece0",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bde-71d6-b2d8-59286e70299d",
+      "id": "019f9bfc-6520-71a0-88cf-dbece0206d39",
       "ruleKey": "require-fraud-check-4dccc488",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -1310,26 +1449,26 @@
       "message": "fraud.check is required at least 1 time(s) but occurred 0 time(s).",
       "expected": "at least 1",
       "observed": "0",
-      "traceId": "9f915642aeaa004b456994e8a8028887",
+      "traceId": "be2139332bb86bb47d4545d126e7ece0",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bd7-7293-92e1-9df29c7d3ef6",
+      "id": "019f9bfc-651b-72b3-b6b7-7fa07cb22024",
       "ruleKey": "budget-run-duration-ms-69ef06b5",
       "ruleType": "numeric_budget",
       "violationType": "NUMERIC_BUDGET_EXCEEDED",
       "severity": "medium",
       "zeroTolerance": false,
-      "message": "run.duration_ms (max) was 817, exceeding the budget of 90.",
+      "message": "run.duration_ms (max) was 819, exceeding the budget of 90.",
       "expected": "at most 90",
-      "observed": "817",
-      "traceId": "9db46fc730f0f4c1890b2a48d1cf80d0",
+      "observed": "819",
+      "traceId": "b93a498416dd66e5140a03770b9edc12",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bd7-7018-865b-05d172ec2355",
+      "id": "019f9bfc-651b-70ab-af4a-9bf1b9e077aa",
       "ruleKey": "route-approved-family-5e4bcff6",
       "ruleType": "approved_routes",
       "violationType": "ROUTE_NOT_APPROVED",
@@ -1338,12 +1477,12 @@
       "message": "The route is not approved and is materially different: similarity 0.619047 is below the 0.92 threshold.",
       "expected": "one of 1 approved route fingerprint(s)",
       "observed": "22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466",
-      "traceId": "9db46fc730f0f4c1890b2a48d1cf80d0",
+      "traceId": "b93a498416dd66e5140a03770b9edc12",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bd6-7198-a8fa-5a440eae8a99",
+      "id": "019f9bfc-651a-7298-bc26-4ab4a5fd6d83",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
@@ -1352,12 +1491,12 @@
       "message": "The side-effecting step issue_refund was retried 1 time(s); at most 0 are permitted.",
       "expected": "at most 0 retries of a side-effecting step",
       "observed": "1",
-      "traceId": "9db46fc730f0f4c1890b2a48d1cf80d0",
+      "traceId": "b93a498416dd66e5140a03770b9edc12",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bd5-72c3-931d-af14e2a86b79",
+      "id": "019f9bfc-651a-70ab-8d42-7e3afedc9bf8",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
@@ -1366,12 +1505,12 @@
       "message": "This run performed 1 retries; at most 0 are permitted.",
       "expected": "at most 0 retries per run",
       "observed": "1",
-      "traceId": "9db46fc730f0f4c1890b2a48d1cf80d0",
+      "traceId": "b93a498416dd66e5140a03770b9edc12",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bd5-700d-8fdc-df1789806224",
+      "id": "019f9bfc-6519-728c-b827-71d027fead1b",
       "ruleKey": "retries-bounded-73060ad7",
       "ruleType": "retry_budget",
       "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
@@ -1380,12 +1519,12 @@
       "message": "issue_refund was retried 1 time(s); at most 0 are permitted per tool.",
       "expected": "at most 0 retries of issue_refund",
       "observed": "1",
-      "traceId": "9db46fc730f0f4c1890b2a48d1cf80d0",
+      "traceId": "b93a498416dd66e5140a03770b9edc12",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bd4-719c-ad9f-e0527e94c220",
+      "id": "019f9bfc-6519-7090-af4d-e4f9ef69841c",
       "ruleKey": "require-refund-calculate-973f0a45",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -1394,12 +1533,12 @@
       "message": "refund.calculate is required at least 1 time(s) but occurred 0 time(s).",
       "expected": "at least 1",
       "observed": "0",
-      "traceId": "9db46fc730f0f4c1890b2a48d1cf80d0",
+      "traceId": "b93a498416dd66e5140a03770b9edc12",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bd3-72c2-b128-cd8e72ab37b1",
+      "id": "019f9bfc-6518-7275-9aa6-7edce07f46e8",
       "ruleKey": "require-payment-refund-a4f9c9ee",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_TOO_MANY",
@@ -1408,12 +1547,12 @@
       "message": "payment.refund occurred 2 times; the contract permits at most 1.",
       "expected": "at most 1",
       "observed": "2",
-      "traceId": "9db46fc730f0f4c1890b2a48d1cf80d0",
+      "traceId": "b93a498416dd66e5140a03770b9edc12",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bd3-701c-ae57-681f2dd2f660",
+      "id": "019f9bfc-6518-70aa-bb57-14664092b8ba",
       "ruleKey": "single-payment-refund-write-8846bedd",
       "ruleType": "cardinality",
       "violationType": "CARDINALITY_ABOVE_MAX",
@@ -1422,12 +1561,12 @@
       "message": "payment.refund, agent.side_effect = write occurred 2 times; the contract permits at most 1 per run.",
       "expected": "at most 1 per run",
       "observed": "2",
-      "traceId": "9db46fc730f0f4c1890b2a48d1cf80d0",
+      "traceId": "b93a498416dd66e5140a03770b9edc12",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bd2-7159-bb2c-0406cb67b293",
+      "id": "019f9bfc-6517-72c5-bc03-a9afc7135e54",
       "ruleKey": "require-policy-retrieve-98fbf144",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -1436,12 +1575,12 @@
       "message": "policy.retrieve is required at least 1 time(s) but occurred 0 time(s).",
       "expected": "at least 1",
       "observed": "0",
-      "traceId": "9db46fc730f0f4c1890b2a48d1cf80d0",
+      "traceId": "b93a498416dd66e5140a03770b9edc12",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     },
     {
-      "id": "019f9bd0-0bd1-72a7-820f-3b1fb3267a26",
+      "id": "019f9bfc-6517-70d3-a0b8-32b0c241d9c0",
       "ruleKey": "require-fraud-check-4dccc488",
       "ruleType": "required_span",
       "violationType": "REQUIRED_SPAN_MISSING",
@@ -1450,147 +1589,7 @@
       "message": "fraud.check is required at least 1 time(s) but occurred 0 time(s).",
       "expected": "at least 1",
       "observed": "0",
-      "traceId": "9db46fc730f0f4c1890b2a48d1cf80d0",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bcb-70d7-8cbe-f8918264deb9",
-      "ruleKey": "budget-run-duration-ms-69ef06b5",
-      "ruleType": "numeric_budget",
-      "violationType": "NUMERIC_BUDGET_EXCEEDED",
-      "severity": "medium",
-      "zeroTolerance": false,
-      "message": "run.duration_ms (max) was 813, exceeding the budget of 90.",
-      "expected": "at most 90",
-      "observed": "813",
-      "traceId": "9bbacab3c367404bf02e7551f50dc58c",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bca-72cd-8178-70b6ef59c138",
-      "ruleKey": "route-approved-family-5e4bcff6",
-      "ruleType": "approved_routes",
-      "violationType": "ROUTE_NOT_APPROVED",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "The route is not approved and is materially different: similarity 0.619047 is below the 0.92 threshold.",
-      "expected": "one of 1 approved route fingerprint(s)",
-      "observed": "22ffa0c0e578ef70a32a34aae7830f40aeef027aae28e66006601e80f99c7466",
-      "traceId": "9bbacab3c367404bf02e7551f50dc58c",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bca-7017-9b55-ba5ac24e88e0",
-      "ruleKey": "retries-bounded-73060ad7",
-      "ruleType": "retry_budget",
-      "violationType": "RETRY_BUDGET_SIDE_EFFECT_EXCEEDED",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "The side-effecting step issue_refund was retried 1 time(s); at most 0 are permitted.",
-      "expected": "at most 0 retries of a side-effecting step",
-      "observed": "1",
-      "traceId": "9bbacab3c367404bf02e7551f50dc58c",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bc9-7182-970e-0bcdf5bf5e0a",
-      "ruleKey": "retries-bounded-73060ad7",
-      "ruleType": "retry_budget",
-      "violationType": "RETRY_BUDGET_RUN_TOTAL_EXCEEDED",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "This run performed 1 retries; at most 0 are permitted.",
-      "expected": "at most 0 retries per run",
-      "observed": "1",
-      "traceId": "9bbacab3c367404bf02e7551f50dc58c",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bc8-7301-88b1-23f70943823f",
-      "ruleKey": "retries-bounded-73060ad7",
-      "ruleType": "retry_budget",
-      "violationType": "RETRY_BUDGET_PER_TOOL_EXCEEDED",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "issue_refund was retried 1 time(s); at most 0 are permitted per tool.",
-      "expected": "at most 0 retries of issue_refund",
-      "observed": "1",
-      "traceId": "9bbacab3c367404bf02e7551f50dc58c",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bc8-7039-9162-5feaed7a42c7",
-      "ruleKey": "require-refund-calculate-973f0a45",
-      "ruleType": "required_span",
-      "violationType": "REQUIRED_SPAN_MISSING",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "refund.calculate is required at least 1 time(s) but occurred 0 time(s).",
-      "expected": "at least 1",
-      "observed": "0",
-      "traceId": "9bbacab3c367404bf02e7551f50dc58c",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bc7-71dd-83fd-6a7f7e2230cd",
-      "ruleKey": "require-payment-refund-a4f9c9ee",
-      "ruleType": "required_span",
-      "violationType": "REQUIRED_SPAN_TOO_MANY",
-      "severity": "high",
-      "zeroTolerance": false,
-      "message": "payment.refund occurred 2 times; the contract permits at most 1.",
-      "expected": "at most 1",
-      "observed": "2",
-      "traceId": "9bbacab3c367404bf02e7551f50dc58c",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bc6-739a-a6bf-2d0dcabfd80b",
-      "ruleKey": "single-payment-refund-write-8846bedd",
-      "ruleType": "cardinality",
-      "violationType": "CARDINALITY_ABOVE_MAX",
-      "severity": "critical",
-      "zeroTolerance": true,
-      "message": "payment.refund, agent.side_effect = write occurred 2 times; the contract permits at most 1 per run.",
-      "expected": "at most 1 per run",
-      "observed": "2",
-      "traceId": "9bbacab3c367404bf02e7551f50dc58c",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bc6-7169-af0c-accbc115ecc8",
-      "ruleKey": "require-policy-retrieve-98fbf144",
-      "ruleType": "required_span",
-      "violationType": "REQUIRED_SPAN_MISSING",
-      "severity": "critical",
-      "zeroTolerance": true,
-      "message": "policy.retrieve is required at least 1 time(s) but occurred 0 time(s).",
-      "expected": "at least 1",
-      "observed": "0",
-      "traceId": "9bbacab3c367404bf02e7551f50dc58c",
-      "signozWebUrl": null,
-      "releaseKey": "refund-agent-v2"
-    },
-    {
-      "id": "019f9bd0-0bc5-732d-89f6-70d1d87bc7c6",
-      "ruleKey": "require-fraud-check-4dccc488",
-      "ruleType": "required_span",
-      "violationType": "REQUIRED_SPAN_MISSING",
-      "severity": "critical",
-      "zeroTolerance": true,
-      "message": "fraud.check is required at least 1 time(s) but occurred 0 time(s).",
-      "expected": "at least 1",
-      "observed": "0",
-      "traceId": "9bbacab3c367404bf02e7551f50dc58c",
+      "traceId": "b93a498416dd66e5140a03770b9edc12",
       "signozWebUrl": null,
       "releaseKey": "refund-agent-v2"
     }

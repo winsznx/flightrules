@@ -90,3 +90,4 @@ export type {
   VerifiedWrite,
 } from "./verify.js";
 export { assertVerified, createAndVerify, deepEquals, readPath } from "./verify.js";
+export { rehomeSignozUrl, signozTraceUrl, traceLink } from "./web-url.js";

@@ -1,0 +1,288 @@
+
+[1m== 1/8  known-good telemetry: 25 runs of refund-agent-v1[0m
+{
+    "releaseId": "refund-agent-v1",
+    "orderId": "ord-98271",
+    "completedRuns": 25,
+    "runIds": [
+        "run_b40a74451d944522867f",
+        "run_030166a305aa49419e5a",
+        "run_8373fccc16f247efb76c",
+        "run_8da49818473543ba9dce",
+        "run_74f3a67293f54ae188a8",
+        "run_f509036290054277b831",
+        "run_c9a40b06b4994477b724",
+        "run_d61d6042eaaa404bae07",
+        "run_5b4e26d12e964cbcac66",
+        "run_bcce0822aa9a4d5d927d",
+        "run_65d042c2025c4adbbf27",
+        "run_358469acc0df4e3bb39d",
+        "run_4007ff9b7a034cf6b25d",
+        "run_c5f6951d6db943a1b2c2",
+        "run_ab0967a7beda465b990f",
+        "run_97a6786cba094436a39e",
+        "run_d6017d86bbe94b6e87c2",
+        "run_b3eb4df2058842be82f7",
+        "run_134b973982fa409a909d",
+        "run_a28487330a4c459bb7c0",
+        "run_fffa30f9ddd54622ab4e",
+        "run_819045ed17694e9caa30",
+        "run_564f86463004414fabd2",
+        "run_ca32e610698a4081a141",
+        "run_c92eb023400b4e6094f3"
+    ]
+}
+
+[1m== 2/8  seed the project, mine the baseline, activate the contract, sync SigNoz[0m
+
+== API http://localhost:4000
+   ready, migrations 0001, 0002, 0003, 0004
+
+== project demo-commerce
+   created 019f9bf9-3652-7018-8662-93f0fdefedbb
+
+== agent refund-agent
+   created 019f9bf9-3665-710d-9985-932e83ceebdb
+
+== baseline from live refund-agent-v1 telemetry
+   baseline: fetching_span_trees
+   baseline: proposing_contract_rules
+   bl-aa80b2b53ea9495fb6eda5baf024077b — 1 route family(ies) from ? run(s)
+
+== route-family review
+   approved 43070aa4af4f6c2c912a… (231 run(s))
+
+== contract proposal
+   proposal: fetching_span_trees
+   proposal: proposing_contract_rules
+   019f9bf9-cfde-72f3-b0d1-83bfb0fb2fb2
+
+== validate, approve, activate
+   valid
+   approved
+   active
+
+== SigNoz artefact sync
+   sync 019f9bf9-3665-710d-9985-932e83ceebdb: syncing
+   created 0, updated 0, unchanged 0, conflicts 10
+   register: {"total":10,"synced":0,"drifted":0,"failed":0,"conflict":10}
+
+== seeded
+   project    demo-commerce  019f9bf9-3652-7018-8662-93f0fdefedbb
+   agent      refund-agent  019f9bf9-3665-710d-9985-932e83ceebdb
+   contract   019f9bf9-cfde-72f3-b0d1-83bfb0fb2fb2
+
+Next:
+   FLIGHTRULES_PROJECT=demo-commerce FLIGHTRULES_AGENT=refund-agent \
+     FLIGHTRULES_RELEASE=refund-agent-v1 make gate
+
+[1m== 3/8  evaluate the approved release[0m
+evaluating refund-agent-v1 against 019f9bf9-cfde-72f3-b0d1-83bfb0fb2fb2
+  discovering_traces
+  fetching_span_trees
+  evaluating_runs
+
+Evaluation
+----------
+  evaluation                  019f9bf9-dced-7357-b721-36ac44bc82ec
+  status                      pass
+  contractContentHash         "3830896eb65a8c53de023f82c17a1b78724c11c595987e7d4bccdf52a51e25db"
+  duplicateSideEffects        0
+  erroredRuns                 0
+  evaluatorVersion            "1.0.0"
+  failedRuns                  0
+  insufficientRuns            0
+  runs                        256
+  violations                  0
+  zeroToleranceViolations     0
+
+Run `flightrules gate check` for the release decision.
+
+[1m== 4/8  release gate on the approved release — expecting exit 0[0m
+reading the release gate for 019f9bf9-7c77-714e-9942-432849d191aa
+PASS: This release stayed within the approved trajectory contract.
+
+Release
+-------
+  release                     refund-agent-v1
+  environment                 local
+  contract                    refund-agent-local 0.1.0 (active)
+  contract hash               3830896eb65a8c53de023f82c17a1b78724c11c595987e7d4bccdf52a51e25db
+  evaluation                  019f9bf9-dced-7357-b721-36ac44bc82ec
+  evaluator                   1.0.0
+  baseline release            refund-agent-v1
+  decision hash               9f73de7e5a1c09741f6ab6eb454796000e5b8d7e5f28c9cc94e1d21bcf03aed2
+
+Runs
+----
+  evaluated                   256
+  passed                      256
+  failed                      0
+  errored                     0
+  insufficient                0
+  minimum required            20
+
+Rates
+-----
+  violation                   0.000000%  (limit 0.5%)
+  unknown route               0.000000%  (limit 1%)
+  duplicate side effect       0.000000%
+  missing prerequisite        0.000000%
+
+Change from baseline
+--------------------
+  run.duration_ms             0.000000%  (22 -> 22)
+  gen_ai.usage.total_tokens   not measured
+  agent.retry.count           not measured
+
+Violations
+----------
+  total                       0
+  critical                    0
+  zero tolerance              0
+  by severity                 critical 0, high 0, medium 0, low 0
+
+Release-scoped rules
+--------------------
+  budget-release-duration-ms-90268c56 [pass] p95 of run.duration_ms was 22, within 27.
+
+Disclosures
+-----------
+  RETRY_CHANGE_NOT_MEASURED
+    No usable baseline value for agent.retry.count, so its change could not be measured.
+  TOKEN_REGRESSION_NOT_MEASURED
+    No usable baseline value for gen_ai.usage.total_tokens, so its change could not be measured.
+
+exit code: 0
+
+[1m== 5/8  unsafe canary telemetry: 8 runs of refund-agent-v2[0m
+{
+    "releaseId": "refund-agent-v2",
+    "orderId": "ord-98271",
+    "completedRuns": 8,
+    "runIds": [
+        "run_18f60f94cee14b4c92e1",
+        "run_dbc76834ff9f4f489858",
+        "run_55d92fee7063473b83b2",
+        "run_7187433b53354865b18c",
+        "run_5772f1dcf79440c2b6f1",
+        "run_49714a80bedd49f3b925",
+        "run_02cf20f0fc814211b7ea",
+        "run_a497d2417edb4a309d7e"
+    ]
+}
+
+[1m== 6/8  evaluate the canary[0m
+evaluating refund-agent-v2 against 019f9bf9-cfde-72f3-b0d1-83bfb0fb2fb2
+  fetching_span_trees
+  evaluating_runs
+
+Evaluation
+----------
+  evaluation                  019f9bfa-4f5c-7302-8ff1-d470a8fac44b
+  status                      fail
+  contractContentHash         "3830896eb65a8c53de023f82c17a1b78724c11c595987e7d4bccdf52a51e25db"
+  duplicateSideEffects        38
+  erroredRuns                 0
+  evaluatorVersion            "1.0.0"
+  failedRuns                  38
+  insufficientRuns            0
+  runs                        38
+  violations                  380
+  zeroToleranceViolations     114
+
+Run `flightrules gate check` for the release decision.
+
+[1m== 7/8  release gate on the canary — expecting exit 2[0m
+reading the release gate for 019f9bfa-4f35-73ab-8c97-b2071b12e034
+FAIL: This release exceeded one or more trajectory thresholds.
+
+Release
+-------
+  release                     refund-agent-v2
+  environment                 local
+  contract                    refund-agent-local 0.1.0 (active)
+  contract hash               3830896eb65a8c53de023f82c17a1b78724c11c595987e7d4bccdf52a51e25db
+  evaluation                  019f9bfa-4f5c-7302-8ff1-d470a8fac44b
+  evaluator                   1.0.0
+  baseline release            refund-agent-v1
+  decision hash               499991b6aef73000575b0723857120d605d4e721f307c6671d8cd9abec8fa281
+
+Runs
+----
+  evaluated                   38
+  passed                      0
+  failed                      38
+  errored                     0
+  insufficient                0
+  minimum required            20
+
+Rates
+-----
+  violation                   100.000000%  (limit 0.5%)
+  unknown route               100.000000%  (limit 1%)
+  duplicate side effect       100.000000%
+  missing prerequisite        100.000000%
+
+Change from baseline
+--------------------
+  run.duration_ms             3636.363636%  (22 -> 822)
+  gen_ai.usage.total_tokens   not measured
+  agent.retry.count           not measured
+
+Violations
+----------
+  total                       380
+  critical                    114
+  zero tolerance              114
+  by severity                 critical 114, high 228, medium 38, low 0
+
+Release-scoped rules
+--------------------
+  budget-release-duration-ms-90268c56 [violation] p95 of run.duration_ms was 822, exceeding 27.
+
+Findings
+--------
+  ZERO_TOLERANCE_VIOLATION (fail)
+    114 zero-tolerance violation(s) were observed. A zero-tolerance rule has no permitted rate.
+    expected 0 zero-tolerance violation(s); observed 114 violation(s)
+  VIOLATION_RATE_EXCEEDED (fail)
+    100.000000% of runs violated the contract; the gate permits at most 0.5%.
+    expected at most 0.5%; observed 100.000000% (38 of 38)
+  UNKNOWN_ROUTE_RATE_EXCEEDED (fail)
+    100.000000% of runs followed a route the contract does not approve; the gate permits at most 1%.
+    expected at most 1%; observed 100.000000% (38 of 38)
+  LATENCY_REGRESSION_EXCEEDED (fail)
+    p95 latency moved 3636.363636% against the baseline; the gate permits at most 20%.
+    expected at most 20%; observed 3636.363636% (22 ms to 822 ms)
+  RELEASE_BUDGET_EXCEEDED (fail)
+    Release-wide p95 of run.duration_ms was 822, over the budget of 27.
+    expected at most 27; observed 822
+
+Disclosures
+-----------
+  RETRY_CHANGE_NOT_MEASURED
+    No usable baseline value for agent.retry.count, so its change could not be measured.
+  TOKEN_REGRESSION_NOT_MEASURED
+    No usable baseline value for gen_ai.usage.total_tokens, so its change could not be measured.
+
+Evidence
+--------
+  failing traces              07dd2ec86b00cab63ce472a0d8378f1f, 095fdc597e8863084e4d0a737e4f029d, 14b458070426524b6446b2e99e090bfc, 1e1e68071e446ca4f03661e06978cd0e, 243a115eb3128c99bb567c58e42d35d8
+  zero-tolerance rules        require-fraud-check-4dccc488, require-policy-retrieve-98fbf144, single-payment-refund-write-8846bedd
+  violated rules              budget-run-duration-ms-69ef06b5, require-fraud-check-4dccc488, require-payment-refund-a4f9c9ee, require-policy-retrieve-98fbf144, require-refund-calculate-973f0a45, retries-bounded-73060ad7, route-approved-family-5e4bcff6, single-payment-refund-write-8846bedd
+
+exit code: 2
+
+[1m== 8/8  export the evidence[0m
+wrote 60073 bytes to docs/evidence/phase-11/canary-gate.json
+  evidence written            docs/evidence/phase-11/canary-gate.json
+wrote 3594 bytes to docs/evidence/phase-11/baseline-gate.json
+  evidence written            docs/evidence/phase-11/baseline-gate.json
+
+[1m== result[0m
+  approved release refund-agent-v1      exit 0
+  unsafe canary    refund-agent-v2      exit 2
+  evidence         docs/evidence/phase-11/
+
+A release pipeline failed because of trajectory evidence from SigNoz.

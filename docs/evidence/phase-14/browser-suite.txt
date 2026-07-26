@@ -1,0 +1,48 @@
+
+Running 42 tests using 1 worker
+
+  ✓   1 [desktop] › tests/e2e/phase-13-presentation.spec.ts:21:3 › presentation, at every width › the baseline page is usable by keyboard and never scrolls sideways (564ms)
+  ✓   2 [desktop] › tests/e2e/phase-13-presentation.spec.ts:54:3 › presentation, at every width › the Contract Studio is readable and colourless at every width (253ms)
+  ✓   3 [desktop] › tests/e2e/phase-13-presentation.spec.ts:67:3 › presentation, at every width › an unknown identifier shows the product's not-found state, not a crash (155ms)
+  ✓   4 [desktop] › tests/e2e/phase-14-release-diff.spec.ts:35:3 › the release list › shows every PRD column and filters by decision (457ms)
+  ✓   5 [desktop] › tests/e2e/phase-14-release-diff.spec.ts:69:3 › the release list › a filter that matches nothing says so, and says what exists (208ms)
+  ✓   6 [desktop] › tests/e2e/phase-14-release-diff.spec.ts:77:3 › the approved release › reads as a pass, in PRD section 8.11's own sentence (249ms)
+  ✓   7 [desktop] › tests/e2e/phase-14-release-diff.spec.ts:94:3 › the unsafe canary › reads as a fail and names all three regressions in words (269ms)
+  ✓   8 [desktop] › tests/e2e/phase-14-release-diff.spec.ts:137:3 › the unsafe canary › links to the nearest approved route, and it opens (388ms)
+  ✓   9 [desktop] › tests/e2e/phase-14-release-diff.spec.ts:147:3 › the unsafe canary › offers a SigNoz trace link built from the identifier SigNoz itself returned (243ms)
+  ✓  10 [desktop] › tests/e2e/phase-14-release-diff.spec.ts:171:3 › evidence download › carries the decision and its typed changes, and no prompt or tool payload (298ms)
+  ✓  11 [desktop] › tests/e2e/phase-14-release-diff.spec.ts:226:3 › re-evaluation › creates a job without changing the decision until it completes (10.9s)
+  ✓  12 [desktop] › tests/e2e/phase-14-release-diff.spec.ts:260:3 › states the page must not fake › a release with no evaluation says so rather than showing an empty diff (268ms)
+  ✓  13 [desktop] › tests/e2e/phase-14-release-diff.spec.ts:269:3 › states the page must not fake › hostile telemetry strings are escaped, never rendered as markup (249ms)
+  ✓  14 [narrow] › tests/e2e/phase-13-presentation.spec.ts:21:3 › presentation, at every width › the baseline page is usable by keyboard and never scrolls sideways (438ms)
+  ✓  15 [narrow] › tests/e2e/phase-13-presentation.spec.ts:54:3 › presentation, at every width › the Contract Studio is readable and colourless at every width (226ms)
+  ✓  16 [narrow] › tests/e2e/phase-13-presentation.spec.ts:67:3 › presentation, at every width › an unknown identifier shows the product's not-found state, not a crash (152ms)
+  ✓  17 [narrow] › tests/e2e/phase-14-release-diff.spec.ts:35:3 › the release list › shows every PRD column and filters by decision (515ms)
+  ✓  18 [narrow] › tests/e2e/phase-14-release-diff.spec.ts:69:3 › the release list › a filter that matches nothing says so, and says what exists (223ms)
+  ✓  19 [narrow] › tests/e2e/phase-14-release-diff.spec.ts:77:3 › the approved release › reads as a pass, in PRD section 8.11's own sentence (259ms)
+  ✓  20 [narrow] › tests/e2e/phase-14-release-diff.spec.ts:94:3 › the unsafe canary › reads as a fail and names all three regressions in words (262ms)
+  ✓  21 [narrow] › tests/e2e/phase-14-release-diff.spec.ts:137:3 › the unsafe canary › links to the nearest approved route, and it opens (276ms)
+  ✓  22 [narrow] › tests/e2e/phase-14-release-diff.spec.ts:147:3 › the unsafe canary › offers a SigNoz trace link built from the identifier SigNoz itself returned (228ms)
+  -  23 [narrow] › tests/e2e/phase-14-release-diff.spec.ts:171:3 › evidence download › carries the decision and its typed changes, and no prompt or tool payload
+  -  24 [narrow] › tests/e2e/phase-14-release-diff.spec.ts:226:3 › re-evaluation › creates a job without changing the decision until it completes
+  ✓  25 [narrow] › tests/e2e/phase-14-release-diff.spec.ts:260:3 › states the page must not fake › a release with no evaluation says so rather than showing an empty diff (152ms)
+  ✓  26 [narrow] › tests/e2e/phase-14-release-diff.spec.ts:269:3 › states the page must not fake › hostile telemetry strings are escaped, never rendered as markup (198ms)
+  ✓  27 [mobile] › tests/e2e/phase-13-presentation.spec.ts:21:3 › presentation, at every width › the baseline page is usable by keyboard and never scrolls sideways (289ms)
+  ✓  28 [mobile] › tests/e2e/phase-13-presentation.spec.ts:54:3 › presentation, at every width › the Contract Studio is readable and colourless at every width (262ms)
+  ✓  29 [mobile] › tests/e2e/phase-13-presentation.spec.ts:67:3 › presentation, at every width › an unknown identifier shows the product's not-found state, not a crash (198ms)
+  ✓  30 [mobile] › tests/e2e/phase-14-release-diff.spec.ts:35:3 › the release list › shows every PRD column and filters by decision (457ms)
+  ✓  31 [mobile] › tests/e2e/phase-14-release-diff.spec.ts:69:3 › the release list › a filter that matches nothing says so, and says what exists (301ms)
+  ✓  32 [mobile] › tests/e2e/phase-14-release-diff.spec.ts:77:3 › the approved release › reads as a pass, in PRD section 8.11's own sentence (383ms)
+  ✓  33 [mobile] › tests/e2e/phase-14-release-diff.spec.ts:94:3 › the unsafe canary › reads as a fail and names all three regressions in words (310ms)
+  ✓  34 [mobile] › tests/e2e/phase-14-release-diff.spec.ts:137:3 › the unsafe canary › links to the nearest approved route, and it opens (1.2s)
+  ✓  35 [mobile] › tests/e2e/phase-14-release-diff.spec.ts:147:3 › the unsafe canary › offers a SigNoz trace link built from the identifier SigNoz itself returned (292ms)
+  -  36 [mobile] › tests/e2e/phase-14-release-diff.spec.ts:171:3 › evidence download › carries the decision and its typed changes, and no prompt or tool payload
+  -  37 [mobile] › tests/e2e/phase-14-release-diff.spec.ts:226:3 › re-evaluation › creates a job without changing the decision until it completes
+  ✓  38 [mobile] › tests/e2e/phase-14-release-diff.spec.ts:260:3 › states the page must not fake › a release with no evaluation says so rather than showing an empty diff (224ms)
+  ✓  39 [mobile] › tests/e2e/phase-14-release-diff.spec.ts:269:3 › states the page must not fake › hostile telemetry strings are escaped, never rendered as markup (248ms)
+  ✓  40 [workflow] › tests/e2e/phase-13-workflow.spec.ts:37:3 › baseline to active contract, through the browser › a new user reaches an active contract without leaving the UI (48.0s)
+  ✓  41 [workflow] › tests/e2e/phase-13-workflow.spec.ts:199:3 › guards that must hold on the server › an invalid document cannot be saved, and so cannot be approved (440ms)
+  ✓  42 [workflow] › tests/e2e/phase-13-workflow.spec.ts:231:3 › guards that must hold on the server › a control that would contradict an existing rule is refused (352ms)
+
+  4 skipped
+  38 passed (1.2m)

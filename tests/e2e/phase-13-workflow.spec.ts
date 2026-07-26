@@ -1,11 +1,4 @@
-import {
-  expect,
-  expectNoHorizontalOverflow,
-  expectNoStatusColour,
-  expectVisibleFocus,
-  seed,
-  test,
-} from "./support";
+import { expect, expectNoStatusColour, seed, test } from "./support";
 
 /**
  * PRD Phase 13's exit gate: **a new user can move from v1 traces to an active contract entirely
@@ -15,9 +8,11 @@ import {
  * baseline and no contract — and finishes with an active contract and read-back verified SigNoz
  * artefacts, touching nothing but the browser. Every wait is on real persisted state.
  *
- * It runs on `desktop` only. The same workflow at the two narrower widths would take three times as
- * long to prove the same product behaviour; what actually differs by width is layout, and
- * `phase-13-presentation.spec.ts` covers that at all three.
+ * This file is **destructive**: it purges the managed SigNoz artefacts and resets the demo database
+ * before it begins, because "from reset demo state" is what the exit gate says. It therefore runs in
+ * its own Playwright project, declared last, so no read-only assertion in any other file can be
+ * invalidated by it. What varies by viewport is layout, not product behaviour, and
+ * `phase-13-presentation.spec.ts` covers that at all three widths.
  */
 
 const API = process.env["FLIGHTRULES_API_URL"] ?? "http://localhost:4000";
@@ -40,10 +35,6 @@ async function purgeManagedArtifacts(): Promise<void> {
 
 test.describe("baseline to active contract, through the browser", () => {
   test("a new user reaches an active contract without leaving the UI", async ({ clean: page }) => {
-    // The workflow proves product behaviour, which does not vary by viewport; `presentation, at
-    // every width` below is what runs three times.
-    test.skip(test.info().project.name !== "desktop", "the workflow runs once");
-
     // #given a reset demo, which for this product means two things and not one.
     //
     // `POST /api/demo/reset` clears the FlightRules database. It deliberately does not touch
@@ -208,8 +199,6 @@ test.describe("guards that must hold on the server", () => {
   test("an invalid document cannot be saved, and so cannot be approved", async ({
     clean: page,
   }) => {
-    test.skip(test.info().project.name !== "desktop", "the guards run once");
-
     // #given a draft contract
     const demo = await seed();
     const draft = await fetch(`${API}/api/agents/${demo.agentId}/contracts`, {
@@ -240,8 +229,6 @@ test.describe("guards that must hold on the server", () => {
   });
 
   test("a control that would contradict an existing rule is refused", async ({ clean: page }) => {
-    test.skip(test.info().project.name !== "desktop", "the guards run once");
-
     // #given the active contract, which requires several steps
     const demo = await seed();
     expect(demo.contractId).not.toBeNull();
@@ -254,62 +241,6 @@ test.describe("guards that must hold on the server", () => {
     // #then the edit is refused. An active contract is immutable, and the contradiction would be
     // refused on a draft too — either way, nothing was written.
     await expect(page.getByTestId("action-failed")).toBeVisible();
-  });
-});
-
-test.describe("presentation, at every width", () => {
-  test("the baseline page is usable by keyboard and never scrolls sideways", async ({
-    clean: page,
-  }) => {
-    const demo = await seed();
-    await page.goto(`${demo.agentBase}/baselines/new`);
-    await expect(page.getByTestId("route-baseline-new")).toBeVisible();
-
-    // #then nothing overflows, at this project's viewport
-    await expectNoHorizontalOverflow(page);
-
-    // #and the first tab stop is the skip link, which is visibly focused
-    await page.keyboard.press("Tab");
-    await expectVisibleFocus(page);
-    await expect(page.locator(":focus")).toHaveText("Skip to content");
-
-    // #and every form control is reachable and labelled
-    for (const label of [
-      "Release ID",
-      "Environment",
-      "Time range",
-      "Minimum completed runs",
-      "Rare route threshold",
-      "Maximum traces to fetch",
-      "Include successful runs only",
-      "Exclude traces with missing root span",
-    ]) {
-      await expect(page.getByLabel(label)).toBeVisible();
-    }
-
-    // #and no status hue is painted
-    await expectNoStatusColour(page);
-  });
-
-  test("the Contract Studio is readable and colourless at every width", async ({ clean: page }) => {
-    const demo = await seed();
-    test.skip(demo.contractId === null, "no contract is seeded");
-    await page.goto(`${demo.agentBase}/contracts/${demo.contractId ?? ""}`);
-    await expect(page.getByTestId("route-contract-studio")).toBeVisible();
-
-    await expectNoHorizontalOverflow(page);
-    await expectNoStatusColour(page);
-
-    // The status is a word in upper case, never a colour.
-    await expect(page.getByTestId("contract-status")).toHaveText(/^[A-Z ]+$/);
-  });
-
-  test("an unknown identifier shows the product's not-found state, not a crash", async ({
-    clean: page,
-  }) => {
-    const demo = await seed();
-    await page.goto(`${demo.agentBase}/contracts/00000000-0000-7000-8000-000000000000`);
-    await expect(page.getByTestId("not-found-state")).toBeVisible();
   });
 });
 

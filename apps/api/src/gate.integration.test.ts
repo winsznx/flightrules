@@ -606,3 +606,149 @@ describe("GET /api/releases/:releaseId/gate", () => {
     expect(document.paths["/api/releases/{releaseId}/gate"]?.get).toBeTruthy();
   });
 });
+
+/* -------------------------------------------------------------------------- */
+/* The release diff (PRD section 8.11, PRD Phase 14)                          */
+/* -------------------------------------------------------------------------- */
+
+describe("GET /api/releases/:releaseId/diff", () => {
+  it("compares the release's representative run against an approved route family", async () => {
+    // #given a release whose runs took a route the contract's baseline does not approve
+    const seeded = await seed({ runs: 3, failing: 3 });
+
+    // #when the diff is read
+    const response = await server.inject({
+      method: "GET",
+      url: `/api/releases/${seeded.releaseId}/diff`,
+    });
+
+    // #then it names the evaluation it compared, and the run it chose
+    expect(response.statusCode).toBe(200);
+    const body = response.json() as {
+      evaluationId: string;
+      candidate: { trace: { status: string; signozWebUrl: string | null } } | null;
+      changes: { kind: string; label: string; severity: string }[];
+      representativeFailingTraces: unknown[];
+      identical: boolean;
+    };
+    expect(body.evaluationId).toBe(seeded.evaluationId);
+    // A failing run is the representative, because a regression is what the page exists to explain.
+    expect(body.candidate?.trace.status).toBe("fail");
+    expect(body.representativeFailingTraces.length).toBeGreaterThan(0);
+  });
+
+  it("builds a browser-reachable SigNoz link for every representative trace", async () => {
+    // #given SL-061: the builder query returns no webUrl, so the link is constructed
+    const seeded = await seed({ runs: 2, failing: 1 });
+
+    const response = await server.inject({
+      method: "GET",
+      url: `/api/releases/${seeded.releaseId}/diff`,
+    });
+
+    // #then every link uses the configured origin and SigNoz's own `/trace/<id>` path
+    const body = response.json() as {
+      representativeFailingTraces: { traceId: string; signozWebUrl: string | null }[];
+      representativePassingTraces: { traceId: string; signozWebUrl: string | null }[];
+    };
+    const traces = [...body.representativeFailingTraces, ...body.representativePassingTraces];
+    expect(traces.length).toBeGreaterThan(0);
+    for (const trace of traces) {
+      expect(trace.signozWebUrl).toBe(`${ENV.SIGNOZ_URL}/trace/${trace.traceId}`);
+    }
+  });
+
+  it("returns the same change list twice, byte for byte", async () => {
+    // #given determinism is the whole basis for showing this to a reviewer
+    const seeded = await seed({ runs: 4, failing: 2 });
+
+    const first = await server.inject({
+      method: "GET",
+      url: `/api/releases/${seeded.releaseId}/diff`,
+    });
+    const second = await server.inject({
+      method: "GET",
+      url: `/api/releases/${seeded.releaseId}/diff`,
+    });
+
+    // #then only the retrieval timestamp differs
+    const strip = (raw: string): string =>
+      JSON.stringify({ ...(JSON.parse(raw) as Record<string, unknown>), retrievedAt: null });
+    expect(strip(second.body)).toBe(strip(first.body));
+  });
+
+  it("labels every change with PRD section 8.11's own wording", async () => {
+    const seeded = await seed({ runs: 2, failing: 2 });
+    const response = await server.inject({
+      method: "GET",
+      url: `/api/releases/${seeded.releaseId}/diff`,
+    });
+
+    // #then no change is reported with an engine-internal name the PRD does not use
+    const body = response.json() as { changes: { kind: string; label: string }[] };
+    const PRD_LABELS = new Set([
+      "Added step",
+      "Removed step",
+      "New edge",
+      "Missing edge",
+      "Cardinality changed",
+      "New tool",
+      "New service",
+      "New data domain",
+      "Retry increase",
+      "Duplicate side effect",
+      "Attribute changed",
+      "Route not approved",
+    ]);
+    for (const change of body.changes) {
+      expect(PRD_LABELS.has(change.label), `${change.kind} produced "${change.label}"`).toBe(true);
+    }
+  });
+
+  it("discloses rather than guesses when the contract approves no route", async () => {
+    // #given a contract whose baseline has no approved route family — the seeded contract is
+    // authored, so no `route_families` rows exist for it at all
+    const seeded = await seed({ runs: 2, failing: 1 });
+
+    const response = await server.inject({
+      method: "GET",
+      url: `/api/releases/${seeded.releaseId}/diff`,
+    });
+
+    // #then the page is told why the comparison is empty, rather than being shown "no changes"
+    const body = response.json() as {
+      approvedRouteCount: number;
+      baseline: unknown;
+      disclosures: { code: string }[];
+    };
+    expect(body.approvedRouteCount).toBe(0);
+    expect(body.baseline).toBeNull();
+    expect(body.disclosures.map((entry) => entry.code)).toContain("NO_APPROVED_ROUTE");
+  });
+
+  it("refuses to produce a diff for a release that was never evaluated", async () => {
+    // #given a release with no completed evaluation
+    const seeded = await seed({ runs: 1 });
+    const other = await observeRelease(sql, {
+      agentId: seeded.agentId,
+      releaseKey: "refund-agent-v3",
+      environment: "production",
+      observedAt: WINDOW_END,
+    });
+
+    const response = await server.inject({ method: "GET", url: `/api/releases/${other.id}/diff` });
+
+    // #then it is a typed refusal, never an empty diff that would read as "nothing changed"
+    expect(response.statusCode).toBe(422);
+    expect(response.json().error.code).toBe("RELEASE_INSUFFICIENT_DATA");
+  });
+
+  it("returns NOT_FOUND for an unknown release", async () => {
+    const response = await server.inject({
+      method: "GET",
+      url: "/api/releases/00000000-0000-7000-8000-000000000000/diff",
+    });
+    expect(response.statusCode).toBe(404);
+    expect(response.json().error.code).toBe("NOT_FOUND");
+  });
+});

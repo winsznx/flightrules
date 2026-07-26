@@ -87,8 +87,34 @@ export function diffGraphs(
   candidate: TraceGraph,
   fingerprints: { readonly baseline: string; readonly candidate: string },
 ): GraphDiff {
-  const baselineCanonical = canonicaliseGraph(baseline);
-  const candidateCanonical = canonicaliseGraph(candidate);
+  return diffCanonicalGraphs(
+    canonicaliseGraph(baseline),
+    canonicaliseGraph(candidate),
+    fingerprints,
+    (label) => spanIdsFor(candidate, label),
+  );
+}
+
+/**
+ * The same comparison, over two graphs already in canonical form.
+ *
+ * This is what `diffGraphs` has always computed — the raw `TraceGraph` is only ever used to look up
+ * span identifiers for evidence linking. Exposing it separately lets the Release Diff compare the
+ * **stored** canonical graphs, which is the only form the database keeps (`trace_graphs.
+ * canonical_graph_json`), without re-fetching and re-reconstructing both traces from SigNoz.
+ *
+ * `spanIds` is how a caller that still has the raw graph supplies evidence identifiers. A caller
+ * working from stored canonical form has none — a canonical node carries no span ID by design,
+ * because the fingerprint must not depend on one — and passes nothing. The changes are identical
+ * either way; only the evidence links differ, and the Violation Inspector is where span-level
+ * evidence lives.
+ */
+export function diffCanonicalGraphs(
+  baselineCanonical: CanonicalGraph,
+  candidateCanonical: CanonicalGraph,
+  fingerprints: { readonly baseline: string; readonly candidate: string },
+  spanIds: (label: string) => readonly string[] = () => [],
+): GraphDiff {
   const changes: GraphChange[] = [];
 
   const baselineNodes = countBy(baselineCanonical.nodes, (node) => node.label);
@@ -99,7 +125,7 @@ export function diffGraphs(
     const after = candidateNodes.get(label) ?? 0;
     if (before === after) continue;
 
-    const spanIds = spanIdsFor(candidate, label);
+    const nodeSpanIds = spanIds(label);
     if (before === 0) {
       changes.push({
         kind: "node_added",
@@ -107,7 +133,7 @@ export function diffGraphs(
         detail: `${label} appears in the candidate but not in the baseline.`,
         baselineCount: 0,
         candidateCount: after,
-        candidateSpanIds: spanIds,
+        candidateSpanIds: nodeSpanIds,
       });
     } else if (after === 0) {
       changes.push({
@@ -125,16 +151,16 @@ export function diffGraphs(
         detail: `${label} occurs ${after} times in the candidate against ${before} in the baseline.`,
         baselineCount: before,
         candidateCount: after,
-        candidateSpanIds: spanIds,
+        candidateSpanIds: nodeSpanIds,
       });
     }
   }
 
-  changes.push(...diffEdges(baselineCanonical, candidateCanonical, candidate));
-  changes.push(...diffClassifications(baselineCanonical, candidateCanonical, candidate));
-  changes.push(...diffSideEffects(baselineCanonical, candidateCanonical, candidate));
-  changes.push(...diffRetries(baselineCanonical, candidateCanonical, candidate));
-  changes.push(...diffAttributes(baselineCanonical, candidateCanonical, candidate));
+  changes.push(...diffEdges(baselineCanonical, candidateCanonical, spanIds));
+  changes.push(...diffClassifications(baselineCanonical, candidateCanonical, spanIds));
+  changes.push(...diffSideEffects(baselineCanonical, candidateCanonical, spanIds));
+  changes.push(...diffRetries(baselineCanonical, candidateCanonical, spanIds));
+  changes.push(...diffAttributes(baselineCanonical, candidateCanonical, spanIds));
 
   // Sorted by kind then subject so the same pair of graphs always yields the same list. The UI
   // orders by severity separately; determinism here is what makes the diff testable.
@@ -153,7 +179,7 @@ export function diffGraphs(
 function diffEdges(
   baseline: CanonicalGraph,
   candidate: CanonicalGraph,
-  candidateGraph: TraceGraph,
+  spanIds: (label: string) => readonly string[],
 ): readonly GraphChange[] {
   const labelEdges = (canonical: CanonicalGraph): ReadonlySet<string> => {
     const labels = labelIndex(canonical);
@@ -175,7 +201,7 @@ function diffEdges(
       kind: "edge_added",
       subject: edge,
       detail: `The candidate contains the relationship ${edge}, which the baseline does not.`,
-      candidateSpanIds: spanIdsFor(candidateGraph, edge.split("->")[1]?.split("|")[0] ?? ""),
+      candidateSpanIds: spanIds(edge.split("->")[1]?.split("|")[0] ?? ""),
     });
   }
   for (const edge of before) {
@@ -194,7 +220,7 @@ function diffEdges(
 function diffClassifications(
   baseline: CanonicalGraph,
   candidate: CanonicalGraph,
-  candidateGraph: TraceGraph,
+  spanIds: (label: string) => readonly string[],
 ): readonly GraphChange[] {
   const changes: GraphChange[] = [];
 
@@ -232,7 +258,7 @@ function diffClassifications(
         kind: dimension.kind,
         subject: value,
         detail: `The candidate uses the ${dimension.noun} ${value}, which the baseline never does.`,
-        candidateSpanIds: spanIdsFor(candidateGraph, dimension.labelFor(value)),
+        candidateSpanIds: spanIds(dimension.labelFor(value)),
       });
     }
   }
@@ -250,7 +276,7 @@ function diffClassifications(
 function diffSideEffects(
   baseline: CanonicalGraph,
   candidate: CanonicalGraph,
-  candidateGraph: TraceGraph,
+  spanIds: (label: string) => readonly string[],
 ): readonly GraphChange[] {
   const mutating = (node: CanonicalNode): boolean =>
     node.sideEffect === "write" || node.sideEffect === "external";
@@ -277,7 +303,7 @@ function diffSideEffects(
         `candidate against ${baselineCount} in the baseline.`,
       baselineCount,
       candidateCount,
-      candidateSpanIds: spanIdsFor(candidateGraph, label),
+      candidateSpanIds: spanIds(label),
     });
   }
   return changes;
@@ -286,7 +312,7 @@ function diffSideEffects(
 function diffRetries(
   baseline: CanonicalGraph,
   candidate: CanonicalGraph,
-  candidateGraph: TraceGraph,
+  spanIds: (label: string) => readonly string[],
 ): readonly GraphChange[] {
   const maxRetry = (canonical: CanonicalGraph): ReadonlyMap<string, number> => {
     const result = new Map<string, number>();
@@ -310,7 +336,7 @@ function diffRetries(
       detail: `${label} retried up to attempt ${candidateMax} against ${baselineMax} in the baseline.`,
       baselineCount: baselineMax,
       candidateCount: candidateMax,
-      candidateSpanIds: spanIdsFor(candidateGraph, label),
+      candidateSpanIds: spanIds(label),
     });
   }
   return changes;
@@ -319,7 +345,7 @@ function diffRetries(
 function diffAttributes(
   baseline: CanonicalGraph,
   candidate: CanonicalGraph,
-  candidateGraph: TraceGraph,
+  spanIds: (label: string) => readonly string[],
 ): readonly GraphChange[] {
   const attributesByLabel = (
     canonical: CanonicalGraph,
@@ -349,7 +375,7 @@ function diffAttributes(
       kind: "attribute_changed",
       subject: label,
       detail: `${label} carries attribute values the baseline never showed: ${added.join(", ")}.`,
-      candidateSpanIds: spanIdsFor(candidateGraph, label),
+      candidateSpanIds: spanIds(label),
     });
   }
   return changes;

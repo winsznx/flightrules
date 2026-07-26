@@ -127,3 +127,82 @@ export async function gatesForReleases(
 export function decisionOf(result: Awaited<ReturnType<typeof findGate>>): string {
   return isFailure(result) ? "not evaluated" : result.data.decision;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Release diff (PRD section 8.11)                                            */
+/* -------------------------------------------------------------------------- */
+
+const DiffGraphSchema = z.object({
+  nodes: z.array(
+    z.object({
+      order: z.number(),
+      depth: z.number(),
+      label: z.string(),
+      service: z.string(),
+      kind: z.string().nullable(),
+      sideEffect: z.string(),
+      tool: z.string().nullable(),
+      dataDomain: z.string().nullable(),
+      retryNumber: z.number().nullable(),
+    }),
+  ),
+  edges: z.array(z.object({ from: z.number(), to: z.number(), type: z.string() })),
+});
+
+const DiffTraceSchema = z.object({
+  traceId: z.string(),
+  traceRunId: z.string(),
+  status: z.string(),
+  routeFingerprint: z.string(),
+  routeApproved: z.boolean(),
+  similarity: z.string(),
+  durationMs: z.number().nullable(),
+  signozWebUrl: z.string().nullable(),
+});
+
+export const ReleaseDiffSchema = z.object({
+  schemaVersion: z.string(),
+  releaseId: z.string(),
+  releaseKey: z.string(),
+  environment: z.string(),
+  agentId: z.string(),
+  projectId: z.string(),
+  evaluationId: z.string(),
+  evaluationStatus: z.string(),
+  contractId: z.string(),
+  contractVersion: z.string(),
+  contractContentHash: z.string(),
+  evaluatorVersion: z.string(),
+  baseline: z
+    .object({
+      routeFamilyId: z.string(),
+      fingerprint: z.string(),
+      occurrenceCount: z.number(),
+      graph: DiffGraphSchema,
+    })
+    .nullable(),
+  candidate: z.object({ trace: DiffTraceSchema, graph: DiffGraphSchema }).nullable(),
+  nearestApprovedRouteFamilyId: z.string().nullable(),
+  identical: z.boolean(),
+  changes: z.array(
+    z.object({
+      kind: z.string(),
+      subject: z.string(),
+      detail: z.string(),
+      baselineCount: z.number().nullable(),
+      candidateCount: z.number().nullable(),
+      label: z.string(),
+      severity: z.string(),
+    }),
+  ),
+  representativeFailingTraces: z.array(DiffTraceSchema),
+  representativePassingTraces: z.array(DiffTraceSchema),
+  approvedRouteCount: z.number(),
+  disclosures: z.array(z.object({ code: z.string(), summary: z.string() })),
+  retrievedAt: z.string(),
+});
+
+export type ReleaseDiff = z.infer<typeof ReleaseDiffSchema>;
+
+export const findReleaseDiff = (releaseId: string) =>
+  apiGet(`/api/releases/${releaseId}/diff`, ReleaseDiffSchema);
