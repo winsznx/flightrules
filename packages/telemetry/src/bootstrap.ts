@@ -20,6 +20,14 @@ export interface BootstrapOptions {
    */
   readonly metrics?: boolean;
   readonly metricIntervalMs?: number;
+  /**
+   * Open the log pipeline as well (PRD section 17.5).
+   *
+   * On by default, unlike metrics. Every process this function starts writes structured logs
+   * already, and the Violation Inspector's correlated-log panel can only show what reached SigNoz;
+   * a process whose logs stop at stdout contributes nothing to a violation's evidence.
+   */
+  readonly logs?: boolean;
 }
 
 export function bootstrapFromEnv(
@@ -34,6 +42,7 @@ export function bootstrapFromEnv(
     commitSha: process.env["VCS_COMMIT_SHA"],
     serviceInstanceId: process.env["SERVICE_INSTANCE_ID"],
     metrics: options.metrics ?? false,
+    logs: options.logs ?? true,
     ...(options.metricIntervalMs === undefined
       ? {}
       : { metricIntervalMs: options.metricIntervalMs }),

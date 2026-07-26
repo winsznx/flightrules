@@ -543,3 +543,54 @@ export async function listJobs(
     limit ${request.limit + 1}`;
   return toPage(rows.map(toJob), request);
 }
+
+export interface JobQueueDepth {
+  readonly queued: number;
+  readonly running: number;
+  /** Age of the oldest job still waiting to be claimed, or `null` when nothing is waiting. */
+  readonly oldestQueuedSeconds: number | null;
+  /** Running jobs whose lease has already expired and which recovery has not yet returned. */
+  readonly expiredLeases: number;
+}
+
+/**
+ * The queue as an operator sees it.
+ *
+ * A worker that has stopped claiming work is invisible from every other health signal: the API is
+ * up, the database is up, SigNoz is up, and jobs simply accumulate in `queued` for ever. That is the
+ * exact shape of the defect this repository already fixed once — an `unref`ed idle poll timer let
+ * the worker exit silently after logging nothing but successes — so the condition needs a reading
+ * somebody can alert on rather than a second chance to be discovered by hand.
+ *
+ * `available_at` rather than `created_at`: a job deliberately deferred by a retry backoff is not
+ * waiting yet, and counting it as waiting would make every retry look like a stall.
+ */
+export async function jobQueueDepth(sql: Db): Promise<JobQueueDepth> {
+  const rows = await sql<
+    {
+      queued: string;
+      running: string;
+      oldest_queued_seconds: string | null;
+      expired_leases: string;
+    }[]
+  >`
+    select
+      count(*) filter (where status = 'queued')::text as queued,
+      count(*) filter (where status = 'running')::text as running,
+      max(extract(epoch from (now() - available_at)))
+        filter (where status = 'queued' and available_at <= now())::text
+        as oldest_queued_seconds,
+      count(*) filter (where status = 'running' and lease_expires_at < now())::text
+        as expired_leases
+    from jobs`;
+
+  const row = rows[0];
+  const oldest = row?.oldest_queued_seconds;
+  return {
+    queued: Number(row?.queued ?? "0"),
+    running: Number(row?.running ?? "0"),
+    oldestQueuedSeconds:
+      oldest === null || oldest === undefined ? null : Math.floor(Number(oldest)),
+    expiredLeases: Number(row?.expired_leases ?? "0"),
+  };
+}

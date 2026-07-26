@@ -26,6 +26,7 @@ import {
 } from "@opentelemetry/sdk-trace-base";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import { AGENT, EXPERIMENTAL, STABLE } from "./attributes.js";
+import { type LogPipeline, startLogPipeline } from "./logs.js";
 
 /**
  * Strips any attribute the PRD forbids on the default product path, at the point a span starts
@@ -89,11 +90,20 @@ export interface TelemetryOptions {
   readonly metrics?: boolean;
   /** Export interval for metrics. Short in tests, so an assertion does not wait a minute. */
   readonly metricIntervalMs?: number;
+  /**
+   * Export logs over OTLP as well as traces (PRD section 17.5).
+   *
+   * Off by default for the same reason as metrics: a process that has nothing to correlate does not
+   * need a third exporter. The API, the worker and every demo service turn it on, because the
+   * Violation Inspector's correlated-log panel retrieves exactly what they emit.
+   */
+  readonly logs?: boolean;
 }
 
 export interface TelemetryHandle {
   readonly provider: NodeTracerProvider;
   readonly meterProvider: MeterProvider | undefined;
+  readonly logPipeline: LogPipeline | undefined;
   readonly redactor: ForbiddenAttributeRedactor;
   readonly memory: InMemorySpanExporter | undefined;
   readonly metricMemory: InMemoryMetricExporter | undefined;
@@ -172,9 +182,20 @@ export function startTelemetry(options: TelemetryOptions): TelemetryHandle {
     metrics.setGlobalMeterProvider(meterProvider);
   }
 
+  const logPipeline = options.logs
+    ? startLogPipeline({
+        resource,
+        otlpEndpoint: options.otlpEndpoint,
+        ...(options.captureInMemory === undefined
+          ? {}
+          : { captureInMemory: options.captureInMemory }),
+      })
+    : undefined;
+
   return {
     provider,
     meterProvider,
+    logPipeline,
     redactor,
     memory,
     metricMemory,
@@ -183,11 +204,14 @@ export function startTelemetry(options: TelemetryOptions): TelemetryHandle {
     forceFlush: async () => {
       await provider.forceFlush();
       await meterProvider?.forceFlush();
+      await logPipeline?.forceFlush();
     },
     shutdown: async () => {
       await provider.forceFlush();
       await meterProvider?.forceFlush();
+      await logPipeline?.forceFlush();
       await meterProvider?.shutdown();
+      await logPipeline?.shutdown();
       await provider.shutdown();
     },
   };

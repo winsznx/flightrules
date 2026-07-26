@@ -596,7 +596,7 @@ describe("proposing a contract from approved families", () => {
     const hostile = approvedRefundRows({
       replace: [
         {
-          name: "policy .retrieve\u202e",
+          name: "policy\u0000.retrieve\u202e",
           spanId: "c1policy",
           parentSpanId: "root0000",
           tool: "retrieve_policy",
@@ -618,7 +618,7 @@ describe("proposing a contract from approved families", () => {
       );
 
     for (const name of names) {
-      expect(name).not.toContain(" ");
+      expect(name).not.toContain("\u0000");
       expect(name).not.toContain("\u202e");
     }
   });
@@ -688,7 +688,7 @@ describe("refusing to propose", () => {
     const result = proposeContract({
       baseline: input.baseline,
       runsByFingerprint: input.runsByFingerprint,
-      options: { ...PROPOSAL_OPTIONS, workflowName: " \u0001" },
+      options: { ...PROPOSAL_OPTIONS, workflowName: "\u0000\u0001" },
     });
 
     expect(result.ok).toBe(false);

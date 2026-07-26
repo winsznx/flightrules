@@ -305,8 +305,11 @@ export function registerGateRoutes(
 
       context.metrics?.recordGateDecision(
         {
+          projectId: project.id,
+          agentId: agent.id,
           projectSlug: project.slug,
           agentKey: agent.agentKey,
+          releaseId: release.id,
           releaseKey: release.releaseKey,
           scope: "release",
         },

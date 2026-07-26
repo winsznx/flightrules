@@ -12,7 +12,7 @@ import {
   gateCheck,
   releaseEvaluate,
 } from "./commands.js";
-import { type Io, USAGE, writeJson } from "./output.js";
+import { type Io, terminalSafe, USAGE, writeJson } from "./output.js";
 
 /**
  * The CLI's single entry point.
@@ -40,7 +40,11 @@ const HANDLERS: Readonly<
   "evidence export": evidenceExport,
 };
 
-export async function run(argv: readonly string[], io: Io): Promise<ExitCode> {
+export async function run(argv: readonly string[], rawIo: Io): Promise<ExitCode> {
+  // Wrapped once, here, so every line any command writes is filtered. A span name, a tool name or a
+  // rule summary arriving from telemetry reaches the human report, and a terminal treats an escape
+  // sequence inside one as an instruction (PRD Phase 16 task 12).
+  const io = terminalSafe(rawIo);
   let parsed: ParsedCommand;
 
   try {

@@ -76,9 +76,23 @@ export default function LandingPage(): ReactNode {
 
         <Section title={LANDING.secondaryCta} testId="architecture">
           <figure style={{ margin: 0 }} id="architecture">
-            <pre className="fr-schematic" aria-describedby="architecture-caption">
-              {SCHEMATIC}
-            </pre>
+            {/*
+              At narrow widths the schematic scrolls horizontally, and a region that scrolls must be
+              reachable by keyboard or its right-hand half cannot be read without a pointer. axe
+              reports the absence as `scrollable-region-focusable`, serious. The scroll container is
+              a labelled `section` rather than the `pre` itself, because `pre` has no ARIA role and
+              therefore takes no accessible name.
+            */}
+            <section
+              className="fr-schematic-scroll"
+              // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region is the documented case where a non-interactive element must be focusable (WCAG 2.1.1)
+              tabIndex={0}
+              aria-label="Architecture diagram of the FlightRules pipeline"
+            >
+              <pre className="fr-schematic" aria-describedby="architecture-caption">
+                {SCHEMATIC}
+              </pre>
+            </section>
             <figcaption
               className="fr-muted"
               id="architecture-caption"

@@ -1,0 +1,10 @@
+pnpm run scan:deps
+
+> flightrules@0.1.0 scan:deps /Users/mac/flightrules
+> node scripts/audit-dependencies.mjs --level high
+
+Audited 302 installed package(s) against the npm advisory database.
+  note  moderate @hono/node-server@1.19.15
+        Node.js Adapter for Hono: Path traversal in `serve-static` on Windows via encoded backslash (`%5C`)
+        vulnerable <2.0.5; patched none published
+        https://github.com/advisories/GHSA-frvp-7c67-39w9

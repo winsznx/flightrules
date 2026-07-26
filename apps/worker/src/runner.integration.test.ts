@@ -2,8 +2,10 @@ import { readFile } from "node:fs/promises";
 import {
   connect,
   findJob,
+  jobQueueDepth,
   MIGRATIONS_DIR,
   migrateUp,
+  reclaimExpiredLeases,
   requestCancellation,
   type Sql,
   submitJob,
@@ -353,5 +355,210 @@ describe("staying alive while idle", () => {
     const loopBody = source.slice(source.indexOf("async loop("), source.indexOf("async stop("));
     const pollTimer = loopBody.slice(loopBody.indexOf("setTimeout(resolve"));
     expect(pollTimer).not.toContain("unref");
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* Restart, crash and recovery                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * What happens to a job when the worker holding it stops (PRD Phase 16 task 8, PRD section 20.1:
+ * "worker restarts resume or safely fail jobs").
+ *
+ * A worker can stop in four materially different places, and each has a different correct outcome:
+ * before it claims anything, while idle, between the claim and the commit, and after the commit. The
+ * dangerous one is the third, because a job left `running` by a process that no longer exists is
+ * invisible: nothing is working on it and nothing will, until its lease expires.
+ *
+ * The lease is expired here by moving `lease_expires_at` into the past rather than by waiting, so
+ * the test states the condition it is testing instead of encoding a timeout in a sleep.
+ */
+describe("a worker that stops mid-job", () => {
+  /** Simulates `kill -9`: the row stays `running`, its owner is gone, and its lease is stale. */
+  async function expireLease(jobId: string): Promise<void> {
+    await sql`update jobs set lease_expires_at = now() - interval '1 second' where id = ${jobId}`;
+  }
+
+  it("leaves the job claimable again once its lease expires", async () => {
+    // #given a job claimed by a worker that then died without failing it. The claim is written
+    // directly, because the state under test is the one a `kill -9` leaves behind: `running`, owned
+    // by a process that no longer exists, with a lease nobody is renewing.
+    const jobId = await queue("crash-after-claim");
+    await sql`update jobs set status = 'running', lease_owner = 'dead-worker',
+      lease_expires_at = now() + interval '60 seconds', attempt = 1 where id = ${jobId}`;
+    expect((await findJob(sql, jobId))?.status).toBe("running");
+
+    // #when the lease expires and recovery runs
+    await expireLease(jobId);
+    const recovered = await reclaimExpiredLeases(sql);
+
+    // #then the job is queued again, with attempts remaining, and says why
+    expect(recovered.requeued).toContain(jobId);
+    const job = await findJob(sql, jobId);
+    expect(job?.status).toBe("queued");
+    expect(job?.leaseOwner).toBeNull();
+    expect(job?.failure?.retryable).toBe(true);
+    expect(job?.failure?.message).toContain("stopped responding");
+  });
+
+  it("fails a job terminally when its worker died and no attempts remain", async () => {
+    const jobId = await queue("crash-at-final-attempt", 1);
+    await sql`update jobs set status = 'running', lease_owner = 'dead-worker',
+      lease_expires_at = now() - interval '1 second', attempt = 1 where id = ${jobId}`;
+
+    const recovered = await reclaimExpiredLeases(sql);
+
+    expect(recovered.abandoned).toContain(jobId);
+    const job = await findJob(sql, jobId);
+    expect(job?.status).toBe("failed");
+    expect(job?.failure?.retryable).toBe(false);
+  });
+
+  it("is picked up and completed by the next worker after recovery", async () => {
+    const jobId = await queue("recovered-then-run");
+    await sql`update jobs set status = 'running', lease_owner = 'dead-worker',
+      lease_expires_at = now() - interval '1 second', attempt = 1 where id = ${jobId}`;
+    await reclaimExpiredLeases(sql);
+
+    const outcome = await runnerWith(async () => async () => ({ ok: true })).runOnce();
+
+    expect(outcome).toMatchObject({ claimed: true, jobId, outcome: "succeeded" });
+    expect((await findJob(sql, jobId))?.status).toBe("succeeded");
+  });
+
+  it("commits no output when the lease was lost before the commit", async () => {
+    // #given a job whose lease is taken by another worker while the handler is still running
+    const jobId = await queue("lease-lost-mid-run");
+    const runner = runnerWith(async (context) => {
+      // Somebody else claims it: the lease owner changes under the running handler.
+      await sql`update jobs set lease_owner = 'other-worker',
+        lease_expires_at = now() + interval '60 seconds' where id = ${context.job.id}`;
+      return async (tx) => {
+        await tx`insert into projects (name, slug) values ('Stolen', 'stolen')`;
+        return { ok: true };
+      };
+    });
+
+    // #when it finishes and tries to commit
+    const outcome = await runner.runOnce();
+
+    // #then the whole transaction rolled back: no side effect, and no success recorded by the
+    // worker that no longer owns the job
+    expect(outcome.outcome).toBe("failed");
+    const projects = await sql<{ count: string }[]>`
+      select count(*)::text as count from projects where slug = 'stolen'`;
+    expect(projects[0]?.count).toBe("0");
+    expect((await findJob(sql, jobId))?.result).toBeNull();
+  });
+
+  it("commits its output exactly once even when the same job is run twice", async () => {
+    // #given a job whose handler is not itself idempotent
+    const jobId = await queue("run-twice");
+    let runs = 0;
+    const runner = runnerWith(async () => {
+      runs += 1;
+      return async (tx) => {
+        await tx`insert into projects (name, slug) values ('Once', 'once')`;
+        return { runs };
+      };
+    });
+
+    // #when the runner is asked to run twice over the same queue
+    await runner.runOnce();
+    const second = await runner.runOnce();
+
+    // #then the second call found nothing to claim: a succeeded job is not claimable
+    expect(second.claimed).toBe(false);
+    expect(runs).toBe(1);
+    const projects = await sql<{ count: string }[]>`
+      select count(*)::text as count from projects where slug = 'once'`;
+    expect(projects[0]?.count).toBe("1");
+    expect((await findJob(sql, jobId))?.status).toBe("succeeded");
+  });
+
+  it("submits one job, not two, for a repeated idempotency key", async () => {
+    const first = await queue("same-key");
+    const second = await queue("same-key");
+
+    expect(second).toBe(first);
+    const rows = await sql<{ count: string }[]>`select count(*)::text as count from jobs`;
+    expect(rows[0]?.count).toBe("1");
+  });
+});
+
+describe("shutdown while idle", () => {
+  it("returns from the loop promptly and claims nothing afterwards", async () => {
+    // #given a running loop with nothing to do
+    const runner = runnerWith(async () => async () => ({}), "idle-shutdown", {
+      WORKER_POLL_INTERVAL_MS: "25",
+    });
+    const loop = runner.loop();
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    // #when it is stopped while idle
+    await runner.stop();
+    await loop;
+
+    // #then a job submitted afterwards is left for another worker rather than silently claimed
+    const jobId = await queue("after-shutdown");
+    expect((await runner.runOnce()).claimed).toBe(false);
+    expect((await findJob(sql, jobId))?.status).toBe("queued");
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* Operational visibility                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A stalled queue has to be detectable in production (PRD Phase 16 task 8).
+ *
+ * When the worker stops claiming, every other health signal stays green: the API answers, the
+ * database answers, SigNoz answers. Only the queue itself says anything, which is why
+ * `GET /health/dependencies` reports it and why the reading it reports is asserted here.
+ */
+describe("queue depth", () => {
+  it("reports nothing waiting on an empty queue", async () => {
+    const depth = await jobQueueDepth(sql);
+    expect(depth).toMatchObject({ queued: 0, running: 0, oldestQueuedSeconds: null });
+  });
+
+  it("reports the age of the oldest claimable job", async () => {
+    const jobId = await queue("waiting");
+    await sql`update jobs set available_at = now() - interval '600 seconds' where id = ${jobId}`;
+
+    const depth = await jobQueueDepth(sql);
+    expect(depth.queued).toBe(1);
+    expect(depth.oldestQueuedSeconds).toBeGreaterThanOrEqual(600);
+  });
+
+  it("does not count a job deferred by a retry backoff as waiting", async () => {
+    // #given a job whose next attempt is deliberately in the future
+    const jobId = await queue("backing-off");
+    await sql`update jobs set available_at = now() + interval '300 seconds' where id = ${jobId}`;
+
+    // #then it is queued but not yet waiting to be claimed, so it is not a stall
+    const depth = await jobQueueDepth(sql);
+    expect(depth.queued).toBe(1);
+    expect(depth.oldestQueuedSeconds).toBeNull();
+  });
+
+  it("counts a running job whose lease has already expired", async () => {
+    const jobId = await queue("expired-lease");
+    await sql`update jobs set status = 'running', lease_owner = 'dead-worker',
+      lease_expires_at = now() - interval '1 second' where id = ${jobId}`;
+
+    const depth = await jobQueueDepth(sql);
+    expect(depth.running).toBe(1);
+    expect(depth.expiredLeases).toBe(1);
+  });
+
+  it("returns to zero once the work has been done", async () => {
+    await queue("will-finish");
+    await runnerWith(async () => async () => ({})).runOnce();
+
+    const depth = await jobQueueDepth(sql);
+    expect(depth).toMatchObject({ queued: 0, running: 0, oldestQueuedSeconds: null });
   });
 });

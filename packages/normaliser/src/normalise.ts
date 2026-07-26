@@ -175,13 +175,23 @@ function stringAttribute(
   return trimmed.length === 0 ? null : trimmed;
 }
 
-function integerAttribute(
+/**
+ * A non-negative integer attribute, or `null`.
+ *
+ * `agent.retry.number` is a zero-based attempt index, so a negative value is not a smaller number of
+ * retries — it is not an attempt index at all. Admitting one lets a single mislabelled span subtract
+ * from the run's retry total and from the release's summed retries, which turns a real budget breach
+ * into a clean run. Rejecting it reports the span as carrying no retry evidence, which is what an
+ * uninterpretable value actually is.
+ */
+function nonNegativeIntegerAttribute(
   attributes: Readonly<Record<string, unknown>>,
   key: string,
 ): number | null {
   const value = attributes[key];
-  if (typeof value === "number" && Number.isInteger(value)) return value;
-  // SigNoz returns some numeric tags as strings depending on the selected data type.
+  if (typeof value === "number" && Number.isInteger(value) && value >= 0) return value;
+  // SigNoz returns some numeric tags as strings depending on the selected data type. `isAllDigits`
+  // admits no sign, so the string path cannot carry a negative value.
   if (typeof value === "string" && isAllDigits(value.trim())) return Number(value.trim());
   return null;
 }
@@ -208,7 +218,7 @@ export function classify(
     dataDomain: dataDomain === null ? null : dataDomain.toLowerCase(),
     toolName: toolName === null ? null : normaliseName(toolName, config),
     toolType: stringAttribute(attributes, "gen_ai.operation.name"),
-    retryNumber: integerAttribute(attributes, "agent.retry.number"),
+    retryNumber: nonNegativeIntegerAttribute(attributes, "agent.retry.number"),
     releaseId: stringAttribute(attributes, "agent.release.id"),
     environment: stringAttribute(attributes, "deployment.environment.name"),
   };

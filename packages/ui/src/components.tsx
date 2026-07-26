@@ -173,7 +173,14 @@ export function Table<T>(props: {
 }): ReactNode {
   if (props.rows.length === 0) return props.empty;
   return (
-    <div className="fr-table-scroll">
+    /*
+     * A container that scrolls must be reachable by keyboard, or a keyboard-only user cannot read
+     * the columns past the fold. axe reports the absence as `scrollable-region-focusable`, serious.
+     * A `section` with an accessible name is an implicit `region`, so the caption is announced
+     * rather than "group".
+     */
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region is the documented case where a non-interactive element must be focusable (WCAG 2.1.1)
+    <section className="fr-table-scroll" tabIndex={0} aria-label={props.caption}>
       <table className="fr-table" data-testid={props.testId}>
         <caption>{props.caption}</caption>
         <thead>
@@ -201,7 +208,7 @@ export function Table<T>(props: {
           ))}
         </tbody>
       </table>
-    </div>
+    </section>
   );
 }
 

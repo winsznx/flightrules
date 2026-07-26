@@ -26,6 +26,14 @@ export interface BuildApiOptions {
   readonly context: AppContext;
   /** Off in tests, where Fastify's own logger would flood the reporter. */
   readonly logger?: boolean;
+  /**
+   * Where pino's output goes (PRD section 17.5).
+   *
+   * The entrypoint passes a destination that writes the line to stdout **and** emits a correlated
+   * OTLP log record. It is an option rather than a hard-wired dependency so a test can capture the
+   * lines, and so `buildApi` stays constructible without a telemetry pipeline behind it.
+   */
+  readonly logStream?: { write(line: string): void };
 }
 
 export interface BuiltApi {
@@ -87,6 +95,10 @@ export function buildApi(options: BuildApiOptions): BuiltApi {
         }),
         res: (reply) => ({ statusCode: reply.statusCode }),
       },
+      // Declared after `redact`, so what reaches the destination — and therefore what reaches
+      // SigNoz — is already censored. A destination that received the uncensored line and censored
+      // it again would be two rules that could drift apart.
+      ...(options.logStream === undefined ? {} : { stream: options.logStream }),
     },
   });
 

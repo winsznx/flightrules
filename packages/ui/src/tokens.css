@@ -19,6 +19,17 @@
   --color-deep-ink: #000d10;
   --color-pure-white: #ffffff;
   --color-cool-ash: #8e8e95;
+  /*
+   * Cool Ash, darkened only enough to clear WCAG AA on the white canvas.
+   *
+   * design.md is authoritative for colour, and `--color-cool-ash` is unchanged: on the dark
+   * surfaces it was drawn for it measures 6.06:1 on Footer Ink and 5.51:1 on Dark Slate, both
+   * comfortably AA. On white it measures 3.25:1, and PRD section 20.3 requires AA after design.md
+   * is applied — so the *semantic* muted-text role points here instead, at 4.91:1, while the
+   * palette token keeps the value design.md declares. Verified by the axe sweep in
+   * tests/e2e/phase-16-accessibility.spec.ts.
+   */
+  --color-cool-ash-on-white: #707077;
   --color-pebble: #d5d3d4;
   --color-midnight-hull: #0f0f1c;
   --color-charcoal-deck: #151623;
@@ -106,7 +117,9 @@
   /* ---------------------------------------------------------------------- */
 
   --fr-text: var(--color-deep-ink);
-  --fr-text-muted: var(--color-cool-ash);
+  --fr-text-muted: var(--color-cool-ash-on-white);
+  /* The palette value, for the dark surfaces where design.md uses it and it already clears AA. */
+  --fr-text-muted-on-dark: var(--color-cool-ash);
   --fr-text-inverse: var(--color-pure-white);
   --fr-surface: var(--surface-canvas-white);
   --fr-surface-dark: var(--surface-dark-slate);

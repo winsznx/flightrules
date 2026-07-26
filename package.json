@@ -21,13 +21,14 @@
     "build": "pnpm -r --if-present run build",
     "scan:secrets": "secretlint --secretlintignore .gitignore \"**/*\"",
     "scan:licences": "node scripts/check-licences.mjs",
-    "scan:deps": "pnpm audit --audit-level high",
+    "scan:deps": "node scripts/audit-dependencies.mjs --level high",
     "test:integration:db": "vitest run --project integration-db",
     "test:integration:signoz": "vitest run --project integration-signoz",
     "test:e2e": "playwright test",
     "test:e2e:report": "playwright show-report"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.11.2",
     "@biomejs/biome": "2.5.5",
     "@flightrules/domain": "workspace:*",
     "@flightrules/signoz-mcp": "workspace:*",
@@ -36,11 +37,15 @@
     "@secretlint/secretlint-rule-preset-recommend": "13.0.4",
     "@types/node": "24.13.3",
     "secretlint": "13.0.4",
+    "semver": "7.8.5",
     "tsx": "4.23.1",
     "typescript": "7.0.2",
     "vitest": "4.1.10"
   },
   "pnpm": {
+    "overrides": {
+      "postcss": "8.5.23"
+    },
     "ignoredOptionalDependencies": [
       "@img/sharp-libvips-darwin-arm64",
       "sharp"

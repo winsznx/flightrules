@@ -1,10 +1,11 @@
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 .PHONY: help verify-env install lint lint-fix format format-check typecheck test test-integration \
-        test-integration-db test-integration-signoz test-e2e build up down db-migrate db-rollback db-status scan-secrets scan-licences \
+        test-integration-db test-integration-signoz test-e2e build up down db-deps db-migrate db-rollback db-status scan-secrets scan-licences \
         scan-deps verify clean contract-validate demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
         signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility mine-demo-baseline \
-        signoz-sync signoz-purge api worker web cli demo-seed demo-full demo-urls gate gate-json evidence scan-design
+        signoz-sync signoz-purge api worker web cli demo-seed demo-full demo-urls gate gate-json evidence scan-design \
+        verify-telemetry measure-performance scan-history verify-alerts verify-fresh-machine
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -111,14 +112,25 @@ evidence: ## Export the release evidence bundle to OUT (default docs/evidence/re
 			--release "$${RELEASE:-refund-agent-v1}" \
 			--out "$${OUT:-docs/evidence/release-gate.json}"
 
-db-migrate: ## Apply database migrations
-	pnpm --filter @flightrules/db run migrate
+# The migrator runs from source through `tsx`, but it imports `@flightrules/domain` by its package
+# entry point, which resolves to `dist/`. On a fresh clone nothing has been built yet, so the
+# documented `make install && make db-migrate` sequence failed with an opaque
+# `ERR_MODULE_NOT_FOUND` for a file the reader has no reason to expect. `tsc --build` on the db
+# package builds its project references, so this stays correct if the package gains a dependency.
+db-deps:
+	@pnpm --filter @flightrules/db run build >/dev/null
 
-db-rollback: ## Revert the most recent database migration
-	pnpm --filter @flightrules/db run rollback
+# These three load .env the same way `api`, `worker` and `test-integration` do. Without it
+# `make db-migrate` — a documented README step — fails with "DATABASE_URL is not set." on any
+# machine that has not exported the variable by hand, which is every fresh machine.
+db-migrate: db-deps ## Apply database migrations
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/db run migrate
 
-db-status: ## Show applied database migrations
-	pnpm --filter @flightrules/db run migrate:status
+db-rollback: db-deps ## Revert the most recent database migration
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/db run rollback
+
+db-status: db-deps ## Show applied database migrations
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/db run migrate:status
 
 contract-validate: ## Validate every committed contract document
 	@bash scripts/validate-contracts.sh
@@ -131,6 +143,9 @@ scan-licences: ## Check every installed dependency licence
 
 scan-deps: ## Audit dependencies for known vulnerabilities
 	pnpm run scan:deps
+
+scan-history: ## Scan the whole git history for committed credentials
+	gitleaks detect --no-banner --redact --config .gitleaks.toml
 
 signoz-gauge: ## Check the tools Foundry needs are available
 	foundryctl gauge -f casting.yaml --format text --no-ledger --no-updater
@@ -152,6 +167,18 @@ signoz-bootstrap: ## Create the first SigNoz user and mint a FlightRules API key
 
 signoz-verify: ## Verify every SigNoz surface against the running deployment
 	@bash scripts/verify-signoz.sh
+
+verify-telemetry: ## Prove exported logs correlate and metric dimensions are queryable in SigNoz
+	@set -a; [ -f .env ] && . ./.env; set +a; node scripts/verify-telemetry.mjs
+
+verify-alerts: ## Observe every managed alert's configuration, firing and recovery in SigNoz
+	@set -a; [ -f .env ] && . ./.env; set +a; node scripts/verify-alert-lifecycle.mjs $(ARGS)
+
+verify-fresh-machine: ## Reproduce the whole product in a clean clone. DESTROYS local SigNoz data
+	@bash scripts/verify-fresh-machine.sh
+
+measure-performance: ## Measure every PRD section 20.2 target with repetitions, median, p95 and max
+	@set -a; [ -f .env ] && . ./.env; set +a; node scripts/measure-performance.mjs
 
 signoz-capabilities: ## Refresh docs/research/mcp-capabilities.json from the live MCP server
 	@set -a; [ -f .env ] && . ./.env; set +a; node scripts/snapshot-mcp-capabilities.mjs

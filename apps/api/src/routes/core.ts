@@ -8,6 +8,7 @@ import {
   findProject,
   findProjectBySlug,
   findSignozConnectionByName,
+  jobQueueDepth,
   listAgents,
   listArtifacts,
   listProjects,
@@ -235,6 +236,14 @@ export function registerCoreRoutes(
           status: z.enum(["up", "degraded", "down"]),
           missingTools: z.array(z.string()),
         }),
+        jobs: z.object({
+          status: z.enum(["ok", "stalled", "unknown"]),
+          queued: z.number(),
+          running: z.number(),
+          oldestQueuedSeconds: z.number().nullable(),
+          expiredLeases: z.number(),
+          stalledAfterSeconds: z.number(),
+        }),
       }),
       errors: [],
     },
@@ -244,6 +253,43 @@ export function registerCoreRoutes(
         await sql`select 1`;
       } catch {
         database = "down";
+      }
+
+      // A worker that has stopped claiming work takes nothing else down with it: the API answers,
+      // the database answers, SigNoz answers, and jobs simply accumulate. `stalled` is the only
+      // signal that says so, so it is reported here rather than inferred from a job page by hand.
+      let jobs: {
+        status: "ok" | "stalled" | "unknown";
+        queued: number;
+        running: number;
+        oldestQueuedSeconds: number | null;
+        expiredLeases: number;
+        stalledAfterSeconds: number;
+      } = {
+        status: "unknown",
+        queued: 0,
+        running: 0,
+        oldestQueuedSeconds: null,
+        expiredLeases: 0,
+        stalledAfterSeconds: config.jobStalledAfterSeconds,
+      };
+      try {
+        const depth = await jobQueueDepth(sql);
+        const stalled =
+          depth.oldestQueuedSeconds !== null &&
+          depth.oldestQueuedSeconds >= config.jobStalledAfterSeconds;
+        jobs = {
+          status: stalled ? "stalled" : "ok",
+          queued: depth.queued,
+          running: depth.running,
+          oldestQueuedSeconds: depth.oldestQueuedSeconds,
+          expiredLeases: depth.expiredLeases,
+          stalledAfterSeconds: config.jobStalledAfterSeconds,
+        };
+      } catch {
+        // Left `unknown`. The database section already reports the underlying failure, and claiming
+        // `ok` for a queue that could not be read would be the false green this product exists to
+        // stop.
       }
 
       let signoz: { status: "up" | "degraded" | "down"; missingTools: string[] } = {
@@ -263,7 +309,7 @@ export function registerCoreRoutes(
         await gateway.close().catch(() => {});
       }
 
-      return { database: { status: database }, signoz };
+      return { database: { status: database }, signoz, jobs };
     },
   );
 

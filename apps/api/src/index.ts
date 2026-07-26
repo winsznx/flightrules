@@ -7,7 +7,7 @@ const telemetry = bootstrapFromEnv(process.env["OTEL_SERVICE_NAME"] ?? "flightru
 
 import process from "node:process";
 import { assertSchemaCompatible, connect, MIGRATIONS_DIR } from "@flightrules/db";
-import { FlightRulesMetrics, protectSecret } from "@flightrules/telemetry";
+import { createOtlpLogStream, FlightRulesMetrics, protectSecret } from "@flightrules/telemetry";
 import { buildApi } from "./app.js";
 import { loadApiConfig } from "./config.js";
 import { liveSignozGateway } from "./signoz.js";
@@ -30,6 +30,7 @@ const sql = connect(config.databaseUrl, {
 });
 
 const { server } = buildApi({
+  logStream: createOtlpLogStream(config.serviceName),
   context: {
     sql,
     config,

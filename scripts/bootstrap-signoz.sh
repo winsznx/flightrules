@@ -25,10 +25,47 @@ KEY_NAME="${SIGNOZ_KEY_NAME:-flightrules-mcp-key}"
 KEY_TTL_DAYS="${SIGNOZ_KEY_TTL_DAYS:-90}"
 ENV_FILE="${ENV_FILE:-.env}"
 
+# SigNoz v0.134.0 enforces a password policy on `/api/v1/register` and states it only in the
+# rejection body: at least 12 characters, with an uppercase letter, a lowercase letter, a digit and
+# a symbol. `openssl rand -base64 18` satisfies it only by luck — its alphabet is `[A-Za-z0-9+/=]`,
+# so a given draw often contains no digit or no symbol — which is why the command this script used
+# to suggest failed intermittently, and why `ci-<run_id>` in the workflows would have failed every
+# time. The suggested command below is compliant by construction.
+SUGGESTED_PASSWORD_COMMAND='export SIGNOZ_ADMIN_PASSWORD="$(openssl rand -base64 18)Aa1!"'
+
 if [ -z "${SIGNOZ_ADMIN_PASSWORD:-}" ]; then
   echo "SIGNOZ_ADMIN_PASSWORD is not set." >&2
-  echo "Choose a local password, for example:" >&2
-  echo "  export SIGNOZ_ADMIN_PASSWORD=\"\$(openssl rand -base64 18)\"" >&2
+  echo "Choose a local password that satisfies SigNoz's policy, for example:" >&2
+  echo "  ${SUGGESTED_PASSWORD_COMMAND}" >&2
+  exit 5
+fi
+
+# Checked here rather than left to the server, so the failure names the rule that was broken
+# instead of arriving 25 retries later as an HTTP 400.
+password_problem=""
+case "${SIGNOZ_ADMIN_PASSWORD}" in
+  ?????????????*) ;;
+  *) password_problem="it must be at least 12 characters long" ;;
+esac
+[ -z "${password_problem}" ] && case "${SIGNOZ_ADMIN_PASSWORD}" in
+  *[A-Z]*) ;; *) password_problem="it must contain an uppercase letter" ;;
+esac
+[ -z "${password_problem}" ] && case "${SIGNOZ_ADMIN_PASSWORD}" in
+  *[a-z]*) ;; *) password_problem="it must contain a lowercase letter" ;;
+esac
+[ -z "${password_problem}" ] && case "${SIGNOZ_ADMIN_PASSWORD}" in
+  *[0-9]*) ;; *) password_problem="it must contain a digit" ;;
+esac
+[ -z "${password_problem}" ] && case "${SIGNOZ_ADMIN_PASSWORD}" in
+  *[~!@\#\$%^\&*\(\)_+\`=\{\}\|\[\]\\:\"\<\>?,./-]*) ;;
+  *) password_problem="it must contain a symbol" ;;
+esac
+
+if [ -n "${password_problem}" ]; then
+  echo "SIGNOZ_ADMIN_PASSWORD does not satisfy SigNoz's password policy: ${password_problem}." >&2
+  echo "SigNoz v0.134.0 requires at least 12 characters with an uppercase letter, a lowercase" >&2
+  echo "letter, a digit and a symbol. For example:" >&2
+  echo "  ${SUGGESTED_PASSWORD_COMMAND}" >&2
   exit 5
 fi
 
@@ -65,21 +102,41 @@ step "Ensuring the first organisation and root user exist"
 if [ "${setup_completed}" = "True" ] || [ "${setup_completed}" = "true" ]; then
   echo "Setup already completed; reusing the existing organisation."
 else
-  register_body="$(curl -sf --max-time 30 -X POST "${SIGNOZ_URL}/api/v1/register" \
-    -H 'Content-Type: application/json' \
-    -d "$(python3 -c 'import json,os
+  register_payload="$(python3 -c 'import json,os
 print(json.dumps({
   "name": os.environ["ADMIN_NAME"],
   "orgId": "",
   "orgName": os.environ["ORG_NAME"],
   "email": os.environ["ADMIN_EMAIL"],
   "password": os.environ["SIGNOZ_ADMIN_PASSWORD"],
-}))')")"
-  if ! printf '%s' "${register_body}" | grep -q '"status":"success"'; then
-    echo "Registration failed:" >&2
-    printf '%s\n' "${register_body}" >&2
-    exit 4
-  fi
+}))')"
+
+  # Retried, and never with `curl -f`.
+  #
+  # `/api/v1/health` reports ok before registration is servable: on a freshly cast deployment the
+  # apiserver answers health while its metastore migration is still running, and `/api/v1/register`
+  # answers 5xx for a few seconds afterwards. A fresh-machine reproduction hit exactly that and
+  # failed with `make: *** [signoz-bootstrap] Error 22` and no further information, because
+  # `curl -sf` discards the response body on an HTTP error — so the one thing needed to diagnose it
+  # was the one thing thrown away. The body is captured and printed here instead.
+  register_body=""
+  register_status=""
+  register_deadline=$(( $(date +%s) + 120 ))
+  while :; do
+    register_response="$(curl -s --max-time 30 -w '\n%{http_code}' \
+      -X POST "${SIGNOZ_URL}/api/v1/register" \
+      -H 'Content-Type: application/json' -d "${register_payload}")"
+    register_status="${register_response##*$'\n'}"
+    register_body="${register_response%$'\n'*}"
+    if printf '%s' "${register_body}" | grep -q '"status":"success"'; then break; fi
+    if [ "$(date +%s)" -ge "${register_deadline}" ]; then
+      echo "Registration failed with HTTP ${register_status}:" >&2
+      printf '%s\n' "${register_body}" >&2
+      exit 4
+    fi
+    echo "   registration returned HTTP ${register_status}; retrying"
+    sleep 5
+  done
   echo "Created the root user and organisation."
 fi
 

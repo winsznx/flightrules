@@ -1,0 +1,352 @@
+import { FlightRulesError } from "@flightrules/domain";
+import fc from "fast-check";
+import { describe, expect, it } from "vitest";
+import { buildTraceGraph, type SpanRowData } from "./build.js";
+import { canonicaliseGraph, fingerprintGraph, serialiseCanonicalGraph } from "./canonical.js";
+import { diffGraphs } from "./diff.js";
+import { featuresOfGraph, similarity } from "./features.js";
+import { childrenOf, nodeById } from "./model.js";
+
+/**
+ * Adversarial input against graph construction, canonicalisation and the indexes the evaluator
+ * reads (PRD Phase 16 task 4).
+ *
+ * The graph is what a release is judged on. A crash here stops an evaluation; a non-deterministic
+ * fingerprint makes two identical releases compare as different; a prototype-chain lookup makes a
+ * span named `constructor` behave differently from every other span.
+ *
+ * Everything except an empty row set and a span count past the configured maximum is required to
+ * be **reported, not thrown** — a degraded trace still carries evidence, and PRD section 28 wants
+ * incomplete evidence visible rather than fatal.
+ */
+
+const ROOT = "refund.request";
+
+function row(overrides: Record<string, unknown>): SpanRowData {
+  return {
+    trace_id: "0123456789abcdef0123456789abcdef",
+    span_id: "0000000000000001",
+    parent_span_id: null,
+    name: ROOT,
+    "service.name": "flightrules-demo-agent",
+    timestamp: "2026-07-25T00:00:00.000Z",
+    duration_nano: 1_000_000,
+    ...overrides,
+  };
+}
+
+function spanId(index: number): string {
+  return index.toString(16).padStart(16, "0");
+}
+
+/** A well-formed five-span trace, used as the shape hostile variants deviate from. */
+function healthyRows(): readonly SpanRowData[] {
+  return [
+    row({ span_id: spanId(1), parent_span_id: null, name: ROOT }),
+    row({ span_id: spanId(2), parent_span_id: spanId(1), name: "policy.retrieve" }),
+    row({ span_id: spanId(3), parent_span_id: spanId(1), name: "order.lookup" }),
+    row({ span_id: spanId(4), parent_span_id: spanId(1), name: "fraud.check" }),
+    row({ span_id: spanId(5), parent_span_id: spanId(1), name: "payment.refund" }),
+  ];
+}
+
+function build(rows: readonly SpanRowData[]) {
+  return buildTraceGraph(rows, { rootSelector: ROOT });
+}
+
+describe("the healthy trace this suite deviates from", () => {
+  it("builds, canonicalises and fingerprints", () => {
+    const graph = build(healthyRows());
+    expect(graph.nodes.length).toBe(5);
+    expect(fingerprintGraph(graph).fingerprint.length).toBeGreaterThan(0);
+  });
+});
+
+describe("structurally broken traces are reported, never thrown", () => {
+  const cases: readonly [string, readonly SpanRowData[]][] = [
+    [
+      "a missing parent",
+      [
+        row({ span_id: spanId(1), parent_span_id: null, name: ROOT }),
+        row({ span_id: spanId(2), parent_span_id: spanId(99), name: "orphan.step" }),
+      ],
+    ],
+    [
+      "every span an orphan",
+      [
+        row({ span_id: spanId(1), parent_span_id: spanId(90), name: "a" }),
+        row({ span_id: spanId(2), parent_span_id: spanId(91), name: "b" }),
+      ],
+    ],
+    [
+      "a two-node cycle",
+      [
+        row({ span_id: spanId(1), parent_span_id: spanId(2), name: ROOT }),
+        row({ span_id: spanId(2), parent_span_id: spanId(1), name: "policy.retrieve" }),
+      ],
+    ],
+    [
+      "a self-edge",
+      [
+        row({ span_id: spanId(1), parent_span_id: null, name: ROOT }),
+        row({ span_id: spanId(2), parent_span_id: spanId(2), name: "self.loop" }),
+      ],
+    ],
+    [
+      "duplicate span identifiers",
+      [
+        row({ span_id: spanId(1), parent_span_id: null, name: ROOT }),
+        row({ span_id: spanId(2), parent_span_id: spanId(1), name: "policy.retrieve" }),
+        row({ span_id: spanId(2), parent_span_id: spanId(1), name: "policy.retrieve" }),
+      ],
+    ],
+    [
+      "two disconnected components",
+      [
+        row({ span_id: spanId(1), parent_span_id: null, name: ROOT }),
+        row({ span_id: spanId(2), parent_span_id: spanId(1), name: "policy.retrieve" }),
+        row({ span_id: spanId(3), parent_span_id: null, name: "other.root" }),
+        row({ span_id: spanId(4), parent_span_id: spanId(3), name: "other.child" }),
+      ],
+    ],
+    ["a missing service name", [row({ span_id: spanId(1), "service.name": null })]],
+    ["a missing operation name", [row({ span_id: spanId(1), name: null })]],
+    [
+      "a parent identifier of the wrong type",
+      [
+        row({ span_id: spanId(1), parent_span_id: null, name: ROOT }),
+        row({ span_id: spanId(2), parent_span_id: 12_345, name: "policy.retrieve" }),
+      ],
+    ],
+    [
+      "an attribute of an unexpected type",
+      [row({ span_id: spanId(1), "agent.release.id": { nested: true } })],
+    ],
+  ];
+
+  it.each(cases)("builds a graph from %s without throwing", (_name, rows) => {
+    expect(() => build(rows)).not.toThrow();
+    const graph = build(rows);
+    expect(() => fingerprintGraph(graph)).not.toThrow();
+  });
+
+  it("reports quality rather than silently presenting a broken trace as healthy", () => {
+    const graph = build([
+      row({ span_id: spanId(1), parent_span_id: null, name: ROOT }),
+      row({ span_id: spanId(2), parent_span_id: spanId(99), name: "orphan.step" }),
+    ]);
+    expect(graph.warnings.length).toBeGreaterThan(0);
+  });
+});
+
+describe("the two conditions that are fatal, and are typed", () => {
+  it("refuses an empty row set with a typed error", () => {
+    expect(() => build([])).toThrow(FlightRulesError);
+  });
+
+  it("refuses a trace past the configured maximum with a typed error", () => {
+    const rows = Array.from({ length: 12 }, (_unused, index) =>
+      row({ span_id: spanId(index + 1), parent_span_id: index === 0 ? null : spanId(1) }),
+    );
+    expect(() => buildTraceGraph(rows, { rootSelector: ROOT, maxSpans: 10 })).toThrow(
+      FlightRulesError,
+    );
+  });
+});
+
+describe("extreme shapes", () => {
+  it("handles a deep chain without recursing into a stack overflow", () => {
+    const depth = 2_000;
+    const rows: SpanRowData[] = [row({ span_id: spanId(1), parent_span_id: null, name: ROOT })];
+    for (let index = 2; index <= depth; index += 1) {
+      rows.push(
+        row({
+          span_id: spanId(index),
+          parent_span_id: spanId(index - 1),
+          name: `step.${String(index)}`,
+        }),
+      );
+    }
+    expect(() => {
+      const graph = buildTraceGraph(rows, { rootSelector: ROOT, maxSpans: depth + 1 });
+      fingerprintGraph(graph);
+    }).not.toThrow();
+  });
+
+  it("handles an extremely wide fan-out", () => {
+    const width = 3_000;
+    const rows: SpanRowData[] = [row({ span_id: spanId(1), parent_span_id: null, name: ROOT })];
+    for (let index = 2; index <= width; index += 1) {
+      rows.push(row({ span_id: spanId(index), parent_span_id: spanId(1), name: "tool.call" }));
+    }
+    const graph = buildTraceGraph(rows, { rootSelector: ROOT, maxSpans: width + 1 });
+    expect((childrenOf(graph).get(graph.rootSpanId) ?? []).length).toBeGreaterThan(0);
+    expect(() => fingerprintGraph(graph)).not.toThrow();
+  });
+
+  it("builds from a single span", () => {
+    expect(() => build([row({ span_id: spanId(1) })])).not.toThrow();
+  });
+});
+
+describe("hostile names and attribute keys are data, not behaviour", () => {
+  const HOSTILE = [
+    "<script>alert(1)</script>",
+    "<img src=x onerror=alert(1)>",
+    "__proto__",
+    "constructor",
+    "prototype",
+    "toString",
+    "valueOf",
+    "hasOwnProperty",
+    "../../etc/passwd",
+    "name\u0000with\u0000nulls",
+    "[31mred[0m",
+    "‮override",
+    "`backtick`",
+    '"quoted"',
+    "line\nbreak",
+    "x".repeat(5_000),
+  ];
+
+  it.each(HOSTILE)("accepts %j as a span name without crashing or polluting", (name) => {
+    const before = Object.getOwnPropertyNames(Object.prototype).sort();
+    const graph = build([
+      row({ span_id: spanId(1), parent_span_id: null, name: ROOT }),
+      row({ span_id: spanId(2), parent_span_id: spanId(1), name }),
+    ]);
+    expect(() => fingerprintGraph(graph)).not.toThrow();
+    expect(Object.getOwnPropertyNames(Object.prototype).sort()).toEqual(before);
+  });
+
+  it.each(HOSTILE)("accepts %j as an attribute key without polluting", (key) => {
+    const before = Object.getOwnPropertyNames(Object.prototype).sort();
+    expect(() => build([row({ span_id: spanId(1), [key]: "polluted" })])).not.toThrow();
+    expect(Object.getOwnPropertyNames(Object.prototype).sort()).toEqual(before);
+    expect(Object.prototype).not.toHaveProperty("polluted");
+  });
+
+  it("does not return a prototype method when a node is looked up by a prototype-shaped id", () => {
+    // `nodeById` must be a data lookup. If the index were a plain object, `nodeById(g, "toString")`
+    // would return a function and every caller downstream would behave unpredictably.
+    const graph = build(healthyRows());
+    for (const key of ["__proto__", "constructor", "toString", "hasOwnProperty"]) {
+      const found = nodeById(graph).get(key);
+      expect(found).toBeUndefined();
+    }
+  });
+});
+
+describe("determinism, which the whole product rests on", () => {
+  it("gives reordered input the same fingerprint", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 1_000_000 }), (seed) => {
+        const rows = [...healthyRows()];
+        let state = seed;
+        for (let index = rows.length - 1; index > 0; index -= 1) {
+          state = (state * 1_103_515_245 + 12_345) % 2_147_483_648;
+          const target = state % (index + 1);
+          [rows[index], rows[target]] = [rows[target] as SpanRowData, rows[index] as SpanRowData];
+        }
+        expect(fingerprintGraph(build(rows)).fingerprint).toBe(
+          fingerprintGraph(build(healthyRows())).fingerprint,
+        );
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it("gives the same graph the same canonical serialisation every time", () => {
+    const first = serialiseCanonicalGraph(canonicaliseGraph(build(healthyRows())));
+    const second = serialiseCanonicalGraph(canonicaliseGraph(build(healthyRows())));
+    expect(first).toBe(second);
+  });
+
+  it("gives two semantically identical traces with different identifiers the same fingerprint", () => {
+    // The span and trace identifiers differ; nothing else does.
+    const relabelled = healthyRows().map((original, index) =>
+      row({
+        ...(original as Record<string, unknown>),
+        trace_id: "ffffffffffffffffffffffffffffffff",
+        span_id: spanId(index + 100),
+        parent_span_id: index === 0 ? null : spanId(100),
+      }),
+    );
+    expect(fingerprintGraph(build(relabelled)).fingerprint).toBe(
+      fingerprintGraph(build(healthyRows())).fingerprint,
+    );
+  });
+
+  it("changes the fingerprint when a step is actually removed", () => {
+    const withoutFraud = healthyRows().filter((entry) => entry["name"] !== "fraud.check");
+    expect(fingerprintGraph(build(withoutFraud)).fingerprint).not.toBe(
+      fingerprintGraph(build(healthyRows())).fingerprint,
+    );
+  });
+
+  it("scores a graph against itself as identical, and never outside 0 to 1", () => {
+    const graph = build(healthyRows());
+    expect(similarity(graph, graph)).toBe(1);
+
+    const other = build(healthyRows().slice(0, 3));
+    const cross = similarity(graph, other);
+    expect(cross).toBeGreaterThanOrEqual(0);
+    expect(cross).toBeLessThanOrEqual(1);
+  });
+
+  it("diffs a graph against itself as no change", () => {
+    const graph = build(healthyRows());
+    const print = fingerprintGraph(graph).fingerprint;
+    const diff = diffGraphs(graph, graph, { baseline: print, candidate: print });
+    expect(diff.identical).toBe(true);
+    expect(diff.changes).toEqual([]);
+  });
+});
+
+describe("properties over generated traces", () => {
+  const rowArb = fc.record({
+    span: fc.integer({ min: 1, max: 40 }),
+    parent: fc.option(fc.integer({ min: 1, max: 40 }), { nil: null }),
+    name: fc.constantFrom(ROOT, "policy.retrieve", "__proto__", "constructor", "payment.refund"),
+  });
+
+  it("never throws on any generated trace that has at least one span", () => {
+    fc.assert(
+      fc.property(fc.array(rowArb, { minLength: 1, maxLength: 40 }), (entries) => {
+        const rows = entries.map((entry) =>
+          row({
+            span_id: spanId(entry.span),
+            parent_span_id: entry.parent === null ? null : spanId(entry.parent),
+            name: entry.name,
+          }),
+        );
+        expect(() => {
+          const graph = build(rows);
+          fingerprintGraph(graph);
+          featuresOfGraph(graph);
+        }).not.toThrow();
+      }),
+      { numRuns: 300 },
+    );
+  });
+
+  it("never leaves Object.prototype modified, whatever the trace", () => {
+    const before = Object.getOwnPropertyNames(Object.prototype).sort();
+    fc.assert(
+      fc.property(fc.array(rowArb, { minLength: 1, maxLength: 20 }), (entries) => {
+        const rows = entries.map((entry) =>
+          row({
+            span_id: spanId(entry.span),
+            parent_span_id: entry.parent === null ? null : spanId(entry.parent),
+            name: entry.name,
+            [entry.name]: "polluted",
+          }),
+        );
+        build(rows);
+      }),
+      { numRuns: 200 },
+    );
+    expect(Object.getOwnPropertyNames(Object.prototype).sort()).toEqual(before);
+    expect(Object.prototype).not.toHaveProperty("polluted");
+  });
+});

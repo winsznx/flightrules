@@ -20,6 +20,7 @@ import {
 import { canonicalContract, parseContract } from "@flightrules/contract-schema";
 import type { JobType } from "@flightrules/db";
 import {
+  artifactSyncLockKey,
   BaselineMiningInputSchema,
   ContractProposalInputSchema,
   completeEvaluation,
@@ -40,6 +41,7 @@ import {
   startEvaluation,
   upsertTraceGraph,
   upsertTraceRun,
+  withAdvisoryLock,
 } from "@flightrules/db";
 import { FlightRulesError } from "@flightrules/domain";
 import {
@@ -210,8 +212,12 @@ function baselineMiningHandler(dependencies: HandlerDependencies): JobHandler {
     if (!mined.ok) {
       const first = mined.errors[0];
       dependencies.metrics?.recordTraceFetchFailure(
-        input.projectKey,
-        input.agentKey,
+        {
+          projectId: input.projectId,
+          agentId: input.agentId,
+          projectSlug: input.projectKey,
+          agentKey: input.agentKey,
+        },
         first?.code ?? "unknown",
       );
       throw new TerminalJobError(
@@ -614,12 +620,6 @@ function evaluationHandler(dependencies: HandlerDependencies): JobHandler {
       };
     }
 
-    const dimensions = {
-      projectSlug: input.projectKey,
-      agentKey: input.agentKey,
-      releaseKey: input.releaseKey,
-      scope: input.scope,
-    };
     // Computed once for the whole release: which rules pin themselves to a side-effecting step.
     const sideEffectingRules = sideEffectingRuleIds(parsed.value.contract);
 
@@ -631,6 +631,19 @@ function evaluationHandler(dependencies: HandlerDependencies): JobHandler {
         environment: input.environment,
         observedAt: new Date(input.endMs),
       });
+
+      // Built here rather than above, because the release identifier only exists once the release
+      // has been observed — and it is the identifier, not the key, that the API and the saved
+      // views select on.
+      const dimensions = {
+        projectId: input.projectId,
+        agentId: input.agentId,
+        projectSlug: input.projectKey,
+        agentKey: input.agentKey,
+        releaseId: release.id,
+        releaseKey: input.releaseKey,
+        scope: input.scope,
+      };
 
       let violations = 0;
       let zeroTolerance = 0;
@@ -860,52 +873,73 @@ function signozSyncHandler(dependencies: HandlerDependencies): JobHandler {
 
     const session = await dependencies.signoz();
     try {
-      const registered = await readRegisteredArtifacts(context.sql, input.projectId);
-      const { result, writes } = await withFlightRulesSpan(
-        SPAN_NAMES.compileSignozArtifacts,
-        {
-          [FLIGHT_RULES.projectId]: input.projectId,
-          [FLIGHT_RULES.agentId]: input.agentId,
-          [FLIGHT_RULES.contractId]: input.contractId,
-          [FLIGHT_RULES.contractVersion]: input.contractVersion,
+      // Serialised per agent. A saved view is replaced by delete-then-create (SL-057), which is not
+      // atomic: two syncs of one agent overlapping inside it each delete a view and create another,
+      // leaving two resources of the same managed name. Job idempotency does not cover this — two
+      // contract versions of one agent are two legitimately different jobs — so the exclusion has to
+      // be one both workers can see, which is the database.
+      const result = await withAdvisoryLock(
+        context.sql,
+        artifactSyncLockKey(input.agentId),
+        async () => {
+          const registered = await readRegisteredArtifacts(context.sql, input.projectId);
+          const synced = await withFlightRulesSpan(
+            SPAN_NAMES.compileSignozArtifacts,
+            {
+              [FLIGHT_RULES.projectId]: input.projectId,
+              [FLIGHT_RULES.agentId]: input.agentId,
+              [FLIGHT_RULES.contractId]: input.contractId,
+              [FLIGHT_RULES.contractVersion]: input.contractVersion,
+            },
+            async () =>
+              synchroniseArtifacts(
+                {
+                  projectId: input.projectId,
+                  agentId: input.agentId,
+                  contractId: input.contractId,
+                  projectSlug: input.projectSlug,
+                  agentKey: input.agentKey,
+                  contractVersion: input.contractVersion,
+                  rootSpanName: input.rootSpanName,
+                  violationThreshold: input.violationThreshold,
+                  webhookUrl: context.config.alertWebhookUrl,
+                  signozBaseUrl: context.config.signozUrl,
+                  attempt: context.job.attempt,
+                },
+                registered,
+                {
+                  synchroniser: new ArtifactSynchroniser(session.operations),
+                  now: context.now,
+                  progress: (stage, message) => context.progress(stage, message),
+                },
+              ),
+          );
+
+          // Inside the lock, not after it. The register is what the *next* sync plans from, so
+          // releasing before writing it would let a waiting sync read a register that still
+          // describes the state before this one ran — and create a second copy of everything this
+          // one just replaced.
+          //
+          // Its own transaction, before the commit function, so a verification failure still leaves
+          // the evidence behind: the commit transaction is rolled back when the job fails, and a
+          // rolled-back mismatch record is no record at all.
+          await context.sql.begin((tx) => persistArtifactWrites(tx, synced.writes));
+          return synced.result;
         },
-        async () =>
-          synchroniseArtifacts(
-            {
-              projectId: input.projectId,
-              agentId: input.agentId,
-              contractId: input.contractId,
-              projectSlug: input.projectSlug,
-              agentKey: input.agentKey,
-              contractVersion: input.contractVersion,
-              rootSpanName: input.rootSpanName,
-              violationThreshold: input.violationThreshold,
-              webhookUrl: context.config.alertWebhookUrl,
-              signozBaseUrl: context.config.signozUrl,
-              attempt: context.job.attempt,
-            },
-            registered,
-            {
-              synchroniser: new ArtifactSynchroniser(session.operations),
-              now: context.now,
-              progress: (stage, message) => context.progress(stage, message),
-            },
-          ),
       );
 
       for (const outcome of result.outcomes) {
         dependencies.metrics?.recordArtifactSync(
-          input.projectSlug,
-          input.agentKey,
+          {
+            projectId: input.projectId,
+            agentId: input.agentId,
+            projectSlug: input.projectSlug,
+            agentKey: input.agentKey,
+          },
           outcome.artifactType,
           outcome.operation,
         );
       }
-
-      // The register is written in its own transaction, before the commit function, precisely so
-      // that a verification failure still leaves the evidence behind: the commit transaction is
-      // rolled back when the job fails, and a rolled-back mismatch record is no record at all.
-      await context.sql.begin((tx) => persistArtifactWrites(tx, writes));
 
       return async (tx: Db) => {
         await recordAudit(tx, {

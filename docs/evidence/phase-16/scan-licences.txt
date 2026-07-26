@@ -1,0 +1,7 @@
+pnpm run scan:licences
+
+> flightrules@0.1.0 scan:licences /Users/mac/flightrules
+> node scripts/check-licences.mjs
+
+Checked 302 installed package(s) across 17 licence expression(s).
+All dependency licences are permissive and allowed.
