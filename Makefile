@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 .PHONY: help verify-env install lint lint-fix format format-check typecheck test test-integration \
-        test-integration-db test-integration-signoz test-e2e build up down db-migrate db-rollback db-status scan-secrets scan-licences \
+        test-integration-db test-integration-signoz test-e2e build up down db-deps db-migrate db-rollback db-status scan-secrets scan-licences \
         scan-deps verify clean contract-validate demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
         signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility mine-demo-baseline \
         signoz-sync signoz-purge api worker web cli demo-seed demo-full demo-urls gate gate-json evidence scan-design \
@@ -112,16 +112,24 @@ evidence: ## Export the release evidence bundle to OUT (default docs/evidence/re
 			--release "$${RELEASE:-refund-agent-v1}" \
 			--out "$${OUT:-docs/evidence/release-gate.json}"
 
+# The migrator runs from source through `tsx`, but it imports `@flightrules/domain` by its package
+# entry point, which resolves to `dist/`. On a fresh clone nothing has been built yet, so the
+# documented `make install && make db-migrate` sequence failed with an opaque
+# `ERR_MODULE_NOT_FOUND` for a file the reader has no reason to expect. `tsc --build` on the db
+# package builds its project references, so this stays correct if the package gains a dependency.
+db-deps:
+	@pnpm --filter @flightrules/db run build >/dev/null
+
 # These three load .env the same way `api`, `worker` and `test-integration` do. Without it
 # `make db-migrate` — a documented README step — fails with "DATABASE_URL is not set." on any
 # machine that has not exported the variable by hand, which is every fresh machine.
-db-migrate: ## Apply database migrations
+db-migrate: db-deps ## Apply database migrations
 	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/db run migrate
 
-db-rollback: ## Revert the most recent database migration
+db-rollback: db-deps ## Revert the most recent database migration
 	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/db run rollback
 
-db-status: ## Show applied database migrations
+db-status: db-deps ## Show applied database migrations
 	@set -a; [ -f .env ] && . ./.env; set +a; pnpm --filter @flightrules/db run migrate:status
 
 contract-validate: ## Validate every committed contract document
