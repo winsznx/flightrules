@@ -5,7 +5,7 @@ SHELL := /usr/bin/env bash
         scan-deps verify clean contract-validate demo-up demo-v1 demo-v2 demo-reset signoz-gauge signoz-forge signoz-up signoz-down signoz-destroy \
         signoz-bootstrap signoz-verify signoz-capabilities signoz-reproducibility mine-demo-baseline \
         signoz-sync signoz-purge api worker web cli demo-seed demo-full demo-urls gate gate-json evidence scan-design \
-        verify-telemetry measure-performance
+        verify-telemetry measure-performance scan-history
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -135,6 +135,9 @@ scan-licences: ## Check every installed dependency licence
 
 scan-deps: ## Audit dependencies for known vulnerabilities
 	pnpm run scan:deps
+
+scan-history: ## Scan the whole git history for committed credentials
+	gitleaks detect --no-banner --redact --config .gitleaks.toml
 
 signoz-gauge: ## Check the tools Foundry needs are available
 	foundryctl gauge -f casting.yaml --format text --no-ledger --no-updater
