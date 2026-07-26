@@ -56,6 +56,7 @@ if [ "${SKIP_DESTROY:-0}" = "1" ]; then
 else
   pkill -f 'apps/api/dist/index.js' 2>/dev/null || true
   pkill -f 'apps/worker/dist/index.js' 2>/dev/null || true
+  pkill -f 'next-server' 2>/dev/null || true
   pkill -f 'next start' 2>/dev/null || true
   (cd "${SOURCE_REPO}" && docker compose -f pours/deployment/compose.yaml -p signoz down -v \
     >>"${REPORT}" 2>&1) || true
@@ -292,9 +293,13 @@ step "15  the documented test commands"
 # `next build` and a running `next start` share `.next`. Building underneath a live server fails
 # with `Cannot read properties of null (reading 'useContext')` while prerendering `/_global-error` —
 # a message that says nothing about the real cause. `docs/RUNBOOK.md` records the same trap.
+# `pkill -f 'next start'` does not match it: the server renames its own process to
+# `next-server (vX.Y.Z)` once it is up, so the pattern has to be `next-server`. Getting that wrong
+# is why a run that looked correctly sequenced still built underneath a live server.
 kill "${WEB_PID}" 2>/dev/null || true
+pkill -f 'next-server' 2>/dev/null || true
 pkill -f 'next start' 2>/dev/null || true
-sleep 2
+sleep 3
 run "make verify" make verify
 
 # ---------------------------------------------------------------------------

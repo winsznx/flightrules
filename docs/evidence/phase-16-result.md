@@ -182,6 +182,18 @@ again and still has to find real runs.
 
 ## The full validation, re-run in order
 
+### The result
+
+Every stage passes on a clean clone: clone → `verify-env` → lockfile install → `.env` → Foundry cast
+(lock reproduces byte-identically, images pinned) → bootstrap and a 44-character credential →
+`signoz-verify` → PostgreSQL and migrations → build → API ready, web serving → **worker alive after
+90 idle seconds**, queue depth `ok` → `make demo-full` **exit 0 then exit 2** → both gates read back
+independently → **ten artefacts synced, none failed, none in conflict** → `demo-urls` and
+`verify-telemetry` (five log records correlate to a real violation's trace; metric dimensions
+queryable) → four web routes 200 → `make verify` exit 0 with 1,416 tests.
+
+`docs/evidence/phase-16/fresh-machine.txt` is the full transcript.
+
 ```text
 make verify                exit 0
 make test                  1,415 passed, 0 failed, 0 skipped   (62 files)
@@ -196,7 +208,7 @@ make verify-telemetry      exit 0
 make verify-alerts         exit 0    firing and recovery observed for every alert that fired
 make measure-performance   every PRD 20.2 target met
 make demo-full             exit 0 — approved exit 0, unsafe canary exit 2
-make verify-fresh-machine  see docs/evidence/phase-16/fresh-machine.txt
+make verify-fresh-machine  every stage passes; see docs/evidence/phase-16/fresh-machine.txt
 ```
 
 The integration suites drop the schema, so `make demo-full` runs after them and before any
