@@ -121,7 +121,11 @@ run "make signoz-reproducibility" make signoz-reproducibility
 # ---------------------------------------------------------------------------
 step "6  first-user bootstrap and the SigNoz credential"
 # ---------------------------------------------------------------------------
-SIGNOZ_ADMIN_PASSWORD="${SIGNOZ_ADMIN_PASSWORD:-$(openssl rand -base64 18)}"
+# The `Aa1!` suffix is not decoration. SigNoz v0.134.0 requires at least 12 characters with an
+# uppercase letter, a lowercase letter, a digit and a symbol, and `openssl rand -base64 18` draws
+# from an alphabet that supplies the last two only by luck. This is the same command the runbook,
+# the README and the demo script document.
+SIGNOZ_ADMIN_PASSWORD="${SIGNOZ_ADMIN_PASSWORD:-$(openssl rand -base64 18)Aa1!}"
 export SIGNOZ_ADMIN_PASSWORD
 if make signoz-bootstrap >>"${REPORT}" 2>&1; then
   pass "make signoz-bootstrap"
