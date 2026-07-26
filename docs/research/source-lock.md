@@ -707,3 +707,29 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
   pinned workspace-wide by ADR-0001 and every other package compiles with it; changing it to work
   around one tool's detection would be a far larger change than routing around the detection.
 - Local file: `apps/web/next.config.ts`, `apps/web/package.json`, `docs/adr/0011-*.md`.
+
+## SL-061 — SigNoz returns a trace `webUrl` only from `signoz_get_trace_details`, and its host is the internal container name
+
+- Source: the pinned SigNoz MCP Server v0.9.0 against the deployed SigNoz v0.134.0, called directly
+  through `@modelcontextprotocol/sdk@1.29.0` (tier 1)
+- Verified claim, three parts, all observed in one probe of a real evaluated trace
+  (`010b8d74e8ba968c4a8a194679ab7fb7`):
+  1. `signoz_get_trace_details` returns `"webUrl": "http://signoz-signoz-0:8080/trace/010b8d74e8ba968c4a8a194679ab7fb7"`.
+     The trace view's path is therefore `/trace/<traceId>`, from SigNoz's own answer.
+  2. `signoz_execute_builder_query` returns **no `webUrl` key at all** for the same trace. SL-020 and
+     SL-021 require the builder query for custom span attributes, so this is the call FlightRules'
+     miner and evaluator actually make — which is why every `trace_runs.signoz_web_url` written by
+     that path was `null` before this entry.
+  3. The host in the returned URL is `signoz-signoz-0:8080`, SigNoz's **Compose service name**. It is
+     resolvable inside the deployment network and by nothing else. A browser on the operator's
+     machine cannot open the URL SigNoz itself supplies.
+- Runtime confirmation: **Yes.** Both tools were called live. Probing `${SIGNOZ_URL}/trace/<id>` over
+  HTTP was deliberately **not** treated as confirmation: SL-012 records that an unmatched SigNoz path
+  returns the single-page-application shell with HTTP 200, so a 200 there proves nothing.
+- Implementation consequence: `packages/signoz-mcp/src/web-url.ts` implements one rule — **the path
+  is SigNoz's, the origin is the operator's**. `rehomeSignozUrl` keeps a stored `webUrl`'s path and
+  query and replaces its origin with the configured `SIGNOZ_URL`; `signozTraceUrl` uses the verified
+  `/trace/<id>` path when there is no stored value. Both refuse a non-`http(s)` base and a trace
+  identifier that is not 32 lowercase hex characters, so a hostile configuration or telemetry value
+  cannot become an anchor `href`. Every product surface calls `traceLink`, so the Release Diff, the
+  Violation Inspector and an exported evidence bundle cannot disagree about where a trace lives.

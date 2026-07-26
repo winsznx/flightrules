@@ -8,6 +8,7 @@ import { openApiDocument, RouteRegistry } from "./registry.js";
 import { registerArtifactRoutes } from "./routes/artifacts.js";
 import { registerCoreRoutes } from "./routes/core.js";
 import { registerDemoRoutes } from "./routes/demo.js";
+import { registerDiffRoutes } from "./routes/diff.js";
 import { registerGateRoutes } from "./routes/gate.js";
 import { registerLifecycleRoutes } from "./routes/lifecycle.js";
 
@@ -152,6 +153,7 @@ export function buildApi(options: BuildApiOptions): BuiltApi {
   registerLifecycleRoutes(server, registry, context);
   registerArtifactRoutes(server, registry, context);
   registerGateRoutes(server, registry, context);
+  registerDiffRoutes(server, registry, context);
   registerDemoRoutes(server, registry, context);
 
   // PRD Phase 09 task 11: documentation generated from the same declarations that serve traffic.

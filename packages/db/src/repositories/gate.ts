@@ -256,3 +256,126 @@ export async function findReleaseBaselineReference(
     retriesPerRun: mean(retryWeighted, retryRuns),
   };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Release diff (PRD section 8.11, FR-011)                                    */
+/* -------------------------------------------------------------------------- */
+
+/** One approved route family, as the baseline side of a release comparison. */
+export interface ApprovedRouteGraph {
+  readonly routeFamilyId: string;
+  readonly fingerprint: string;
+  readonly occurrenceCount: number;
+  readonly canonical: unknown;
+}
+
+/** One evaluated run of the candidate release, as the other side. */
+export interface CandidateRunGraph {
+  readonly traceRunId: string;
+  readonly traceId: string;
+  readonly signozWebUrl: string | null;
+  readonly durationMs: number | null;
+  readonly status: string;
+  readonly routeFingerprint: string;
+  readonly routeApproved: boolean;
+  readonly similarity: string;
+  /** The approved family the evaluator itself judged this run closest to. */
+  readonly nearestRouteFamilyId: string | null;
+  readonly canonical: unknown;
+}
+
+interface ApprovedRouteRow {
+  readonly route_family_id: string;
+  readonly fingerprint: string;
+  readonly occurrence_count: number;
+  readonly canonical_graph_json: unknown;
+}
+
+/**
+ * The approved route families a contract's baseline sanctioned.
+ *
+ * Only `approved` families, for the same reason `findReleaseBaselineReference` uses only approved
+ * families: comparing a release against a route a reviewer rejected would measure drift from
+ * something nobody sanctioned. Ordered by occurrence so the most-travelled route is the first
+ * candidate for "nearest approved route".
+ */
+export async function listApprovedRouteGraphs(
+  sql: Db,
+  contractId: string,
+): Promise<readonly ApprovedRouteGraph[]> {
+  const rows = await sql<ApprovedRouteRow[]>`
+    select rf.id as route_family_id, rf.fingerprint, rf.occurrence_count, rf.canonical_graph_json
+    from route_families rf
+    join contracts c on c.baseline_version_id = rf.baseline_version_id
+    where c.id = ${contractId} and rf.status = 'approved'
+    order by rf.occurrence_count desc, rf.fingerprint asc`;
+
+  return rows.map((row) => ({
+    routeFamilyId: row.route_family_id,
+    fingerprint: row.fingerprint,
+    occurrenceCount: row.occurrence_count,
+    canonical: row.canonical_graph_json,
+  }));
+}
+
+interface CandidateRunRow {
+  readonly trace_run_id: string;
+  readonly trace_id: string;
+  readonly signoz_web_url: string | null;
+  readonly duration_ms: number | null;
+  readonly status: string;
+  readonly route_fingerprint: string;
+  readonly route_approved: boolean;
+  readonly similarity_score: string;
+  readonly nearest_route_family_id: string | null;
+  readonly canonical_graph_json: unknown;
+}
+
+/**
+ * The evaluated runs of one evaluation, with the canonical graph each verdict was computed over.
+ *
+ * Ordered failing first, then by trace ID. Failing first because the Release Diff's whole purpose is
+ * to explain a regression and the representative failing run is what explains it; by trace ID within
+ * that, so the same evaluation always yields the same representative and the page is reproducible.
+ */
+export async function listCandidateRunGraphs(
+  sql: Db,
+  evaluationId: string,
+  limit: number,
+): Promise<readonly CandidateRunGraph[]> {
+  const rows = await sql<CandidateRunRow[]>`
+    select
+      re.trace_run_id,
+      tr.trace_id,
+      tr.signoz_web_url,
+      tr.duration_ms,
+      re.status,
+      re.route_fingerprint,
+      re.route_approved,
+      re.similarity_score,
+      re.nearest_route_family_id,
+      tg.canonical_graph_json
+    from run_evaluations re
+    join trace_runs tr on tr.id = re.trace_run_id
+    left join lateral (
+      select canonical_graph_json from trace_graphs
+      where trace_run_id = re.trace_run_id
+      order by id desc limit 1
+    ) tg on true
+    where re.evaluation_id = ${evaluationId}
+    order by (re.status = 'fail') desc, tr.trace_id asc
+    limit ${limit}`;
+
+  return rows.map((row) => ({
+    traceRunId: row.trace_run_id,
+    traceId: row.trace_id,
+    signozWebUrl: row.signoz_web_url,
+    durationMs: row.duration_ms,
+    status: row.status,
+    routeFingerprint: row.route_fingerprint,
+    routeApproved: row.route_approved,
+    similarity: row.similarity_score,
+    nearestRouteFamilyId: row.nearest_route_family_id,
+    canonical: row.canonical_graph_json,
+  }));
+}
