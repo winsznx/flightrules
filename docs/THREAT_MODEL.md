@@ -234,6 +234,38 @@ comparison engines, so nothing that decides anything runs client-side.
 - **Verification** `apps/api/src/api.integration.test.ts`, `docs/evidence/phase-16/hostile-input.md`.
 - **Status** Controlled.
 
+### T14a Terminal control-sequence injection
+
+- **Asset** A7, and the reviewer's own judgement.
+- **Attack path** A span name, service name, tool name or rule summary carrying `ESC [ 2 J` or a
+  bare `0x9b` reaches the CLI's human report. The sequence clears the reader's screen and reprints
+  the opposite verdict, and a CI log records it faithfully — so the deception survives review.
+- **Existing control** Every line the CLI writes passes through `printable()`, which replaces C0
+  except tab and newline, DEL and the whole C1 range with U+FFFD. Applied once by wrapping `Io` at
+  the entry point, so a command added later cannot reintroduce the hole. `assertNameSegment`
+  rejects the same ranges in a managed SigNoz resource name.
+- **Residual risk** None known. `--json` output was never affected: `JSON.stringify` escapes every
+  code point below `0x20`, and it passes through the same filter regardless.
+- **Verification** `apps/cli/src/cli.test.ts` "hostile telemetry cannot drive the reader's
+  terminal"; `packages/artifact-compiler/src/compile.test.ts` "hostile strings cannot forge or
+  split a managed name"; `docs/evidence/phase-16/hostile-input.md`.
+- **Status** Controlled. **Found and closed in Phase 16.**
+
+### T14b Header injection through a download filename
+
+- **Asset** A7.
+- **Attack path** `releaseKey` is any string of up to 200 characters — correctly, since a release
+  key is whatever deployed it — and was interpolated into `content-disposition`. A quote closes the
+  `filename` parameter and everything after it becomes attacker-chosen header parameters; a newline
+  is a header injection.
+- **Existing control** `downloadNameSegment()` reduces the value to `[A-Za-z0-9._-]`, bounds it to
+  64 characters, strips a leading dot or dash, and falls back rather than emitting an empty name.
+  The real key still travels inside the bundle body, where it is data.
+- **Residual risk** None known.
+- **Verification** `apps/web/src/lib/download-name.test.ts`;
+  `docs/evidence/phase-16/hostile-input.md`.
+- **Status** Controlled. **Found and closed in Phase 16.**
+
 ### T15 Public evidence leakage
 
 - **Asset** A4.
@@ -481,7 +513,7 @@ comparison engines, so nothing that decides anything runs client-side.
 
 | Status | Count | Threats |
 |---|---|---|
-| Controlled | 28 | T01–T07, T09–T28 excluding the two below, T30, T31 |
+| Controlled | 30 | T01–T07, T09–T28 excluding the two below, plus T14a and T14b, T30, T31 |
 | Accepted risk, disclosed | 3 | T08 (no authentication), T29 (public demo reset), and the moderate advisory inside T28 |
 
 The three accepted risks share one root: **P0 is scoped to a single-tenant local deployment**
