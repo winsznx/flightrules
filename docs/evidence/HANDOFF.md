@@ -83,6 +83,9 @@ summary that carries identifiers and hashes and nothing else.
 - **Do not run a build while the development web server is running.** They share `.next`; the
   running server's chunks are replaced and every page 404s until it restarts.
 - **A long-running API or worker can outlive its own `dist`.** Restart both after `make typecheck`.
+- **A worker that is absent is the first thing to check when a job stays `queued`.** It used to
+  exit silently when idle (fixed 2026-07-26, `docs/evidence/fix-worker-idle-exit/diagnosis.md`); a
+  regression test now drives the real loop across an idle period before submitting work.
 - **`make demo-urls`** resolves every demo URL from the running API and writes `.demo-state.json`.
   Nothing in `docs/DEMO_SCRIPT.md` hard-codes an identifier.
 

@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import {
   connect,
   findJob,
@@ -64,10 +65,14 @@ beforeEach(async () => {
   await sql`truncate jobs restart identity cascade`;
 });
 
-function runnerWith(handler: JobHandler, workerId = "worker-1"): JobRunner {
+function runnerWith(
+  handler: JobHandler,
+  workerId = "worker-1",
+  overrides: Readonly<Record<string, string>> = {},
+): JobRunner {
   return new JobRunner({
     sql,
-    config: loadWorkerConfig({ ...ENV, WORKER_ID: workerId }),
+    config: loadWorkerConfig({ ...ENV, WORKER_ID: workerId, ...overrides }),
     log: silentLog,
     handlers: {
       baseline_mining: handler,
@@ -292,5 +297,61 @@ describe("shutdown", () => {
     const remaining = await sql<{ status: string }[]>`
       select status from jobs where status = 'queued'`;
     expect(remaining).toHaveLength(1);
+  });
+});
+
+describe("staying alive while idle", () => {
+  /**
+   * A worker that exits when it has nothing to do is indistinguishable from a healthy one until a
+   * job is submitted and never claimed.
+   *
+   * This is a regression test for a real defect: the idle poll timer was `unref`ed, so once
+   * `postgres.js` closed its idle connections the timer was the only pending handle, Node drained
+   * the event loop and the process exited with "Detected unsettled top-level await" and code 13 —
+   * silently, after logging nothing but successes. Every job submitted afterwards sat `queued` with
+   * nothing to claim it.
+   *
+   * The test drives the real `loop()` across several idle polls and then submits work, which is the
+   * sequence that broke: idle first, work second.
+   */
+  it("keeps polling across an idle period and claims a job submitted afterwards", async () => {
+    // #given a runner whose poll interval is short enough to cross several times
+    const claimed: string[] = [];
+    const runner = runnerWith(
+      async (context) => {
+        claimed.push(context.job.id);
+        return async () => ({ finished: true });
+      },
+      "idle-worker",
+      { WORKER_POLL_INTERVAL_MS: "25" },
+    );
+
+    // #when the loop runs with nothing to do at all
+    const loop = runner.loop();
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(claimed).toHaveLength(0);
+
+    // #and a job arrives only after that idle period
+    const jobId = await queue("arrived-after-idle");
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    // #then the loop was still running, and claimed it
+    expect(claimed, "the idle loop stopped polling").toContain(jobId);
+
+    await runner.stop();
+    await loop;
+  });
+
+  /**
+   * The poll timer must hold the event loop open. Asserted directly rather than only through
+   * behaviour, because the behavioural test above would still pass if the timer were unref'ed and
+   * something unrelated happened to be keeping the process alive during the test run — which is
+   * exactly how the original defect survived.
+   */
+  it("does not unref the idle poll timer", async () => {
+    const source = await readFile(new URL("./runner.ts", import.meta.url), "utf8");
+    const loopBody = source.slice(source.indexOf("async loop("), source.indexOf("async stop("));
+    const pollTimer = loopBody.slice(loopBody.indexOf("setTimeout(resolve"));
+    expect(pollTimer).not.toContain("unref");
   });
 });
