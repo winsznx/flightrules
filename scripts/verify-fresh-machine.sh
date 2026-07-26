@@ -278,17 +278,24 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-step "14  the documented test commands"
-# ---------------------------------------------------------------------------
-run "make verify" make verify
-
-# ---------------------------------------------------------------------------
-step "15  the web routes a judge opens"
+step "14  the web routes a judge opens"
 # ---------------------------------------------------------------------------
 for route in / /setup /projects /demo; do
   code="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${WEB_PORT:-3000}${route}")"
   if [ "${code}" = "200" ]; then pass "GET ${route} 200"; else fail "GET ${route} ${code}"; fi
 done
+
+# ---------------------------------------------------------------------------
+step "15  the documented test commands"
+# ---------------------------------------------------------------------------
+# The web server is stopped first, and that ordering is load-bearing: `make verify` builds, and
+# `next build` and a running `next start` share `.next`. Building underneath a live server fails
+# with `Cannot read properties of null (reading 'useContext')` while prerendering `/_global-error` —
+# a message that says nothing about the real cause. `docs/RUNBOOK.md` records the same trap.
+kill "${WEB_PID}" 2>/dev/null || true
+pkill -f 'next start' 2>/dev/null || true
+sleep 2
+run "make verify" make verify
 
 # ---------------------------------------------------------------------------
 printf '\n' | tee -a "${REPORT}"
