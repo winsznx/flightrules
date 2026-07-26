@@ -13,6 +13,8 @@ import {
   fieldValuesPayloadSchema,
   type ListPayload,
   listPayloadSchema,
+  type MetricSeriesPayload,
+  metricSeriesPayloadSchema,
   singleResourceSchema,
 } from "./schemas.js";
 
@@ -36,6 +38,55 @@ export const builderQueryReader: PayloadReader<typeof builderQueryPayloadSchema>
   countRows: (payload) => rowsOf(payload).length,
   // FR-003 requires the SigNoz link to be retained whenever the payload returns one.
   webUrlOf: (payload) => payload.data.webUrl,
+};
+
+/** Every observation in a metric response, flattened out of its five levels of nesting. */
+export function metricPointsOf(payload: MetricSeriesPayload): readonly {
+  readonly labels: Readonly<Record<string, string>>;
+  readonly timestamp: number | null;
+  readonly value: number | null;
+}[] {
+  const points: {
+    labels: Record<string, string>;
+    timestamp: number | null;
+    value: number | null;
+  }[] = [];
+
+  for (const result of payload.data.data.results ?? []) {
+    for (const aggregation of result.aggregations ?? []) {
+      for (const series of aggregation.series ?? []) {
+        const labels: Record<string, string> = {};
+        for (const label of series.labels ?? []) {
+          const name = label.key?.name;
+          // A dimension the series does not carry comes back with an empty value. Recorded as such
+          // rather than dropped, so "not grouped by this" stays distinguishable from "blank".
+          if (typeof name === "string" && name.length > 0) {
+            labels[name] = typeof label.value === "string" ? label.value.slice(0, 200) : "";
+          }
+        }
+        for (const point of series.values ?? []) {
+          points.push({
+            labels,
+            timestamp: typeof point.timestamp === "number" ? point.timestamp : null,
+            value: typeof point.value === "number" ? point.value : null,
+          });
+        }
+      }
+    }
+  }
+  return points;
+}
+
+/**
+ * The metric reader.
+ *
+ * `countRows` counts **observations**, not rows, so an answer carrying a real series is classified
+ * as `SUCCESS_WITH_ROWS` rather than as empty. That single line is the difference between a metric
+ * panel that shows the truth and one that reports "no series exists" about data that is there.
+ */
+export const metricSeriesReader: PayloadReader<typeof metricSeriesPayloadSchema> = {
+  schema: metricSeriesPayloadSchema,
+  countRows: (payload) => metricPointsOf(payload).length,
 };
 
 export const listReader: PayloadReader<typeof listPayloadSchema> = {

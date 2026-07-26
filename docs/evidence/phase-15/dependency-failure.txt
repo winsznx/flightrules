@@ -1,0 +1,49 @@
+# Phase 15 — a real SigNoz dependency failure, and what survives it
+
+Reproduced, not simulated. The API was restarted with
+
+    SIGNOZ_MCP_URL=http://127.0.0.1:9/mcp
+
+Port 9 is the discard service: it accepts nothing, so every MCP call genuinely fails at the
+transport. No code path was stubbed and no response was mocked.
+
+## The two dependent endpoints
+
+GET /api/violations/<id>/logs      HTTP 200
+  state    unavailable
+  detail   SigNoz could not be reached. The violation evidence above is unaffected.
+  logs     0
+
+GET /api/violations/<id>/metrics   HTTP 200
+  state    unavailable
+  detail   SigNoz could not be reached. The violation evidence above is unaffected.
+  series   0
+
+Both answer HTTP 200 with a typed degraded state rather than an error. That is deliberate: an
+inspector page that returned 5xx because an optional panel could not load would make the
+violation — which is local, persisted evidence needing no dependency at all — unreachable
+because of something it does not depend on.
+
+## The violation page, with both dependencies failing
+
+HTTP 200
+
+section                          present
+  violation-what-failed          1
+  violation-observed-route       1
+  violation-approved-route       1
+  violation-trace-evidence       1
+  violation-release-context      1
+  violation-rule                 1
+  violation-evaluation           1
+  violation-summary              1
+  violation-summary-text         1
+
+state panels
+  violation-logs-state           1
+  violation-metrics-state        1
+  UNAVAILABLE rendered           4
+  'could not be reached'         4
+
+Every core-evidence section renders. Both SigNoz panels say UNAVAILABLE and explain that the
+evidence above is unaffected. The violation is fully auditable with SigNoz switched off.

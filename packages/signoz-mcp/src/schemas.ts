@@ -51,6 +51,69 @@ export const builderQueryPayloadSchema = z.object({
 
 export type BuilderQueryPayload = z.infer<typeof builderQueryPayloadSchema>;
 
+/**
+ * The metric query response (SL-062).
+ *
+ * `signoz_query_metrics` does not answer in the `rows` shape every other builder query uses. It
+ * answers `data.data.results[].aggregations[].series[]`, and each series carries its dimensions as
+ * an **array** of `{key: {name}, value}` rather than a map. Reading it with the row reader yields
+ * nothing while the underlying data is real, which is why this has a schema of its own.
+ *
+ * Permissive by intention: every field is optional and unknown keys are ignored, because a metric
+ * panel is explicitly allowed to degrade and a strict parse that rejected one added field would turn
+ * a readable answer into an outage.
+ */
+export const metricSeriesPayloadSchema = z.object({
+  status: z.string().optional(),
+  data: z.object({
+    type: z.string().optional(),
+    data: z.object({
+      results: z
+        .array(
+          z.object({
+            queryName: z.string().optional(),
+            aggregations: z
+              .array(
+                z.object({
+                  series: z
+                    .array(
+                      z.object({
+                        labels: z
+                          .array(
+                            z.object({
+                              key: z.object({ name: z.string().optional() }).optional(),
+                              value: z.unknown().optional(),
+                            }),
+                          )
+                          .nullable()
+                          .optional(),
+                        values: z
+                          .array(
+                            z.object({
+                              timestamp: z.number().optional(),
+                              value: z.unknown().optional(),
+                            }),
+                          )
+                          .nullable()
+                          .optional(),
+                      }),
+                    )
+                    .nullable()
+                    .optional(),
+                }),
+              )
+              .nullable()
+              .optional(),
+          }),
+        )
+        .nullable()
+        .optional(),
+    }),
+  }),
+});
+
+export type MetricSeriesPayload = z.infer<typeof metricSeriesPayloadSchema>;
+
 /** Every list tool returns this envelope, with `structuredContent` mirroring it. */
 export const listPayloadSchema = z.object({
   data: z.array(z.unknown()).nullable(),

@@ -9,6 +9,7 @@ import {
   fieldKeysReader,
   fieldValuesReader,
   listReader,
+  metricSeriesReader,
   rowsOf,
   singleResourceReader,
 } from "./readers.js";
@@ -20,6 +21,7 @@ import type {
   FieldKeysPayload,
   FieldValuesPayload,
   ListPayload,
+  MetricSeriesPayload,
   SpanRow,
   singleResourceSchema,
 } from "./schemas.js";
@@ -252,6 +254,25 @@ export class SigNozOperations {
       tool: "signoz_search_logs",
       arguments: args,
       reader: builderQueryReader,
+      searchContext: context.searchContext,
+    });
+  }
+
+  /**
+   * Metric time series (PRD section 17.4, PRD Phase 15 task 6).
+   *
+   * The downstream-effect evidence a violation carries. `signoz_query_metrics` is listed in the
+   * pinned server's capability snapshot; the arguments are passed through unchanged so this method
+   * cannot become a second, divergent copy of the tool's own schema.
+   */
+  async queryMetrics(
+    args: Readonly<Record<string, unknown>>,
+    context: OperationContext,
+  ): Promise<McpResult<MetricSeriesPayload>> {
+    return this.#client.call({
+      tool: "signoz_query_metrics",
+      arguments: args,
+      reader: metricSeriesReader,
       searchContext: context.searchContext,
     });
   }

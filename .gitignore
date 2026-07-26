@@ -14,3 +14,4 @@ playwright-report/
 .playwright/
 test-results/
 .vitest/
+.demo-state.json

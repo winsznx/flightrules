@@ -733,3 +733,32 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
   identifier that is not 32 lowercase hex characters, so a hostile configuration or telemetry value
   cannot become an anchor `href`. Every product surface calls `traceLink`, so the Release Diff, the
   Violation Inspector and an exported evidence bundle cannot disagree about where a trace lives.
+
+## SL-062 — `signoz_query_metrics` answers in a time-series shape, not the `rows` shape every other builder query uses
+
+- Source: the pinned SigNoz MCP Server v0.9.0 against SigNoz v0.134.0, called live through
+  `@modelcontextprotocol/sdk@1.29.0` (tier 1)
+- Verified claim, three parts:
+  1. The response is `data.data.results[].aggregations[].series[]`. Each series carries
+     `values: [{timestamp, value}]` and **no `rows` array at all**. Reading it with
+     `builderQueryReader` — whose `countRows` counts `rows` — classifies a populated answer as
+     `SUCCESS_EMPTY`, so a metric with real data reports as "no series exists". That is worse than
+     an error, because it is indistinguishable from a truthful empty result.
+  2. A series carries its dimensions as an **array** of `{key: {name}, value}`, not as a map. Every
+     other payload in this product uses a map.
+  3. For `flight_rules.duplicate_side_effects` in this deployment, grouping by
+     `flight_rules.project.id` and `flight_rules.agent.id` returns one series whose label **values
+     are empty strings**. The dimensions are named on the series and carry no value, so a
+     `filter` on them matches nothing while the underlying data is real: 67 observations in a
+     two-hour window, 7 of them non-zero, peaking at `0.667`.
+- Runtime confirmation: **Yes.** `signoz_query_metrics` was called directly, unfiltered and grouped,
+  and the raw envelope inspected both times.
+- Implementation consequence: `metricSeriesPayloadSchema` and `metricSeriesReader` in
+  `packages/signoz-mcp` parse the time-series shape and count **observations** rather than rows, so
+  emptiness is classified by what a metric answer actually contains. `metricPointsOf` flattens the
+  five levels of nesting once, where the schema lives, rather than in each caller.
+  `GET /api/violations/:id/metrics` **groups** by the FlightRules dimensions rather than filtering on
+  them, and states in its own response when the returned series is deployment-wide rather than
+  narrowed to the agent — because the honest presentation of a metric the product cannot yet scope
+  is the number plus the scope, not the number alone. Populating those dimensions on the emitted
+  metric is Phase 16 work.

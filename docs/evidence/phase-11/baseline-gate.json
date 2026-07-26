@@ -1,27 +1,27 @@
 {
   "schemaVersion": "flightrules.dev/release-gate/v1",
-  "exportedAt": "2026-07-26T01:13:58.345Z",
+  "exportedAt": "2026-07-26T01:54:21.251Z",
   "decision": "pass",
-  "decisionHash": "75ac72e4d9f7ad078d9d534551769c2648223bc1ad1dff2b347499bddfe7cb60",
+  "decisionHash": "40677cf9019d2110d1c20f421c4ad830f7894cb6702b87c3f277acc061135e57",
   "release": {
-    "id": "019f9bfb-3f7e-72cb-b9d1-11ea552a39b4",
+    "id": "019f9c20-164d-70e5-ad4d-3d3962e43d47",
     "key": "refund-agent-v1",
     "environment": "local"
   },
   "contract": {
-    "id": "019f9bfb-9915-71ad-bdde-912dd5b2612a",
+    "id": "019f9c20-7dbf-7066-87f1-259a71432bc3",
     "key": "refund-agent-local",
     "version": "0.1.0",
-    "contentHash": "920ab41ddbd094bd7c3527bc2d2f794032c9e8e5e6a4369d10ab5167a2d9be22",
+    "contentHash": "97c739d22e68edf05e938a0434c224a676fe5e3228f360ac4ebc9abccd66be57",
     "state": "active"
   },
   "evaluation": {
-    "id": "019f9bfb-e91f-71b9-b62e-ea066a980698",
+    "id": "019f9c20-d1d9-72c6-8e34-e0eccc0fa851",
     "status": "pass"
   },
   "counts": {
-    "evaluatedRuns": 256,
-    "passedRuns": 256,
+    "evaluatedRuns": 306,
+    "passedRuns": 306,
     "failedRuns": 0,
     "erroredRuns": 0,
     "insufficientRuns": 0,
@@ -45,25 +45,25 @@
   "rates": {
     "violation": {
       "numerator": 0,
-      "denominator": 256,
+      "denominator": 306,
       "decimal": "0.000000",
       "percent": "0.000000"
     },
     "unknownRoute": {
       "numerator": 0,
-      "denominator": 256,
+      "denominator": 306,
       "decimal": "0.000000",
       "percent": "0.000000"
     },
     "duplicateSideEffect": {
       "numerator": 0,
-      "denominator": 256,
+      "denominator": 306,
       "decimal": "0.000000",
       "percent": "0.000000"
     },
     "missingPrerequisite": {
       "numerator": 0,
-      "denominator": 256,
+      "denominator": 306,
       "decimal": "0.000000",
       "percent": "0.000000"
     }
@@ -71,8 +71,8 @@
   "changes": {
     "latency": {
       "metric": "run.duration_ms",
-      "baseline": 22,
-      "candidate": 22,
+      "baseline": 19,
+      "candidate": 19,
       "changePercent": "0.000000",
       "measured": true
     },
@@ -99,10 +99,10 @@
       "outcome": "pass",
       "aggregation": "p95",
       "metric": "run.duration_ms",
-      "observed": 22,
-      "limit": 27,
-      "runsReporting": 256,
-      "summary": "p95 of run.duration_ms was 22, within 27."
+      "observed": 19,
+      "limit": 23,
+      "runsReporting": 306,
+      "summary": "p95 of run.duration_ms was 19, within 23."
     }
   ],
   "findings": [],

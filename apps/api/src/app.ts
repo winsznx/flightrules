@@ -11,6 +11,7 @@ import { registerDemoRoutes } from "./routes/demo.js";
 import { registerDiffRoutes } from "./routes/diff.js";
 import { registerGateRoutes } from "./routes/gate.js";
 import { registerLifecycleRoutes } from "./routes/lifecycle.js";
+import { registerViolationEvidenceRoutes } from "./routes/violation-evidence.js";
 
 /**
  * The FlightRules API server.
@@ -154,6 +155,7 @@ export function buildApi(options: BuildApiOptions): BuiltApi {
   registerArtifactRoutes(server, registry, context);
   registerGateRoutes(server, registry, context);
   registerDiffRoutes(server, registry, context);
+  registerViolationEvidenceRoutes(server, registry, context);
   registerDemoRoutes(server, registry, context);
 
   // PRD Phase 09 task 11: documentation generated from the same declarations that serve traffic.
