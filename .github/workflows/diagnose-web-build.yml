@@ -4,6 +4,9 @@ name: Diagnose web build
 # branch. Never runs on `main` or a phase branch, and is deleted once the silent `next build` exit
 # on Linux is understood. It changes nothing about the product; it runs the same command CI runs,
 # with every diagnostic Node and Next expose at the pinned versions.
+#
+# Everything after the install lives in one step under `set +e`, so a failing probe cannot stop the
+# probes after it. The job's own result is meaningless; only its log matters.
 
 on:
   workflow_dispatch:
@@ -36,84 +39,59 @@ jobs:
       - name: Install from lockfile
         run: pnpm install --frozen-lockfile
 
-      - name: Environment
-        working-directory: apps/web
-        run: |
-          set -x
-          uname -a
-          node --version
-          pnpm --version
-          nproc
-          free -m
-          df -h .
-          cat /etc/os-release
-          node -p "require('next/package.json').version"
-          node -p "require('typescript/package.json').version"
-          ls -la node_modules/.pnpm 2>/dev/null | head -5 || true
-          ls -d ../../node_modules/.pnpm/@next+swc* 2>/dev/null || echo "no @next/swc packages"
-          env | grep -iE 'node|next|npm|pnpm|^ci|turbo' | sort
-
-      - name: Build every workspace package except the web application
-        run: pnpm -r --if-present --filter '!@flightrules/web' run build
-
-      - name: apps/web typecheck alone
-        working-directory: apps/web
-        run: |
-          set -x
-          pnpm run typecheck
-          echo "typecheck exit=$?"
-
-      - name: next build under --trace-exit, exit code and signal captured
-        working-directory: apps/web
+      - name: Probe
         env:
           NEXT_TELEMETRY_DISABLED: "1"
-          NODE_OPTIONS: "--trace-exit --trace-uncaught --trace-warnings"
         run: |
-          set -x
           set +e
+          banner() { echo; echo "############ $* ############"; echo; }
+
+          banner ENVIRONMENT
+          uname -a; node --version; pnpm --version; nproc; free -m; df -h .
+          grep PRETTY /etc/os-release
+          ( cd apps/web && node -p "require('next/package.json').version" )
+          ( cd apps/web && node -p "require('typescript/package.json').version" )
+          ls -d node_modules/.pnpm/@next+swc* 2>/dev/null || echo "no @next/swc packages installed"
+          ls -d node_modules/.pnpm/sharp* 2>/dev/null || echo "no sharp installed"
+          env | grep -iE 'node|next|npm|pnpm|^CI=|turbo' | sort
+
+          banner "WORKSPACE BUILD, WEB AND ROOT EXCLUDED"
+          pnpm -r --if-present --filter '!@flightrules/web' --filter '!flightrules' run build
+          echo "workspace build exit=$?"
+
+          banner "APPS/WEB TYPECHECK ALONE"
+          ( cd apps/web && pnpm run typecheck ); echo "typecheck exit=$?"
+
+          banner "NEXT BUILD UNDER --trace-exit"
+          cd apps/web
           NEXT_BIN="$(node -p "require.resolve('next/dist/bin/next')")"
           echo "next bin: $NEXT_BIN"
-          ls -la .next 2>/dev/null || echo "no .next yet"
-          node "$NEXT_BIN" build > build.out.log 2> build.err.log
-          code=$?
-          echo "=== next build exit code: $code ==="
-          echo "=== stdout ==="
-          cat build.out.log || true
-          echo "=== stderr ==="
-          cat build.err.log || true
-          echo "=== end ==="
-          exit 0
+          NODE_OPTIONS="--trace-exit --trace-uncaught --trace-warnings" \
+            node "$NEXT_BIN" build > /tmp/b.out 2> /tmp/b.err
+          echo "=== next build exit code: $? ==="
+          echo "--- stdout ---"; cat /tmp/b.out
+          echo "--- stderr ---"; cat /tmp/b.err
+          echo "--- end ---"
 
-      - name: Same build through a shell so a signal would be visible
-        working-directory: apps/web
-        env:
-          NEXT_TELEMETRY_DISABLED: "1"
-        run: |
-          set +e
-          rm -rf .next
-          next build
-          echo "raw exit=$?"
-          exit 0
-
-      - name: Inspect what the build produced
-        working-directory: apps/web
-        run: |
-          set -x
+          banner "WHAT THE BUILD LEFT IN .next"
           ls -la .next 2>/dev/null || echo "no .next"
-          find .next -maxdepth 2 2>/dev/null | head -60 || true
-          tail -c 2000 .next/trace 2>/dev/null || true
+          find .next -maxdepth 2 2>/dev/null | head -60
 
-      - name: Kernel ring buffer for OOM or segfault evidence
-        if: always()
-        run: sudo dmesg 2>/dev/null | tail -40 || echo "dmesg unavailable"
+          banner "PLAIN NEXT BUILD, EXIT CODE ONLY"
+          rm -rf .next
+          next build; echo "raw exit=$?"
 
-      - name: Webpack builder for comparison
-        working-directory: apps/web
-        env:
-          NEXT_TELEMETRY_DISABLED: "1"
-        run: |
-          set +e
+          banner "NEXT BUILD WITH NEXT_PRIVATE_DEBUG"
+          rm -rf .next
+          NEXT_PRIVATE_DEBUG_CACHE=1 DEBUG='next:*' next build 2>&1 | tail -80
+          echo "debug exit=${PIPESTATUS[0]}"
+
+          banner "WEBPACK BUILDER FOR COMPARISON"
           rm -rf .next
           next build --webpack 2>&1 | tail -60
           echo "webpack exit=${PIPESTATUS[0]}"
+
+          banner DMESG
+          sudo dmesg 2>/dev/null | tail -40 || echo "dmesg unavailable"
+
           exit 0
