@@ -138,25 +138,45 @@ Full detail: `docs/evidence/phase-16/alert-lifecycle.md`.
 from committed files only, with the SigNoz and application volumes destroyed first — a clone that
 reused them would be testing this machine's accumulated state rather than a fresh one.
 
-**Two defects found, both in the documented path a judge will follow.**
+**Four defects found, every one of them in the documented path a judge will follow.**
 
-1. **`make signoz-bootstrap` failed with `Error 22` and nothing else.** `/api/v1/health` reports ok
-   before registration is servable: on a freshly cast deployment the apiserver answers health while
-   its metastore migration is still running, and `/api/v1/register` answers 5xx for a few seconds
-   afterwards. `curl -sf` discards the response body on an HTTP error, so the one thing needed to
-   diagnose it was the one thing thrown away. Registration is now retried for up to two minutes and
-   the body is printed when it gives up.
-2. **`make db-migrate` failed on a clean clone with `ERR_MODULE_NOT_FOUND`.** The migrator runs from
+1. **The documented bootstrap password command fails, intermittently, for the same reason both
+   GitHub workflows would have failed every time.** SigNoz v0.134.0 enforces a password policy on
+   `/api/v1/register` — at least 12 characters with an uppercase letter, a lowercase letter, a digit
+   and a symbol — and states it *only in the rejection body*. The README, the runbook and the demo
+   script all documented `openssl rand -base64 18`, whose alphabet is `[A-Za-z0-9+/=]`: a given draw
+   often contains no digit or no symbol. One reproduction succeeded and two failed on the same
+   command. Worse, `ci.yml` and `release-gate.yml` both supplied `ci-<run_id>`, which has neither an
+   uppercase letter nor a symbol — **so the release-gate workflow, which has never run on GitHub,
+   could not have passed.** Every documented command now appends `Aa1!`, both workflows use a
+   compliant value, and `bootstrap-signoz.sh` checks the policy *before* calling SigNoz so a
+   non-compliant password names the rule it broke.
+2. **`make signoz-bootstrap` reported `Error 22` and nothing else.** `curl -sf` discards the
+   response body on an HTTP error, so the one thing needed to diagnose defect 1 was the one thing
+   thrown away. Registration is now retried for up to two minutes — `/api/v1/health` also reports ok
+   before registration is servable — and the body is printed when it gives up. **This is what made
+   defect 1 visible**; without it the failure was a bare exit code.
+3. **`make signoz-verify` passed while the credential was `replace-me`.** It proved the MCP server
+   was reachable and that `initialize` succeeded, but `initialize` never presents the SigNoz
+   credential to SigNoz. Every subsequent tool call returned
+   `SigNoz API error: unexpected status 401: unauthenticated` against a deployment this script had
+   just declared healthy. It now makes a real authenticated tool call.
+4. **`make db-migrate` failed on a clean clone with `ERR_MODULE_NOT_FOUND`.** The migrator runs from
    source through `tsx` but imports `@flightrules/domain` by its package entry point, which resolves
    to `dist/`. The README's documented `make install && make db-migrate` sequence therefore could
-   not work before a build. The three database targets now build the package's project references
+   not work before a build, and neither could `ci.yml`'s database job, which migrates without
+   building. The three database targets and that job now build the package's project references
    first, which stays correct if the package gains a dependency.
 
-A third finding is not a code defect but a timing one, fixed anyway because it made the documented
-one-command demo intermittent: `make demo-full` mined its baseline seconds after emitting the
-telemetry, and SigNoz does not make a span queryable the instant it is accepted. Mining is now
-retried for up to a minute. Nothing is assumed about the data — the same real mining job runs again
-and still has to find real runs.
+A fifth finding is a cold start rather than a defect, and is handled the same way: on a deployment
+that has just been cast, `signoz_get_field_keys` answers `MCP_ERROR` until the field catalogue is
+populated from the first ingested spans, so baseline mining fails with `FIELD_TYPES_UNTRUSTED`. The
+seed retries a failed mining job on the same terms as an empty one.
+
+A sixth finding is a timing one, fixed for the same reason: `make demo-full` mined its baseline
+seconds after emitting the telemetry, and SigNoz does not make a span queryable the instant it is
+accepted. Mining is now retried. Nothing is assumed about the data — the same real mining job runs
+again and still has to find real runs.
 
 ---
 

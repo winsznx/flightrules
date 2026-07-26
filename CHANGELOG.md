@@ -902,9 +902,22 @@ All notable changes to FlightRules are recorded here, one section per phase.
 - **A managed artefact edited by hand was recreated rather than replaced**, leaving two resources of
   the same managed name. Drift is now distinguished from a stale identifier and replaces in both
   cases.
+- **The documented SigNoz bootstrap password fails intermittently, and in CI it failed always.**
+  SigNoz v0.134.0 requires at least 12 characters with an uppercase letter, a lowercase letter, a
+  digit and a symbol, and states the policy only in the rejection body. `openssl rand -base64 18`
+  satisfies it by luck; `ci-<run_id>`, which both workflows supplied, never does — so the
+  release-gate workflow could not have passed on its first GitHub run. Every documented command now
+  appends `Aa1!`, both workflows use a compliant value, and `bootstrap-signoz.sh` checks the policy
+  before calling SigNoz.
 - **`make signoz-bootstrap` failed on a fresh deployment with `Error 22` and no other information.**
   `/api/v1/health` reports ok before `/api/v1/register` is servable, and `curl -sf` discards the
-  response body on an HTTP error. Registration is retried for two minutes and the body is printed.
+  response body on an HTTP error — which is what hid the password policy above. Registration is
+  retried for two minutes and the body is printed.
+- **`make signoz-verify` passed while the SigNoz credential was still `replace-me`.** `initialize`
+  succeeds against the MCP server without the credential ever reaching SigNoz. It now makes a real
+  authenticated tool call, so a deployment it declares healthy is one whose key works.
+- **`ci.yml`'s database job migrated without building**, so it would have failed with
+  `ERR_MODULE_NOT_FOUND` on its first GitHub run for the same reason a clean clone did.
 - **`make db-migrate` failed on a clean clone** with `ERR_MODULE_NOT_FOUND`: the migrator imports
   `@flightrules/domain` by its package entry point, which resolves to `dist/`. The database targets
   now build the package's project references first.
