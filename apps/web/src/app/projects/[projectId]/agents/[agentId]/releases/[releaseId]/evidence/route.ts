@@ -1,4 +1,5 @@
 import { isFailure } from "@/lib/api";
+import { downloadNameSegment } from "@/lib/download-name";
 import { findGate, findRelease, findReleaseDiff } from "@/lib/load";
 
 /**
@@ -109,7 +110,7 @@ export async function GET(
     status: 200,
     headers: {
       "content-type": "application/json; charset=utf-8",
-      "content-disposition": `attachment; filename="release-evidence-${decision.releaseKey}-${decision.decisionHash.slice(0, 12)}.json"`,
+      "content-disposition": `attachment; filename="release-evidence-${downloadNameSegment(decision.releaseKey)}-${decision.decisionHash.slice(0, 12)}.json"`,
       "cache-control": "no-store",
     },
   });
