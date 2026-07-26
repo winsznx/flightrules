@@ -34,6 +34,9 @@ const value = (name, fallback) => {
 
 const LOOKBACK_MINUTES = Number.parseInt(value("lookback-minutes", "360"), 10);
 const MINIMUM_RUNS = Number.parseInt(value("minimum-runs", "20"), 10);
+/** Mining attempts before giving up, and the wait between them. See the retry loop for why. */
+const MINING_ATTEMPTS = Number.parseInt(value("mining-attempts", "6"), 10);
+const MINING_RETRY_SECONDS = Number.parseInt(value("mining-retry-seconds", "10"), 10);
 const JOB_TIMEOUT_MS = Number.parseInt(value("job-timeout-ms", "300000"), 10);
 
 const out = (line) => process.stdout.write(`${line}\n`);
@@ -145,24 +148,46 @@ async function main() {
   }
 
   step(`baseline from live ${BASELINE_RELEASE} telemetry`);
-  const endMs = Date.now();
-  const baselineJob = await call("POST", `/api/agents/${agent.id}/baselines`, {
-    releaseKey: BASELINE_RELEASE,
-    environment: ENVIRONMENT,
-    startMs: endMs - LOOKBACK_MINUTES * 60_000,
-    endMs,
-    minimumRuns: MINIMUM_RUNS,
-    rootSpanName: ROOT_SPAN,
-    maxTraces: 500,
-  });
-  const baselineResult = await waitForJob(baselineJob.jobId, "baseline");
-  out(
-    `   ${baselineResult.baselineIdentifier} — ${baselineResult.routeFamilies} route family(ies) from ${baselineResult.completedRuns ?? "?"} run(s)`,
-  );
 
-  const baseline = await call("GET", `/api/baselines/${baselineResult.baselineId}`);
-  const families = [...baseline.families].sort((a, b) => b.occurrenceCount - a.occurrenceCount);
-  if (families.length === 0) throw new SeedError("the baseline mined no route families");
+  // The demo emits its telemetry seconds before this runs, and SigNoz does not make a span
+  // queryable the instant it is accepted: the collector batches, and ClickHouse commits its parts
+  // asynchronously. Mining once, immediately, therefore fails intermittently on a slower or busier
+  // machine with "the baseline mined no route families" — a fresh-machine reproduction hit exactly
+  // that. Retrying is honest here in a way it would not be inside the product: nothing is assumed
+  // about the data, the same real mining job is run again, and it still has to find real runs.
+  let baseline;
+  let families = [];
+  for (let attempt = 1; attempt <= MINING_ATTEMPTS; attempt += 1) {
+    const endMs = Date.now();
+    const baselineJob = await call("POST", `/api/agents/${agent.id}/baselines`, {
+      releaseKey: BASELINE_RELEASE,
+      environment: ENVIRONMENT,
+      startMs: endMs - LOOKBACK_MINUTES * 60_000,
+      endMs,
+      minimumRuns: MINIMUM_RUNS,
+      rootSpanName: ROOT_SPAN,
+      maxTraces: 500,
+    });
+    const baselineResult = await waitForJob(baselineJob.jobId, "baseline");
+    out(
+      `   ${baselineResult.baselineIdentifier} — ${baselineResult.routeFamilies} route family(ies) from ${baselineResult.completedRuns ?? "?"} run(s)`,
+    );
+
+    baseline = await call("GET", `/api/baselines/${baselineResult.baselineId}`);
+    families = [...baseline.families].sort((a, b) => b.occurrenceCount - a.occurrenceCount);
+    if (families.length > 0) break;
+
+    if (attempt === MINING_ATTEMPTS) {
+      throw new SeedError(
+        `the baseline mined no route families after ${MINING_ATTEMPTS} attempts. ` +
+          `Check that the demo topology is running and that ${BASELINE_RELEASE} telemetry reaches SigNoz.`,
+      );
+    }
+    out(
+      `   no route family yet; waiting ${MINING_RETRY_SECONDS}s for telemetry to become queryable`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, MINING_RETRY_SECONDS * 1000));
+  }
 
   step("route-family review");
   // The dominant family is approved; anything rarer is left pending for a human. Approving every
