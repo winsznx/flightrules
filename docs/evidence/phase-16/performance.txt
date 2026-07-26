@@ -1,0 +1,18 @@
+
+Environment
+  platform       Darwin 27.0.0 arm64
+  cpu            Apple M1 Pro
+  cores          8
+  totalMemoryGb  32
+  node           v24.14.1
+  repetitions    30
+  commit         99b9b35
+
+PRD section 20.2 targets
+  measurement                               target                  cold      median    p95       max       heapΔ
+  ok  evaluate a 100-span trace                 < 250 ms p95            5.51      1.36      1.97      2.32      0.5 MB
+  ok  canonicalise a 1,000-span trace           < 1,000 ms p95          13.27     9.38      11.39     12.61     19.9 MB
+  ok  canonicalise a 10,000-span trace          no superlinear blow-up  62.16     62.67     72.04     72.58     126.8 MB
+  ok  evaluate 100 fetched 100-span traces      < 30,000 ms p95         121.48    99.15     111.85    116.14    19.5 MB
+  ok  API non-job endpoint (GET /health/ready)  < 500 ms p95            -         2.18      5.08      8.3       -
+
