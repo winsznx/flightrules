@@ -23,7 +23,7 @@
 set -uo pipefail
 
 SOURCE_REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CLONE_DIR="${CLONE_DIR:-${TMPDIR:-/tmp}flightrules-fresh-$(date +%s)}"
+CLONE_DIR="${CLONE_DIR:-${TMPDIR:-/tmp/}flightrules-fresh-$(date +%s)}"
 LOG_DIR="${LOG_DIR:-${SOURCE_REPO}/docs/evidence/phase-16}"
 REPORT="${LOG_DIR}/fresh-machine.txt"
 
@@ -36,8 +36,10 @@ info() { printf '        %s\n' "$1" | tee -a "${REPORT}"; }
 run() {
   local label="$1"; shift
   printf '  run   %s\n' "$*" | tee -a "${REPORT}"
-  if "$@" >>"${REPORT}" 2>&1; then pass "${label}"; return 0; fi
-  fail "${label} (exit $?)"
+  local status=0
+  "$@" >>"${REPORT}" 2>&1 || status=$?
+  if [ "${status}" -eq 0 ]; then pass "${label}"; return 0; fi
+  fail "${label} (exit ${status})"
   return 1
 }
 
