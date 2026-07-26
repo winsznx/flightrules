@@ -310,9 +310,22 @@ export class JobRunner {
       }
 
       if (!result.claimed && !this.#stopping) {
+        // Deliberately **not** `unref`ed, unlike the lease heartbeat above and the shutdown timeout
+        // in `index.ts`. Those two are correct to unref: something else — the job's own promise, the
+        // shutdown sequence — is already keeping the process alive while they run.
+        //
+        // This timer is different. When the worker is idle it is the *only* pending handle, because
+        // `postgres.js` closes idle connections and takes its sockets with them. An unref'ed timer
+        // does not keep the event loop alive, so Node drains it and exits — with `await
+        // runner.loop()` still pending, which it reports as "Detected unsettled top-level await" and
+        // exit code 13. The worker vanishes without an error, and every job submitted afterwards
+        // sits `queued` for ever with nothing to claim it.
+        //
+        // A polling worker's poll timer is precisely what keeps it running. Shutdown does not need
+        // the unref: `stop()` sets `#stopping`, this loop exits within one poll interval, and
+        // `shutdown()` calls `process.exit` regardless.
         await new Promise((resolve) => {
-          const timer = setTimeout(resolve, this.#config.pollIntervalMs);
-          timer.unref();
+          setTimeout(resolve, this.#config.pollIntervalMs);
         });
       }
     }

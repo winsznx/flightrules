@@ -823,3 +823,24 @@ All notable changes to FlightRules are recorded here, one section per phase.
 - **SL-062** — `signoz_query_metrics` answers in a time-series shape with dimensions as an array of
   `{key: {name}, value}`, not the `rows` shape every other builder query uses, and in this
   deployment the FlightRules dimensions come back named with empty values.
+
+## Fix — the worker exited silently when idle (2026-07-26)
+
+### Fixed
+
+- **`JobRunner.loop()` unref'ed its idle poll timer, so the worker exited on its own whenever it had
+  nothing to do.** An unref'ed timer does not keep the Node event loop alive, and while idle that
+  timer is the only pending handle — `postgres.js` closes idle connections and takes its sockets with
+  them. Node drained the loop and exited with `await runner.loop()` still pending, reporting
+  "Detected unsettled top-level await" and exit code 13.
+
+  The failure is silent: nothing is logged, the exit code is not 1, and every job before it
+  succeeded. Afterwards every submitted job sits `queued` with nothing to claim it. This is the
+  symptom hit during Phase 13, where a browser baseline capture stayed at `QUEUED`.
+
+  Proven against the built worker: idle for 6m 08s with zero jobs claimed and the process still
+  alive, then five jobs claimed when `make demo-full` submitted work, reproducing exit 0 then exit 2.
+
+  The two other `unref()` calls in the worker are correct and unchanged: the lease heartbeat and the
+  shutdown timeout each have something else keeping the process alive while they run.
+
