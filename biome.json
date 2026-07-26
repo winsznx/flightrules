@@ -16,7 +16,10 @@
       "!docs/research/mcp-capabilities.json",
       "!docs/evidence",
       "!pnpm-lock.yaml",
-      "!packages/ui/src/tokens.css"
+      "!packages/ui/src/tokens.css",
+      "!**/.playwright",
+      "!**/playwright-report",
+      "!**/test-results"
     ]
   },
   "formatter": {
@@ -48,7 +51,9 @@
         "noExplicitAny": "error",
         "noConsole": {
           "level": "error",
-          "options": { "allow": ["error", "warn"] }
+          "options": {
+            "allow": ["error", "warn"]
+          }
         }
       },
       "complexity": {

@@ -23,13 +23,16 @@
     "scan:licences": "node scripts/check-licences.mjs",
     "scan:deps": "pnpm audit --audit-level high",
     "test:integration:db": "vitest run --project integration-db",
-    "test:integration:signoz": "vitest run --project integration-signoz"
+    "test:integration:signoz": "vitest run --project integration-signoz",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.5",
     "@flightrules/domain": "workspace:*",
     "@flightrules/signoz-mcp": "workspace:*",
     "@modelcontextprotocol/sdk": "1.29.0",
+    "@playwright/test": "1.62.0",
     "@secretlint/secretlint-rule-preset-recommend": "13.0.4",
     "@types/node": "24.13.3",
     "secretlint": "13.0.4",

@@ -6,6 +6,22 @@ export {
 } from "./canonical.js";
 export type { CliIo } from "./cli-run.js";
 export { CLI_EXIT, defaultCliIo, runContractCli, USAGE } from "./cli-run.js";
+export type {
+  EditError,
+  EditErrorCode,
+  EditResult,
+  RuleControl,
+  RuleControlRequest,
+} from "./edit.js";
+export {
+  applyRuleControl,
+  controlRuleId,
+  controlStateOf,
+  DATA_DOMAIN_FIELD,
+  EDIT_ERROR_CODES,
+  RULE_CONTROLS,
+  SIDE_EFFECT_FIELD,
+} from "./edit.js";
 export type { ValidationCode, ValidationError } from "./errors.js";
 export { childPath, ErrorBag, indexPath, VALIDATION_CODES } from "./errors.js";
 export type { ParsedContract, ParseResult } from "./parse.js";

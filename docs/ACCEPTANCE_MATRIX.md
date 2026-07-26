@@ -6,7 +6,7 @@ runtime behaviour applies.
 
 Status values: `PENDING`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-Last updated: Phase 12, 2026-07-25.
+Last updated: Phase 13, 2026-07-26.
 
 ## Critical final assertions (PRD section 23)
 
@@ -55,7 +55,7 @@ Last updated: Phase 12, 2026-07-25.
 | 21 | CLI or GitHub Action gate exits non-zero when thresholds fail | `apps/cli`, `.github/workflows/release-gate.yml`, `packages/contract-engine/src/release.ts`, `apps/api/src/routes/gate.ts` | `exit-codes.test.ts`, `release.test.ts` (35), `cli.test.ts` (49), `gate.integration.test.ts` (17), `release-gate-workflow.test.ts` (14), `phase-11.signoz.integration.test.ts` (8) | phase-11 — live: `refund-agent-v1` exit `0` over 106 evaluated runs; `refund-agent-v2` exit `2` with 80 violations and 24 zero-tolerance; the same decision served after an API restart | DONE |
 | 22 | Seeded v1 passes and seeded v2 fails | end to end | e2e scenario | phase-17 | PENDING |
 | 23 | UI uses `design.md` without changing product copy or route purposes | `apps/web`, `packages/ui`, `scripts/check-design-assets.mjs` | `apps/web/src/web.test.ts` — 26 tests: every PRD section 8 literal asserted against `docs/PRD.md`, no page the PRD does not describe, no invented colour or size, no shadow or gradient, exactly the seven `design.md` colours | phase-12 — all fourteen routes render live API data; `make scan-design` re-reads `design.md` on every `make verify` | DONE |
-| 24 | Unit, property, integration, e2e, security and reproducibility tests pass | whole repository | `make verify` | phase-16, phase-17 | PENDING |
+| 24 | Unit, property, integration, e2e, security and reproducibility tests pass | whole repository | `make verify`, `make test-e2e` | phase-13 — the browser suite exists and runs against the live product (18 tests, `@playwright/test@1.62.0`); the accessibility audit and the adversarial suite remain phase-16 | IN PROGRESS |
 | 25 | README, architecture, runbook, demo script and submission docs complete | `docs/*`, `README.md` | docs link check | phase-17 | PENDING |
 
 ## Functional requirements (PRD section 9)
@@ -81,7 +81,7 @@ Last updated: Phase 12, 2026-07-25.
 | FR-017 | Evidence linking | `packages/db`, `apps/api` | `api.integration.test.ts`, live `GET /api/violations/:id/evidence` | phase-09 | DONE |
 | FR-018 | Contract lifecycle | `apps/api`, `packages/db` | `lifecycle.integration.test.ts`, `api.integration.test.ts` — every transition, every refusal, one active per agent and environment enforced by a partial unique index | phase-09 | DONE |
 | FR-019 | Audit history | `apps/api`, `packages/db` | `api.integration.test.ts`, `lifecycle.integration.test.ts` — an audit row per lifecycle event, written by the transaction that made the change | phase-09 | DONE |
-| FR-020 | Demo reset | `apps/api`, `scripts/reset-demo.sh` | `api.integration.test.ts` — reset, reseed, demo-mode guard | phase-03, phase-09 | IN PROGRESS |
+| FR-020 | Demo reset | `apps/api`, `scripts/reset-demo.sh`, `scripts/purge-managed-artifacts.mjs` | `api.integration.test.ts` — reset, reseed, demo-mode guard; `phase-13-workflow.spec.ts` resets live before the exit gate | phase-13 — a clean start is a managed-artefact purge **then** the reset; without the purge the next sync correctly reports ten conflicts because the SigNoz resources outlive the register rows | IN PROGRESS |
 
 ## Routes (PRD section 8)
 
@@ -93,9 +93,9 @@ Last updated: Phase 12, 2026-07-25.
 | `/projects/[projectId]/overview` | Project trajectory health | `apps/web/src/app/projects/[projectId]/overview/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
 | `/projects/[projectId]/agents` | Agents list | `apps/web/src/app/projects/[projectId]/agents/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
 | `/projects/[projectId]/agents/[agentId]` | Agent detail | `apps/web/src/app/projects/[projectId]/agents/[agentId]/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
-| `/projects/[projectId]/agents/[agentId]/baselines/new` | Baseline capture | `apps/web/src/app/projects/[projectId]/agents/[agentId]/baselines/new/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
-| `/projects/[projectId]/agents/[agentId]/routes/[routeFamilyId]` | Route family detail | `apps/web/src/app/projects/[projectId]/agents/[agentId]/routes/[routeFamilyId]/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
-| `/projects/[projectId]/agents/[agentId]/contracts/[contractId]` | Contract Studio | `apps/web/src/app/projects/[projectId]/agents/[agentId]/contracts/[contractId]/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
+| `/projects/[projectId]/agents/[agentId]/baselines/new` | Baseline capture | `apps/web/src/app/projects/[projectId]/agents/[agentId]/baselines/new/page.tsx` | `web.test.ts` route, copy, prohibition and client-boundary tests; `phase-13-workflow.spec.ts` browser workflow; live smoke | DONE |
+| `/projects/[projectId]/agents/[agentId]/routes/[routeFamilyId]` | Route family detail | `apps/web/src/app/projects/[projectId]/agents/[agentId]/routes/[routeFamilyId]/page.tsx` | `web.test.ts` route, copy, prohibition and client-boundary tests; `phase-13-workflow.spec.ts` browser workflow; live smoke | DONE |
+| `/projects/[projectId]/agents/[agentId]/contracts/[contractId]` | Contract Studio | `apps/web/src/app/projects/[projectId]/agents/[agentId]/contracts/[contractId]/page.tsx` | `web.test.ts` route, copy, prohibition and client-boundary tests; `phase-13-workflow.spec.ts` browser workflow; live smoke | DONE |
 | `/projects/[projectId]/agents/[agentId]/releases` | Releases list | `apps/web/src/app/projects/[projectId]/agents/[agentId]/releases/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
 | `/projects/[projectId]/agents/[agentId]/releases/[releaseId]` | Release Diff | `apps/web/src/app/projects/[projectId]/agents/[agentId]/releases/[releaseId]/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |
 | `/projects/[projectId]/violations/[violationId]` | Violation Inspector | `apps/web/src/app/projects/[projectId]/violations/[violationId]/page.tsx` | `web.test.ts` route, copy and prohibition tests; live smoke against the running API | DONE |

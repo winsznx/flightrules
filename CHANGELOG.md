@@ -678,3 +678,64 @@ All notable changes to FlightRules are recorded here, one section per phase.
   runs `tsc -p tsconfig.json --noEmit` before `next build`, so the application is fully typechecked
   under the workspace's strict configuration — it rejected six `exactOptionalPropertyTypes`
   violations in the first draft of these routes — and only the broken integration is bypassed.
+
+## Phase 13 — Baseline and Contract Studio UI (2026-07-26)
+
+### Added
+
+- `packages/contract-schema/src/edit.ts` — PRD section 8.9's eight graph rule controls, each a
+  deterministic transformation of the stored YAML document. Every transformation is re-read through
+  `parseContract` before it is returned, so a control cannot produce a document the Phase 07
+  validator rejects. `controlStateOf` reads control state back out of the document, which is the
+  other direction of the bidirectional requirement and the reason the graph and the YAML cannot
+  drift: there is one document, not two models.
+- The baseline capture workflow, live: the eight controls submit a Server Action, the job identifier
+  goes in the URL, and the page renders the job's persisted stage and event list on every server
+  render.
+- The rejected-trace summary: totals, eligible, excluded, duplicates, exclusions grouped by stable
+  reason, per-trace exclusions with quality warnings, disclosures, truncation state, untrusted typed
+  attributes, and an explicit reconciliation line.
+- PRD section 8.8's four review verbs as Server Actions, shared by the baseline page and the route
+  family page, each writing its audit event and each re-read before the next render.
+- The Contract Studio's six actions: validate, approve, activate, sync to SigNoz, export YAML and
+  evaluate. Approval and activation are guarded on the server against the stored document.
+- `components/yaml-editor.tsx`, `components/submit-button.tsx` and `components/auto-refresh.tsx` —
+  the application's only three client components.
+- `contracts/[contractId]/export/route.ts`, so `Export YAML` downloads the stored document without
+  exposing the API's address to the browser.
+- `@playwright/test@1.62.0` (SL-034, Apache-2.0), `playwright.config.ts` at three viewports, and
+  `tests/e2e/phase-13-workflow.spec.ts` — the PRD's exit gate as twenty-three executable steps
+  against the running product.
+- `make test-e2e`.
+
+### Changed
+
+- `make test-integration`, `make test-integration-db`, `make test-integration-signoz` and
+  `make test-e2e` now source `.env`. Without it every SigNoz integration file failed at import with
+  `SIGNOZ_API_KEY must be set` — a green-looking "no tests ran".
+- The Phase 12 assertion that no route file contains `use client` is replaced by five stronger ones:
+  no route file is a client component; exactly three client modules exist, named; no client module
+  fetches, subscribes or imports the server-only API client; every client module is under 160 lines;
+  and the design-token rule applies inside client components too.
+
+### Fixed
+
+- **An action's redirect appended `?job=…` to a URL that already carried a query string**, so the
+  job identifier was swallowed by the first parameter's value and a proposal's progress never
+  appeared. `outcomeUrl` now merges through `URLSearchParams` and is the only way an action builds a
+  redirect.
+- **The approve guard trusted a query parameter.** It now revalidates the stored document server-side
+  and requires both `valid` and `contentHashStable`, so the address bar cannot approve an unvalidated
+  contract.
+- The accessibility assertion no longer demands a label on `type="hidden"` inputs, which are not in
+  the accessibility tree.
+
+### Discovered
+
+- **A demo reset alone is not a clean state.** `POST /api/demo/reset` clears the FlightRules database
+  and leaves SigNoz untouched by design (FR-020), so the ten managed resources outlive the register
+  rows that recorded owning them and the next sync correctly refuses to adopt them — ten conflicts,
+  zero verified. A genuinely clean start is `make signoz-purge` **then** the reset. The browser suite
+  does exactly that, and `docs/DEMO_SCRIPT.md` says so.
+- A long-running API or worker process can outlive its own `dist`. Both had to be restarted before a
+  route registered since Phase 12 appeared in `GET /api/openapi.json`.

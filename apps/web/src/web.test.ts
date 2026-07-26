@@ -45,6 +45,29 @@ async function routeFiles(): Promise<readonly string[]> {
   return found.sort();
 }
 
+/** Every `.ts` and `.tsx` module under `src`, so a boundary cannot hide outside `app/`. */
+async function sourceFiles(): Promise<readonly string[]> {
+  const found: string[] = [];
+  async function walk(directory: string): Promise<void> {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const child = path.join(directory, entry.name);
+      if (entry.isDirectory()) await walk(child);
+      else if (/\.tsx?$/.test(entry.name) && !entry.name.endsWith(".test.ts")) found.push(child);
+    }
+  }
+  await walk(path.join(WEB_ROOT, "src"));
+  return found.sort();
+}
+
+/** Modules that declare a client boundary. */
+async function clientModules(): Promise<readonly string[]> {
+  const found: string[] = [];
+  for (const file of await sourceFiles()) {
+    if ((await readFile(file, "utf8")).includes('"use client"')) found.push(file);
+  }
+  return found;
+}
+
 const PRD = await readFile(path.join(REPO_ROOT, "docs", "PRD.md"), "utf8");
 
 /* -------------------------------------------------------------------------- */
@@ -260,11 +283,87 @@ describe("prohibitions", () => {
     expect(loader).toContain('import "server-only"');
   });
 
-  it("uses no client component, so no product state reaches the browser", async () => {
-    for (const file of await routeFiles()) {
-      const source = await readFile(file, "utf8");
-      expect(source).not.toContain('"use client"');
-    }
+  /* ------------------------------------------------------------------------ */
+  /* Client boundaries                                                        */
+  /* ------------------------------------------------------------------------ */
+
+  /**
+   * Phase 12 asserted that no route file contained `"use client"`, which held while nothing on any
+   * page was interactive. Phase 13 makes the baseline form, the review actions and the YAML editor
+   * work, so three client components now exist and that assertion could only be satisfied by
+   * deleting it.
+   *
+   * These five take its place. They are strictly stronger: the old rule allowed a page to fetch
+   * from the browser through any module that was not itself a route file, and said nothing about
+   * how wide a client boundary could grow. What actually matters is that no product state and no
+   * API address reaches the browser, that pages stay server-rendered, and that a boundary stays
+   * small enough to read.
+   */
+  describe("client boundaries", () => {
+    it("puts no client component in a route file", async () => {
+      // #then every page and layout is a Server Component, so a route is never converted wholesale
+      for (const file of await routeFiles()) {
+        const source = await readFile(file, "utf8");
+        expect(source, `${path.relative(WEB_ROOT, file)} is a client component`).not.toContain(
+          '"use client"',
+        );
+      }
+    });
+
+    it("declares a client boundary only where interaction requires one", async () => {
+      // #given every `"use client"` module the application ships
+      const modules = await clientModules();
+
+      // #then each is one of the three interactions PRD Phase 13 introduces, and nothing else has
+      // been quietly moved to the browser since
+      expect(modules.map((file) => path.basename(file)).sort()).toEqual([
+        "auto-refresh.tsx",
+        "submit-button.tsx",
+        "yaml-editor.tsx",
+      ]);
+    });
+
+    it("never fetches, subscribes or reaches the API from a client component", async () => {
+      // #given PRD section 12.3 and the `server-only` API client
+      for (const file of await clientModules()) {
+        const source = (await readFile(file, "utf8")).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
+        const relative = path.relative(WEB_ROOT, file);
+        for (const forbidden of [
+          "fetch(",
+          "XMLHttpRequest",
+          "EventSource",
+          "WebSocket",
+          "@/lib/api",
+          "@/lib/load",
+          "server-only",
+          "@flightrules/db",
+          "FLIGHTRULES_API_URL",
+        ]) {
+          expect(source, `${relative} contains ${forbidden}`).not.toContain(forbidden);
+        }
+      }
+    });
+
+    it("keeps every client boundary narrow", async () => {
+      // #then a component that has grown past a readable size is a boundary that has crept
+      for (const file of await clientModules()) {
+        const lines = (await readFile(file, "utf8")).split("\n").length;
+        expect(lines, `${path.relative(WEB_ROOT, file)} is ${String(lines)} lines`).toBeLessThan(
+          160,
+        );
+      }
+    });
+
+    it("applies the design-token rule inside client components too", async () => {
+      // #then a client component cannot invent a colour, a size or a font either
+      const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-fA-F])/;
+      for (const file of await clientModules()) {
+        const source = (await readFile(file, "utf8")).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
+        expect(source).not.toMatch(HEX);
+        expect(source).not.toMatch(/\b\d+px\b/);
+        expect(source).not.toMatch(/font-family/);
+      }
+    });
   });
 });
 
@@ -356,7 +455,12 @@ describe("accessibility", () => {
     // Every control is either inside a `Field`, which renders a `<label htmlFor>` and wires
     // `aria-describedby` through the spread attributes, or carries its own `id` beside an explicit
     // `<label htmlFor>`. A control with neither is unlabelled.
-    const controls = [...source.matchAll(/<(input|select|textarea)\b[^>]*>/g)];
+    // A `type="hidden"` control carries a value the form needs and the user never sees or reaches;
+    // it is not in the accessibility tree, and labelling it would announce a field that cannot be
+    // focused. Every other control must be labelled.
+    const controls = [...source.matchAll(/<(input|select|textarea)\b[^>]*>/g)].filter(
+      (control) => !/type="hidden"/.test(control[0]),
+    );
     expect(controls.length).toBeGreaterThan(5);
     for (const control of controls) {
       const markup = control[0];
