@@ -65,21 +65,41 @@ step "Ensuring the first organisation and root user exist"
 if [ "${setup_completed}" = "True" ] || [ "${setup_completed}" = "true" ]; then
   echo "Setup already completed; reusing the existing organisation."
 else
-  register_body="$(curl -sf --max-time 30 -X POST "${SIGNOZ_URL}/api/v1/register" \
-    -H 'Content-Type: application/json' \
-    -d "$(python3 -c 'import json,os
+  register_payload="$(python3 -c 'import json,os
 print(json.dumps({
   "name": os.environ["ADMIN_NAME"],
   "orgId": "",
   "orgName": os.environ["ORG_NAME"],
   "email": os.environ["ADMIN_EMAIL"],
   "password": os.environ["SIGNOZ_ADMIN_PASSWORD"],
-}))')")"
-  if ! printf '%s' "${register_body}" | grep -q '"status":"success"'; then
-    echo "Registration failed:" >&2
-    printf '%s\n' "${register_body}" >&2
-    exit 4
-  fi
+}))')"
+
+  # Retried, and never with `curl -f`.
+  #
+  # `/api/v1/health` reports ok before registration is servable: on a freshly cast deployment the
+  # apiserver answers health while its metastore migration is still running, and `/api/v1/register`
+  # answers 5xx for a few seconds afterwards. A fresh-machine reproduction hit exactly that and
+  # failed with `make: *** [signoz-bootstrap] Error 22` and no further information, because
+  # `curl -sf` discards the response body on an HTTP error — so the one thing needed to diagnose it
+  # was the one thing thrown away. The body is captured and printed here instead.
+  register_body=""
+  register_status=""
+  register_deadline=$(( $(date +%s) + 120 ))
+  while :; do
+    register_response="$(curl -s --max-time 30 -w '\n%{http_code}' \
+      -X POST "${SIGNOZ_URL}/api/v1/register" \
+      -H 'Content-Type: application/json' -d "${register_payload}")"
+    register_status="${register_response##*$'\n'}"
+    register_body="${register_response%$'\n'*}"
+    if printf '%s' "${register_body}" | grep -q '"status":"success"'; then break; fi
+    if [ "$(date +%s)" -ge "${register_deadline}" ]; then
+      echo "Registration failed with HTTP ${register_status}:" >&2
+      printf '%s\n' "${register_body}" >&2
+      exit 4
+    fi
+    echo "   registration returned HTTP ${register_status}; retrying"
+    sleep 5
+  done
   echo "Created the root user and organisation."
 fi
 
