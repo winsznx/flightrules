@@ -437,7 +437,7 @@ function aggregateEdges(
   for (const family of approved) {
     const familyRuns = (runsByFingerprint.get(family.fingerprint) ?? []).length;
     for (const edge of family.statistics.edges) {
-      const key = `${edge.fromLabel} ${edge.toLabel} ${edge.type}`;
+      const key = `${edge.fromLabel}\u0000${edge.toLabel}\u0000${edge.type}`;
       const existing = byKey.get(key);
       if (existing === undefined) {
         byKey.set(key, {
