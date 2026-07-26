@@ -4,10 +4,12 @@ name: Diagnose runner OTLP path
 # branch. Never runs on `main` or a phase branch, and is deleted once the question it asks is
 # answered. It changes nothing about the product.
 #
-# The question: the demo topology exports to `host.docker.internal:4318`, a Docker Desktop
-# convention that `compose.app.yaml` maps on Linux with `extra_hosts: host-gateway`. On a runner the
-# demo runs succeed, SigNoz is healthy, and no `refund-agent-v1` trace ever becomes queryable. This
-# asks, from inside a demo container, whether the collector is reachable at all and by what address.
+# What the last run established: on a runner the five demo services' server spans reach SigNoz and
+# the demo agent's spans never do, so the release filter matches nothing and every suite that needs
+# a run fails. The agent still returns a real trace identifier, so its tracer is alive.
+#
+# This run separates the two remaining explanations: the agent's context never reaches the services
+# (its SDK is inert) or it does and only its export fails.
 
 on:
   workflow_dispatch:
@@ -24,7 +26,7 @@ env:
 
 jobs:
   diagnose:
-    name: Can a demo container reach the collector
+    name: Why the agent's spans do not arrive
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -63,66 +65,38 @@ jobs:
           set +e
           banner() { echo; echo "############ $* ############"; echo; }
 
-          banner "HOST SIDE: WHAT IS PUBLISHED, AND WHAT ARE THE BRIDGES"
-          docker ps --format '{{.Names}}\t{{.Ports}}'
-          docker network ls
-          docker network inspect bridge --format 'bridge gateway: {{ (index .IPAM.Config 0).Gateway }}'
-          ip -4 addr show docker0 2>/dev/null | head -5
-          ss -ltnp 2>/dev/null | grep -E '4317|4318|8080|8000' || true
-
-          banner "HOST SIDE: OTLP POST FROM THE RUNNER ITSELF"
-          curl -si --max-time 15 -X POST http://localhost:4318/v1/traces \
-            -H 'Content-Type: application/json' -d '{"resourceSpans":[]}' | head -5
-
           banner "START THE DEMO TOPOLOGY"
           docker compose -f compose.app.yaml up -d --build --wait \
             policy-service order-service fraud-service payment-service notification-service demo-agent
-          echo "compose exit=$?"
-          docker compose -f compose.app.yaml ps
 
-          banner "CONTAINER SIDE: DOES host.docker.internal RESOLVE"
-          docker compose -f compose.app.yaml exec -T payment-service sh -c \
-            'cat /etc/hosts; getent hosts host.docker.internal || echo "NO RESOLUTION"'
-
-          banner "CONTAINER SIDE: OTLP POST TO host.docker.internal:4318"
-          docker compose -f compose.app.yaml exec -T payment-service node -e '
-            fetch("http://host.docker.internal:4318/v1/traces",{method:"POST",
+          banner "AGENT CONTAINER: RESOLUTION, ENVIRONMENT, AND A DIRECT OTLP POST"
+          docker compose -f compose.app.yaml exec -T demo-agent sh -c \
+            'getent hosts host.docker.internal; echo "endpoint=$OTEL_EXPORTER_OTLP_ENDPOINT"; echo "env=$DEPLOYMENT_ENVIRONMENT_NAME"'
+          docker compose -f compose.app.yaml exec -T demo-agent node -e '
+            fetch(`${process.env.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/traces`,{method:"POST",
               headers:{"content-type":"application/json"},body:"{\"resourceSpans\":[]}"})
-              .then(r=>console.log("status",r.status))
-              .catch(e=>console.log("ERROR",e.name,e.message,e.cause&&e.cause.code));'
+              .then(r=>console.log("agent OTLP post status",r.status))
+              .catch(e=>console.log("agent OTLP post ERROR",e.name,e.message,e.cause&&e.cause.code));'
 
-          GW="$(docker network inspect bridge --format '{{ (index .IPAM.Config 0).Gateway }}')"
-          banner "CONTAINER SIDE: OTLP POST TO THE BRIDGE GATEWAY $GW"
-          docker compose -f compose.app.yaml exec -T payment-service node -e '
-            const gw=process.env.GW;
-            fetch(`http://${gw}:4318/v1/traces`,{method:"POST",
-              headers:{"content-type":"application/json"},body:"{\"resourceSpans\":[]}"})
-              .then(r=>console.log("status",r.status))
-              .catch(e=>console.log("ERROR",e.name,e.message,e.cause&&e.cause.code));' \
-            2>&1 || true
-          docker compose -f compose.app.yaml exec -T -e GW="$GW" payment-service node -e '
-            const gw=process.env.GW;
-            fetch(`http://${gw}:4318/v1/traces`,{method:"POST",
-              headers:{"content-type":"application/json"},body:"{\"resourceSpans\":[]}"})
-              .then(r=>console.log("status",r.status))
-              .catch(e=>console.log("ERROR",e.name,e.message,e.cause&&e.cause.code));'
-
-          banner "WHAT ENDPOINT DID THE SERVICE ACTUALLY GET"
-          docker compose -f compose.app.yaml exec -T payment-service sh -c \
-            'echo "OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_EXPORTER_OTLP_ENDPOINT"'
-
-          banner "RUN ONE DEMO REQUEST AND READ THE SERVICE LOGS"
+          banner "ONE RUN, AND THE TRACE ID IT CLAIMS"
           set -a; . ./.env; set +a
-          DEMO_RUNS=1 bash scripts/run-demo-v1.sh
-          sleep 20
-          docker compose -f compose.app.yaml logs --tail 40 demo-agent payment-service
+          RUN_JSON="$(curl -sf --max-time 60 -X POST http://localhost:4100/agent/refund \
+            -H 'Content-Type: application/json' \
+            -d '{"releaseId":"refund-agent-v1","orderId":"ord-98271"}')"
+          TRACE_ID="$(printf '%s' "$RUN_JSON" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).traceId')"
+          echo "agent reported traceId=$TRACE_ID"
 
-          banner "IS IT QUERYABLE"
-          node scripts/wait-for-demo-traces.mjs refund-agent-v1
-          echo "probe exit=$?"
+          banner "AGENT LOGS SINCE START"
+          docker compose -f compose.app.yaml logs --no-log-prefix demo-agent | tail -60
 
-          banner "COLLECTOR LOGS"
-          docker logs --tail 60 "$(docker ps --filter name=ingester --format '{{.Names}}' | head -1)" 2>&1 | tail -60
+          banner "WAIT, THEN ASK SIGNOZ WHAT IT HOLDS"
+          sleep 60
+          node scripts/probe-spans.mjs
+          echo "query exit=$?"
+
+          banner "COLLECTOR LOGS, FILTERED FOR REFUSALS"
+          docker logs "$(docker ps --filter name=ingester --format '{{.Names}}' | head -1)" 2>&1 \
+            | grep -iE "error|refus|drop|reject|permanent|queue" | tail -40
 
           banner "TEAR DOWN"
           docker compose -f compose.app.yaml down -v || true
