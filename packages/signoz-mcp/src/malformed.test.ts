@@ -145,11 +145,12 @@ describe("pagination that does not terminate", () => {
 
   it("preserves duplicated rows rather than silently collapsing them", () => {
     const duplicated = page("", 1);
-    const rows = duplicated.data.data.results[0]?.rows ?? [];
-    duplicated.data.data.results[0]!.rows = [...rows, ...rows];
-    const result = normalise({ content: [text(JSON.stringify(duplicated))] });
-    expect(result.outcome).toBe("SUCCESS_WITH_ROWS");
-    if (result.outcome === "SUCCESS_WITH_ROWS") expect(rowsOf(result.value)).toHaveLength(2);
+    const result = duplicated.data.data.results[0];
+    if (result === undefined) throw new Error("the fixture must produce one result");
+    result.rows = [...result.rows, ...result.rows];
+    const outcome = normalise({ content: [text(JSON.stringify(duplicated))] });
+    expect(outcome.outcome).toBe("SUCCESS_WITH_ROWS");
+    if (outcome.outcome === "SUCCESS_WITH_ROWS") expect(rowsOf(outcome.value)).toHaveLength(2);
   });
 });
 
