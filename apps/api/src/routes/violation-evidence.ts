@@ -1,6 +1,6 @@
 import { findAgent, findProject, findViolation } from "@flightrules/db";
 import { FlightRulesError } from "@flightrules/domain";
-import { METRIC_NAMES } from "@flightrules/telemetry";
+import { METRIC_NAMES, QUERYABLE_IDENTITY_DIMENSIONS } from "@flightrules/telemetry";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { AppContext } from "../context.js";
@@ -178,7 +178,7 @@ export function registerViolationEvidenceRoutes(
             ...base,
             state: "empty" as const,
             detail:
-              "SigNoz holds no log correlated to this trace. FlightRules writes structured logs to stdout; exporting them over OTLP is not yet enabled, so an empty result here is expected rather than surprising.",
+              "SigNoz holds no log correlated to this trace. The services in a run export their logs over OTLP, so an empty result usually means the run predates that export or its logs have aged out of retention.",
             logs: [],
           };
         }
@@ -258,12 +258,13 @@ export function registerViolationEvidenceRoutes(
         };
       }
 
-      // Grouped by the FlightRules dimensions rather than filtered on them. SL-062 records why: the
-      // series this deployment holds carry those dimension names with **empty values**, so a filter
-      // on them matches nothing while the underlying data is real. Grouping returns the data and
-      // makes the missing scope visible in the labels, which is the honest presentation of a metric
-      // FlightRules cannot currently narrow to one agent.
-      const groupBy = ["flight_rules.project.id", "flight_rules.agent.id"];
+      // The dimension names come from the same declaration the instruments emit, so the querying
+      // side and the emitting side cannot drift apart again. Before Phase 16 they had: the
+      // instruments carried `project.slug` and `agent.key` while this route grouped by
+      // `flight_rules.*`, and SigNoz answered with the requested labels carrying empty values —
+      // real data that read as unscoped. `metricDimensionDisagreement` now fails a build in which
+      // an instrument stops carrying one of these.
+      const groupBy = [...QUERYABLE_IDENTITY_DIMENSIONS];
 
       const gateway = context.gateway();
       try {
@@ -300,7 +301,7 @@ export function registerViolationEvidenceRoutes(
           state: "ok" as const,
           detail: scoped
             ? null
-            : "This series is not narrowed to this agent: the metric carries the FlightRules project and agent dimensions with empty values in this deployment, so what is shown is the deployment-wide series for this metric.",
+            : "This series is not narrowed to this agent. The window contains no series carrying this agent's identifier, so what is shown is every series SigNoz holds for this metric.",
           series: [
             {
               metric: metric.name,

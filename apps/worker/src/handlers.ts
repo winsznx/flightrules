@@ -210,8 +210,12 @@ function baselineMiningHandler(dependencies: HandlerDependencies): JobHandler {
     if (!mined.ok) {
       const first = mined.errors[0];
       dependencies.metrics?.recordTraceFetchFailure(
-        input.projectKey,
-        input.agentKey,
+        {
+          projectId: input.projectId,
+          agentId: input.agentId,
+          projectSlug: input.projectKey,
+          agentKey: input.agentKey,
+        },
         first?.code ?? "unknown",
       );
       throw new TerminalJobError(
@@ -614,12 +618,6 @@ function evaluationHandler(dependencies: HandlerDependencies): JobHandler {
       };
     }
 
-    const dimensions = {
-      projectSlug: input.projectKey,
-      agentKey: input.agentKey,
-      releaseKey: input.releaseKey,
-      scope: input.scope,
-    };
     // Computed once for the whole release: which rules pin themselves to a side-effecting step.
     const sideEffectingRules = sideEffectingRuleIds(parsed.value.contract);
 
@@ -631,6 +629,19 @@ function evaluationHandler(dependencies: HandlerDependencies): JobHandler {
         environment: input.environment,
         observedAt: new Date(input.endMs),
       });
+
+      // Built here rather than above, because the release identifier only exists once the release
+      // has been observed — and it is the identifier, not the key, that the API and the saved
+      // views select on.
+      const dimensions = {
+        projectId: input.projectId,
+        agentId: input.agentId,
+        projectSlug: input.projectKey,
+        agentKey: input.agentKey,
+        releaseId: release.id,
+        releaseKey: input.releaseKey,
+        scope: input.scope,
+      };
 
       let violations = 0;
       let zeroTolerance = 0;
@@ -895,8 +906,12 @@ function signozSyncHandler(dependencies: HandlerDependencies): JobHandler {
 
       for (const outcome of result.outcomes) {
         dependencies.metrics?.recordArtifactSync(
-          input.projectSlug,
-          input.agentKey,
+          {
+            projectId: input.projectId,
+            agentId: input.agentId,
+            projectSlug: input.projectSlug,
+            agentKey: input.agentKey,
+          },
           outcome.artifactType,
           outcome.operation,
         );
