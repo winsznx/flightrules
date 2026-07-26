@@ -16,6 +16,7 @@
  */
 import {
   buildTraceQuery,
+  rowsOf,
   SigNozMcpClient,
   SigNozOperations,
   StreamableToolCaller,
@@ -66,6 +67,49 @@ async function isQueryable(releaseId) {
   return found.outcome === "SUCCESS_WITH_ROWS";
 }
 
+/**
+ * What SigNoz holds for the window, with no filter at all.
+ *
+ * "The release never became queryable" has two very different causes, and the retry loop alone
+ * cannot tell them apart: nothing was ingested, or something was ingested that the filter does not
+ * match. This answers that question in the same run rather than in the next one.
+ */
+async function describeWindow() {
+  const endMs = Date.now();
+  const found = await operations.executeBuilderQuery(
+    buildTraceQuery({
+      filter: "",
+      selectFields: [
+        { name: "service.name", context: "resource" },
+        { name: "name", context: "span" },
+        { name: "agent.release.id", context: "tag" },
+      ],
+      startMs: endMs - 6 * 60 * 60 * 1000,
+      endMs,
+      limit: 200,
+      orderDirection: "desc",
+    }),
+    { searchContext: CONTEXT },
+  );
+  if (found.outcome !== "SUCCESS_WITH_ROWS")
+    return `no spans at all in the window (${found.outcome})`;
+  const rows = rowsOf(found.value);
+  const services = new Set();
+  const spanNames = new Set();
+  const releaseIds = new Set();
+  for (const row of rows) {
+    services.add(String(row.data["service.name"] ?? "?"));
+    spanNames.add(String(row.data["name"] ?? "?"));
+    releaseIds.add(String(row.data["agent.release.id"] ?? "(unset)"));
+  }
+  return [
+    `${rows.length} span(s) in the window`,
+    `  services:     ${[...services].sort().join(", ")}`,
+    `  span names:   ${[...spanNames].sort().slice(0, 12).join(", ")}`,
+    `  release ids:  ${[...releaseIds].sort().join(", ")}`,
+  ].join("\n");
+}
+
 let failed = false;
 for (const releaseId of releases) {
   let queryable = false;
@@ -81,9 +125,9 @@ for (const releaseId of releases) {
     }
   }
   if (!queryable) {
+    console.error(`${releaseId} never became queryable after ${ATTEMPTS} attempts.`);
     console.error(
-      `${releaseId} never became queryable after ${ATTEMPTS} attempts. ` +
-        "The telemetry was not emitted, or ingestion is broken.",
+      await describeWindow().catch((error) => `the window query also failed: ${error}`),
     );
     failed = true;
   }
