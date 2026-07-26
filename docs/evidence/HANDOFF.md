@@ -1,5 +1,13 @@
 # FlightRules handoff — Phase 16 in progress
 
+> **Superseded.** Phase 16 completed and merged at `9f221e6`; Phase 17 completed and is recorded in
+> [phase-17-result.md](phase-17-result.md), [phase-17/actions.md](phase-17/actions.md) and
+> [phase-17/railway.md](phase-17/railway.md). This document is kept as the record of what was known
+> mid-phase, including the three limitations Phase 17 then closed: the workflow had never run on
+> GitHub (it now passes), there was no public deployment (there is now), and `gh` lacked the
+> `workflow` scope (the push credential had it).
+
+
 Written 2026-07-26. **Phase 16 is not complete.** `phase/16-hardening` is green and committed;
 eight of the sixteen Phase 16 tasks are done with runtime evidence, and eight remain. Nothing has
 been merged to `main`, and Phase 17 has not started — correctly, because Phase 17 may not begin

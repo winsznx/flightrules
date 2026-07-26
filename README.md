@@ -3,7 +3,7 @@
 **Agents change their route without changing their answer. FlightRules catches the route.**
 
 FlightRules turns SigNoz traces into deterministic release contracts that catch skipped checks,
-duplicate side effects, unknown tool paths, and behavioural drift before an agent canary reaches
+duplicate side effects, unknown tool paths and behavioural drift before an AI-agent canary reaches
 production.
 
 ---
@@ -30,84 +30,178 @@ refund.request                         refund.request
 ```
 
 The policy retrieval is gone. The fraud check is gone. The payment write happened twice after a
-timeout and retry, and the payment service's idempotency ledger recorded both. The customer-facing
+timeout and a retry, and the payment service's idempotency ledger recorded both. The customer-facing
 answer is identical.
 
 FlightRules reads the real distributed traces out of SigNoz, reconstructs both execution graphs,
 compares them against a contract mined from approved runs, and fails the release with the exact
-traces that prove it.
+traces that prove it — `flightrules gate check` exits `2`.
 
 ---
 
-## Status
+## Why SigNoz is load-bearing
 
-This repository is under phase-gated construction. Completed phases are recorded in
-[CHANGELOG.md](CHANGELOG.md), with per-phase evidence in [docs/evidence/](docs/evidence/).
+Remove SigNoz and there is no product.
 
-| Phase | Name | Status |
-|---|---|---|
-| 00 | Source lock and feasibility proof | PASS |
-| 01 | Repository foundation and CI | PASS |
-| 02–17 | See [docs/PRD.md](docs/PRD.md) section 21 | In progress |
+- **It is the evidence store.** Every graph FlightRules reconstructs comes from spans SigNoz
+  ingested.
+- **It is the only supported path to custom span attributes.** `signoz_get_trace_details` cannot
+  return them (SL-020); `signoz_execute_builder_query` with `selectFields` using
+  `fieldContext: "tag"` can (SL-021). Every contract rule that reads an attribute depends on it.
+- **It is the control surface.** FlightRules compiles the active contract into ten managed SigNoz
+  resources — one notification channel, four saved views, one dashboard, four alert rules — through
+  the SigNoz MCP Server, and reads every one of them back by identifier before recording it as
+  synced.
+- **It is where FlightRules' own telemetry goes.** Evaluation spans, `flight_rules.*` metrics and
+  logs correlated to the trace that produced them.
 
-Complete setup, demo and test instructions land in Phase 17. What follows is what works today.
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) has the full picture.
+
+## Architecture
+
+```text
+ Instrumented agent and five demo services
+        │  OTLP traces, metrics and logs
+        ▼
+ SigNoz — deployed by Foundry from the committed casting.yaml
+        │  SigNoz MCP Server (HTTP :8000)
+        ▼
+ FlightRules MCP client ──► trace discovery, complete trace retrieval, field discovery,
+        │                    dashboard / view / alert creation, read-back verification
+        ▼
+ graph engine → baseline miner → contract engine → artifact compiler
+        │
+        ├──► API + worker + PostgreSQL, and OTLP telemetry back into SigNoz
+        ├──► web application: baseline capture, Contract Studio, Release Diff, Violation Inspector
+        └──► CLI: `flightrules gate check` → the exit code CI reads
+```
 
 ---
+
+## Try it without installing anything
+
+The product is deployed, with a publicly reachable SigNoz behind it. Nothing in it runs on a
+developer machine.
+
+| Surface | URL |
+|---|---|
+| **Web application** | https://flightrules-web-production.up.railway.app |
+| API | https://flightrules-api-production.up.railway.app |
+| SigNoz | https://signoz-signoz-production-f19a.up.railway.app |
+| SigNoz MCP Server | https://flightrules-signoz-mcp-production.up.railway.app/mcp |
+| OTLP ingestion | https://signoz-ingester-production-a417.up.railway.app |
+| Demo agent | https://flightrules-demo-agent-production.up.railway.app |
+
+The hosted deployment holds a real seeded demo: a baseline mined from 26 live runs, an active
+contract, ten SigNoz artefacts read back as `synced: 10, conflict: 0`, an approved release that
+passes and a canary that fails with 80 violations and 8 duplicate refunds. The gate against it:
+
+```bash
+FLIGHTRULES_API_URL=https://flightrules-api-production.up.railway.app \
+  node apps/cli/dist/index.js gate check \
+    --project demo-commerce --agent refund-agent --release refund-agent-v1   # exit 0
+
+FLIGHTRULES_API_URL=https://flightrules-api-production.up.railway.app \
+  node apps/cli/dist/index.js gate check \
+    --project demo-commerce --agent refund-agent --release refund-agent-v2   # exit 2
+```
+
+Every step of that sequence, with its output, is in
+[docs/evidence/phase-17/railway.md](docs/evidence/phase-17/railway.md). The local path below remains
+the reproducible one, and is what the SigNoz deployment is pinned for.
 
 ## Prerequisites
 
-Verified on macOS 27.0 (`arm64`). Versions are pinned; `make verify-env` checks them.
+Verified on macOS 27.0 (`arm64`). `make verify-env` checks all of them.
 
 | Tool | Version |
 |---|---|
 | Node.js | 24.14.1 (see `.nvmrc`) |
 | pnpm | 10.33.0 |
-| Docker Engine | 29.6.1 with the Compose plugin |
-| foundryctl | v0.2.16 (required from Phase 02) |
+| Docker Engine | 29.6.1, with the Compose plugin |
+| foundryctl | v0.2.16 |
 
 ```bash
 curl -fsSL https://signoz.io/foundry.sh | FOUNDRY_VERSION=v0.2.16 bash
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
-## Getting started
+## From a fresh clone to a failing release
+
+Every command below was run, in this order, from a clone with no `.env`, no database and no Docker
+volume. `scripts/verify-fresh-machine.sh` is the executable form of this section, and
+`docs/evidence/phase-16/fresh-machine.txt` is the transcript.
 
 ```bash
-make verify-env          # check the toolchain matches the pinned versions
-make install             # install from the committed lockfile
-cp .env.example .env     # then set SIGNOZ_API_KEY once Phase 02 bootstrap mints it
-make up                  # start the FlightRules PostgreSQL service
-make db-migrate          # apply database migrations
-make verify              # format, lint, typecheck, test, build, secret and licence scans
+git clone <this repository> flightrules && cd flightrules
+
+# 1. toolchain and dependencies
+make verify-env
+make install
+
+# 2. environment
+cp .env.example .env
+
+# 3. SigNoz, deployed by Foundry from the committed casting.yaml
+make signoz-up
+
+# 4. first user, and the API key FlightRules uses
+#    The Aa1! suffix is required: SigNoz enforces at least 12 characters with an uppercase
+#    letter, a lowercase letter, a digit and a symbol, and states the policy only when it rejects.
+export SIGNOZ_ADMIN_PASSWORD="$(openssl rand -base64 18)Aa1!"
+make signoz-bootstrap          # writes SIGNOZ_API_KEY into .env, mode 600, git-ignored
+make signoz-verify             # every SigNoz surface, including a real authenticated tool call
+
+# 5. database
+make up
+make db-migrate
+
+# 6. build, then start the three processes, each in its own terminal
+make build
+make api
+make worker
+make web
+
+# 7. the demo topology: the agent and five services
+make demo-up
+
+# 8. the whole story in one command
+make demo-full
 ```
 
-## Commands
+`make demo-full` emits 25 known-good runs, mines a baseline from them, proposes and activates a
+contract, compiles and verifies ten SigNoz artefacts, evaluates the approved release, runs the
+unsafe canary, evaluates it, and prints:
 
-| Command | What it does |
-|---|---|
-| `make verify-env` | Verify Node, pnpm, Docker, Git and foundryctl versions |
-| `make install` | `pnpm install --frozen-lockfile` |
-| `make lint` / `make format-check` | Biome lint and formatting |
-| `make typecheck` | Strict TypeScript build of every package |
-| `make test` | Unit and property tests, no external services required |
-| `make test-integration` | Integration tests, requires `make up` and a running SigNoz stack |
-| `make build` | Build every package |
-| `make up` / `make down` | Start and stop the FlightRules PostgreSQL service |
-| `make db-migrate` / `make db-rollback` / `make db-status` | Database migrations |
-| `make scan-secrets` / `make scan-licences` / `make scan-deps` | Security and licence gates |
-| `make verify` | The complete validation suite |
-| `make api` / `make worker` | Run the API and the job worker |
-| `make demo-seed` | Empty database to an active contract and synced SigNoz artefacts, through the API |
-| `make demo-full` | The whole demo: telemetry, contract, artefacts, a passing gate and a failing one |
-| `make gate` / `make gate-json` | Read the release-gate decision and exit with its code |
-| `make evidence` | Export the replayable decision document |
+```text
+  approved release refund-agent-v1      exit 0
+  unsafe canary    refund-agent-v2      exit 2
+```
+
+Open http://localhost:3000. `make demo-urls` prints the exact URL of every page worth looking at,
+including the three critical violations.
+
+### If something goes wrong
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| OTLP returns `000` rather than `200` | SigNoz first-user setup has not completed; the receivers do not bind before it | `make signoz-bootstrap`. Never use a TCP port check as a readiness signal — it passes in exactly the broken state |
+| `password must be at least 12 characters…` | The bootstrap password does not meet SigNoz's policy | Use the command in step 4 verbatim |
+| `the baseline produced no route family` | The telemetry has not become queryable yet | The seed already retries for a minute. If it persists, check `make demo-up` and `make signoz-verify` |
+| Every page says "FlightRules could not reach its API" | The API is not running | `make api`. The web application never falls back to stale data |
+
+[docs/RUNBOOK.md](docs/RUNBOOK.md) has the complete list, including the traps that cost an hour each.
+
+---
 
 ## The release gate
 
 ```bash
-make demo-full     # emits telemetry, mines a contract, and asserts exit 0 then exit 2
+make gate                       # exit 0 for the approved release
+RELEASE=refund-agent-v2 make gate   # exit 2 for the canary
+make gate-json                  # the same decision as one machine-readable document
+make evidence                   # the replayable decision bundle
 ```
-
-`flightrules gate check` returns the decision and the process exit code:
 
 | Code | Meaning |
 |---|---|
@@ -120,63 +214,95 @@ make demo-full     # emits telemetry, mines a contract, and asserts exit 0 then 
 
 The decision is computed from persisted evidence by a pure function. No model is involved, the same
 evidence always produces the same `decisionHash`, and a restarted API returns the identical answer.
-`.github/workflows/release-gate.yml` runs the same commands and asserts exit code `2` on the canary.
+`.github/workflows/release-gate.yml` runs the same commands on a runner and asserts exit code `2` on
+the canary.
 
-Full operating detail, including every CLI flag and the failure traps, is in
-[`docs/RUNBOOK.md`](docs/RUNBOOK.md) section 12.
+## Tests
 
-## Architecture
-
-```text
-Instrumented agent and demo services
-        |  OTLP traces, metrics, logs
-        v
-SigNoz OTel ingestion, deployed by Foundry from casting.yaml
-        |
-        |  SigNoz MCP Server (HTTP, port 8000)
-        v
-FlightRules SigNoz MCP client
-        +--> trace discovery and complete trace retrieval
-        +--> field discovery
-        +--> dashboard, saved view and alert creation
-        +--> resource read-back verification
-        |
-        v
-FlightRules API and worker
-        +--> graph engine, baseline miner, contract compiler
-        +--> deterministic evaluator, release gate
-        +--> application PostgreSQL
-        +--> OTLP evaluation telemetry back to SigNoz
-        |
-        v
-FlightRules web application and CLI / CI release gate
+```bash
+make verify              # format, lint, typecheck, unit tests, build, contracts, design, scans
+make test                # 1,416 unit and property tests
+make test-integration    # 286 tests against real PostgreSQL and a real SigNoz deployment
+make test-e2e            # 89 browser tests against the built product, at three viewports
+make verify-telemetry    # exported logs correlate, and metric dimensions are queryable
+make verify-alerts       # every managed alert's configuration, firing and recovery
+make verify-fresh-machine  # this README, executed, in a clone outside the working tree
 ```
 
-Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (Phase 17).
+Two facts about the suites, both consequences of talking to real services rather than mocks:
 
-## How SigNoz is used
+1. **Stop the worker before `make test-integration`** — it competes with the runner tests.
+2. **The integration suites drop the schema, and `make test-e2e` resets the demo.** Run
+   `make demo-full` afterwards.
 
-SigNoz is not a screenshot at the end of this product. It is the operational substrate.
+## Worker lifecycle
 
-- It stores the distributed trace evidence used to reconstruct execution routes.
-- Query Builder v5 through `signoz_execute_builder_query` is how FlightRules retrieves complete
-  span trees **including custom attributes** — the only officially supported path that returns
-  them (see [ADR-0003](docs/adr/0003-signoz-access-boundary.md)).
-- The MCP Server is the programmatic control surface for trace queries, dashboards, saved views
-  and alerts. Every write is followed by a read-back that compares the stored resource against
-  the intended specification.
-- FlightRules emits its own evaluation telemetry back into SigNoz over OTLP.
-- Remove SigNoz and baseline capture, evidence retrieval, artifact compilation, alerting and the
-  final proof all stop working.
+The worker's idle poll timer is deliberately **not** `unref`ed. It was once, and the consequence was
+a worker that exited silently the moment `postgres.js` closed its idle connections — after logging
+nothing but successes, while every job submitted afterwards sat `queued` with nothing to claim it.
+The lease heartbeat and the shutdown timeout *are* `unref`ed, correctly, because something else is
+keeping the process alive while they run.
 
-## Privacy model
+Two tests guard it: one drives the real loop across an idle period and then submits work, and one
+asserts the absence of `unref` in the source directly — because the behavioural test alone would
+pass if something unrelated happened to be holding the event loop open, which is exactly how the
+original defect survived.
 
-FlightRules evaluates observable execution structure and safe metadata. By default it does not
-record prompts, model output, tool call arguments, tool results, or chain-of-thought — and the
-demo proves trajectory enforcement works without them. Raw idempotency keys are never emitted;
-only a salted one-way hash is. The complete register of every attribute, with its stability,
-cardinality risk and privacy classification, is in
+`GET /health/dependencies` reports queue depth, so a worker that has stopped claiming is visible.
+
+## Privacy
+
+FlightRules evaluates observable execution structure and safe metadata. By default it records no
+prompt, no model output, no tool call arguments, no tool results and no chain-of-thought — and the
+demo proves trajectory enforcement works without any of them. The forbidden-key redactor *removes*
+those attributes rather than replacing them with a marker, because a marker would still record that
+the product collected one. Raw idempotency keys are never emitted; only a salted one-way hash is.
+
+Every attribute, with its stability, cardinality risk and privacy classification, is registered in
 [docs/research/otel-attributes.md](docs/research/otel-attributes.md).
+
+## Security
+
+[SECURITY.md](SECURITY.md) and [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) — 33 threats, each with
+an asset, an attack path, the control, the residual risk and the verification. Five scanners run in
+`make verify` and in CI.
+
+## Known limitations
+
+Stated plainly, because a limitation that is disclosed is a limitation a reviewer can weigh.
+
+1. **No authentication.** P0 is scoped to a single-tenant local deployment (PRD section 6.1).
+   Anyone who can reach the API can read and change everything. `T08`.
+2. **Token and retry regression are disclosed rather than measured.** The demo agent makes no model
+   call, so there is no token baseline to regress against. The gate says so rather than reporting a
+   zero.
+3. **The Phase 13 browser workflow is validated at one viewport.** The read-only suites run at
+   three; the destructive workflow runs at desktop only, by design.
+4. **`Open in SigNoz` opens the trace view, not a release-filtered view.** No verified URL shape
+   exists for the latter in the pinned version.
+5. **The API's own structured logs reach SigNoz without a trace identifier.** ESM import order
+   defeats the HTTP instrumentation. It does not affect the Violation Inspector, which correlates on
+   the demo services' traces.
+6. **Browser coverage is Chromium only.** PRD section 20.4 names three engines.
+7. **No container-image vulnerability scan.** No scanner is pinned by this repository; the images
+   are unmodified upstream releases pinned by tag.
+8. **Notification delivery is unverified.** The managed channel points at a local webhook nothing
+   listens on, and SigNoz's own test-notification failure is recorded honestly in the register.
+9. **An alert created moments before a metric spike does not fire on that spike.** Scheduling, not a
+   defect; recorded in `docs/evidence/phase-16/alert-lifecycle.md`.
+10. **The hosted SigNoz core is not version-pinned by this repository.** Railway has no bind mounts,
+    no shared volumes and no init containers, and the Foundry casting needs all three, so the hosted
+    core comes from SigNoz's own Railway template while the **MCP server is deployed at the pinned
+    `v0.9.0`**. The pinned, reproducible deployment is the local Foundry one — `make signoz-up`,
+    proven by `make signoz-reproducibility`. Reasoning in
+    [docs/evidence/phase-17/railway.md](docs/evidence/phase-17/railway.md).
+11. **The hosted SigNoz user interface needs credentials, which are not published.** No credential
+    belongs in a public repository. Everything SigNoz-derived that the product itself shows — the
+    graph diff, the violations, the correlated logs, the artefact register — is visible in the hosted
+    web application without signing in to SigNoz.
+12. **The hosted demo services are publicly reachable and unauthenticated,** like the hosted API
+    itself (limitation 1). They hold no data but the demo's own ledger, which `POST /payments/reset`
+    clears.
 
 ## Repository structure
 
@@ -186,40 +312,42 @@ packages/                 config, db, domain, telemetry, signoz-mcp, trace-graph
                           normaliser, contract-schema, contract-engine, baseline-miner,
                           artifact-compiler, test-fixtures, ui
 contracts/                version-controlled trajectory contracts
-docs/                     PRD, ADRs, research, evidence, runbook, threat model
+docs/                     PRD, architecture, ADRs, research, evidence, runbook, threat model
 scripts/                  bootstrap, verification, demo and reproducibility scripts
-casting.yaml              SigNoz deployment, deployed by Foundry
+casting.yaml              the SigNoz deployment, deployed by Foundry
 compose.app.yaml          FlightRules application services
 ```
-
-Packages appear in the phase that gives them real behaviour; the operating contract forbids
-placeholder implementations.
 
 ## Documentation
 
 | Document | Contents |
 |---|---|
 | [docs/PRD.md](docs/PRD.md) | Authoritative product specification |
-| [CLAUDE.md](CLAUDE.md) | Operating contract and the runtime facts that bite |
-| [docs/research/source-lock.md](docs/research/source-lock.md) | Every external technical claim, its source and its runtime confirmation |
-| [docs/research/compatibility-matrix.md](docs/research/compatibility-matrix.md) | Pinned versions, MCP tool surface, licences, known incompatibilities |
-| [docs/research/otel-attributes.md](docs/research/otel-attributes.md) | Telemetry attribute register |
-| [docs/adr/](docs/adr/) | Architecture decision records |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How it works, package by package, and why |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Operating procedures and every trap worth knowing |
+| [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) | The demo, timed, with expected markers |
+| [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) | 33 threats with controls and verification |
+| [docs/research/source-lock.md](docs/research/source-lock.md) | Every external technical claim, its source, and whether the runtime confirmed it |
+| [docs/research/compatibility-matrix.md](docs/research/compatibility-matrix.md) | Pinned versions, MCP tool surface, licences, incompatibilities |
+| [docs/ACCEPTANCE_MATRIX.md](docs/ACCEPTANCE_MATRIX.md) | Requirement → implementation → test → evidence |
 | [docs/evidence/](docs/evidence/) | Per-phase plans and results |
-| [docs/ACCEPTANCE_MATRIX.md](docs/ACCEPTANCE_MATRIX.md) | Requirement to implementation to test to evidence |
+| [CHANGELOG.md](CHANGELOG.md) | One section per phase |
 
 ## AI assistant disclosure
 
-This repository was built with Claude Code under the phase-gated operating contract in
-[CLAUDE.md](CLAUDE.md). Every external technical claim is recorded in the source lock with its
-source and whether it was confirmed against the installed runtime.
+This repository was built with Claude Code, under the phase-gated operating contract in
+[CLAUDE.md](CLAUDE.md). Every external technical claim is recorded in
+[docs/research/source-lock.md](docs/research/source-lock.md) with its source and whether it was
+confirmed against the installed runtime rather than recalled. Where documentation and runtime
+behaviour disagreed, the runtime won and the mismatch was written down — sixty-six such entries,
+several of which are defects in the pinned dependencies rather than in this product.
 
-## Licences
+## Licence
 
-FlightRules is Apache-2.0.
+Apache-2.0 — see [LICENSE](LICENSE).
 
-FlightRules **deploys** SigNoz (MIT Expat, with `ee/` under the SigNoz Enterprise License),
-SigNoz Foundry (AGPL-3.0), the SigNoz OTel Collector (AGPL-3.0) and the SigNoz MCP Server
-(Apache-2.0) as unmodified upstream containers, communicating over documented network interfaces.
-No AGPL code is copied into, linked with, or redistributed as part of this repository. Full
-detail is in the [compatibility matrix](docs/research/compatibility-matrix.md).
+FlightRules **deploys** SigNoz (MIT Expat, with `ee/` under the SigNoz Enterprise Licence), SigNoz
+Foundry (AGPL-3.0), the SigNoz OTel Collector (AGPL-3.0) and the SigNoz MCP Server (Apache-2.0) as
+unmodified upstream containers communicating over documented network interfaces. No AGPL code is
+copied into, linked with, or redistributed as part of this repository. Full detail in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

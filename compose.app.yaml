@@ -199,6 +199,15 @@ services:
       - "4100:4100"
     networks:
       - flightrules-network
+    # The agent is the process that emits the root `refund.request` span and every
+    # `agent.release.id` attribute the contract is keyed on, and it was the one service in this file
+    # without this mapping. Docker Desktop supplies `host.docker.internal` on macOS whether or not it
+    # is declared, so the omission was invisible for sixteen phases. On Linux it is not supplied:
+    # resolution failed with ENOTFOUND, the agent exported nothing, and the five services' server
+    # spans arrived as parentless roots carrying no release identifier — so every query for a run
+    # returned empty and every suite that needs one failed without naming a cause.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       policy-service: { condition: service_healthy }
       order-service: { condition: service_healthy }

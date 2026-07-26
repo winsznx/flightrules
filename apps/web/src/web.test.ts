@@ -1,4 +1,5 @@
 import { readdir, readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -395,6 +396,71 @@ describe("prohibitions", () => {
         expect(source).not.toMatch(/font-family/);
       }
     });
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* The TypeScript installation Next.js can actually see                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `next build` verifies its TypeScript setup before it emits anything, and that step is not this
+ * project's type check. It is a filesystem probe for `typescript/lib/typescript.js` — a file
+ * TypeScript 7 no longer ships, because the compiler moved to a native binary (SL-067).
+ *
+ * When the probe fails, Next installs `typescript` again on every local build, and on a runner —
+ * where `ci-info` sees `CI` — throws instead. `next/dist/build/type-check.js` then discards that
+ * error and calls `process.exit(1)` on the assumption that a type-check worker already printed it,
+ * which is false whenever `typescript.ignoreBuildErrors` is set, because no worker is spawned. The
+ * observable result is a build that compiles successfully and exits `1` forty-seven milliseconds
+ * later having printed nothing at all.
+ *
+ * `apps/web` therefore pins the TypeScript major Next.js 16.2.11 supports, while the rest of the
+ * workspace stays on 7.0.2. These two tests exist because the failure they guard against is silent
+ * by construction: nothing else in the repository would report it, on any platform, until a runner
+ * with `CI` set ran the build.
+ */
+
+const nodeRequire = createRequire(import.meta.url);
+
+/** Copied verbatim from `next/dist/lib/verify-typescript-setup.js` at the pinned 16.2.11. */
+const NEXT_REQUIRED_PACKAGES = [
+  { file: "typescript/lib/typescript.js", pkg: "typescript", exportsRestrict: true },
+  { file: "@types/react/index.d.ts", pkg: "@types/react", exportsRestrict: true },
+  { file: "@types/node/index.d.ts", pkg: "@types/node", exportsRestrict: true },
+] as const;
+
+interface DependencyProbeResult {
+  readonly missing: readonly { readonly pkg: string }[];
+}
+
+const { hasNecessaryDependencies } = nodeRequire("next/dist/lib/has-necessary-dependencies") as {
+  hasNecessaryDependencies: (
+    baseDir: string,
+    required: typeof NEXT_REQUIRED_PACKAGES,
+  ) => DependencyProbeResult;
+};
+
+describe("the TypeScript installation next build probes for", () => {
+  it("satisfies every package Next.js resolves before it emits", () => {
+    // #given Next.js 16.2.11's own probe and its own required-package list
+    const probe = hasNecessaryDependencies(WEB_ROOT, NEXT_REQUIRED_PACKAGES);
+
+    // #then nothing is missing, so `next build` neither auto-installs nor exits without a message
+    expect(probe.missing.map((dependency) => dependency.pkg)).toEqual([]);
+  });
+
+  it("resolves the version this package pins rather than the workspace's", async () => {
+    // #given the pin `apps/web` declares
+    const declared = JSON.parse(await readFile(path.join(WEB_ROOT, "package.json"), "utf8")) as {
+      devDependencies: Record<string, string>;
+    };
+
+    // #then that is the compiler `pnpm run typecheck` and `next build` both see, not the root's 7.x
+    // reached by hoisting — which ships no `lib/typescript.js` and puts the probe back where it was
+    const resolved = nodeRequire("typescript/package.json") as { version: string };
+    expect(resolved.version).toBe(declared.devDependencies["typescript"]);
+    expect(Number.parseInt(resolved.version, 10)).toBeLessThan(7);
   });
 });
 

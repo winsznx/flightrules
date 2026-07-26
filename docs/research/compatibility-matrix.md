@@ -113,7 +113,8 @@ capability failure rather than degrading silently.
 
 | Package | Pinned | Licence | Verified how | Source lock |
 |---|---|---|---|---|
-| typescript | 7.0.2 | Apache-2.0 | strict typecheck exit 0 | SL-033 |
+| typescript (workspace) | 7.0.2 | Apache-2.0 | strict typecheck exit 0 | SL-033 |
+| typescript (`apps/web`) | 5.9.3 | Apache-2.0 | strict typecheck exit 0, and `next build` detects it | SL-067 |
 | next | 16.2.11 | MIT | App Router typecheck exit 0 | SL-033 |
 | react / react-dom | 19.2.8 | MIT | typecheck exit 0 | SL-033 |
 | fastify | 5.10.0 | MIT | registry | SL-034 |
@@ -168,3 +169,4 @@ FlightRules communicates with these services over documented network interfaces 
 | `signoz_create_view` takes flat arguments, not a nested object | Nested payload fails validation | Client spreads the specification into the tool arguments | SL-023 |
 | All `gen_ai.*` attributes are experimental | Names may change between semconv releases | Imported from the incubating entry point, marked experimental in the register, never the sole basis of a critical rule | SL-030 |
 | `vcs.commit.sha` is not a released convention | PRD name and OTel name differ | Emit both `vcs.ref.head.revision` and `vcs.commit.sha` | SL-031 |
+| Next.js 16.2.11 cannot detect TypeScript 7 | `next build` reinstalls TypeScript on every local build, and on any runner with `CI` set exits `1` having printed nothing at all | `apps/web` pins `typescript@5.9.3`; a unit test runs Next's own dependency probe so the regression cannot be silent again | SL-067 |

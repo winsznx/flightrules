@@ -45,6 +45,13 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
+      # Built on its own, first. `pnpm run -r build` multiplexes every package's output and drops a
+      # child's stderr when it exits immediately, which turned the first real CI run's web-build
+      # failure into the single word "Failed" with no diagnosis. Running this package alone keeps
+      # its stderr attached.
+      - name: Build the web application
+        run: pnpm --filter @flightrules/web run build
+
       - name: Build
         run: pnpm run build
 
@@ -65,6 +72,13 @@ jobs:
 
       - name: Install from lockfile
         run: pnpm install --frozen-lockfile
+
+      # Every workspace package resolves through its `exports`, which point at `dist/`. Nothing is
+      # built by installing, so without this the suite fails at import with
+      # `Failed to resolve entry for package "@flightrules/telemetry"`. Locally `dist/` is always
+      # warm, which is why this only appeared on the first real CI run.
+      - name: Build the workspace packages the suite imports
+        run: pnpm run build
 
       - name: Unit tests
         run: pnpm run test
@@ -106,8 +120,10 @@ jobs:
       # The migrator runs from source through `tsx` and imports `@flightrules/domain` by its package
       # entry point, which resolves to `dist/`. Nothing is built in this job, so without this the
       # migration steps fail with ERR_MODULE_NOT_FOUND. `make db-migrate` does the same locally.
-      - name: Build the migrator's project references
-        run: pnpm --filter @flightrules/db run build
+      # The whole workspace, not just the migrator: the integration suite imports packages by
+      # their `exports`, which point at `dist/`.
+      - name: Build
+        run: pnpm run build
 
       - name: Apply migrations
         run: pnpm --filter @flightrules/db run migrate
@@ -121,9 +137,33 @@ jobs:
       - name: Database integration tests
         run: pnpm run test:integration:db
 
+  # The `integration-signoz` project is not a SigNoz-only suite. Every file in it states its
+  # prerequisites in its own header: a deployed SigNoz, a migrated database, and a recent demo batch
+  # (`DEMO_RUNS=25 make demo-v1 && DEMO_RUNS=8 make demo-v2`). This job used to provide only the
+  # first, so the phase-09, phase-10 and phase-11 gates had no database and the graph, mining and
+  # evaluation suites had no traces to reconstruct — it could not have passed on any runner. The
+  # steps below give the suite the substrate it documents rather than removing the assertions that
+  # noticed it was missing.
   signoz:
     name: SigNoz deployment and MCP integration
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: flightrules
+          POSTGRES_PASSWORD: flightrules
+          POSTGRES_DB: flightrules
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U flightrules -d flightrules"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgres://flightrules:flightrules@localhost:5433/flightrules
     steps:
       - uses: actions/checkout@v5
 
@@ -138,6 +178,9 @@ jobs:
 
       - name: Install from lockfile
         run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
 
       - name: Install foundryctl
         run: |
@@ -167,6 +210,33 @@ jobs:
           set -a; . ./.env; set +a
           node scripts/snapshot-mcp-capabilities.mjs "$RUNNER_TEMP/mcp-capabilities.json"
 
+      - name: Apply migrations
+        run: pnpm --filter @flightrules/db run migrate
+
+      # The six demo services by name. `compose.app.yaml` also declares the application's own
+      # PostgreSQL on host port 5433, which this job already provides as a service container on the
+      # same port; starting the whole file fails to bind. `make demo-up` starts everything locally,
+      # where there is no service container.
+      - name: Start the demo topology
+        run: |
+          docker compose -f compose.app.yaml up -d --build --wait \
+            policy-service order-service fraud-service payment-service notification-service \
+            demo-agent
+
+      - name: Emit the telemetry the suite reconstructs
+        run: |
+          set -a; . ./.env; set +a
+          DEMO_RUNS=25 bash scripts/run-demo-v1.sh
+          DEMO_RUNS=8 bash scripts/run-demo-v2.sh
+
+      # Ingestion is asynchronous. This polls the supported retrieval path until both releases are
+      # queryable and fails if they never are, so "not queryable yet" can never be mistaken for
+      # "never emitted".
+      - name: Wait until both releases are queryable
+        run: |
+          set -a; . ./.env; set +a
+          node scripts/wait-for-demo-traces.mjs refund-agent-v1 refund-agent-v2
+
       - name: SigNoz integration tests
         run: |
           set -a; . ./.env; set +a
@@ -174,7 +244,9 @@ jobs:
 
       - name: Tear down
         if: always()
-        run: docker compose -f pours/deployment/compose.yaml -p signoz down -v
+        run: |
+          docker compose -f compose.app.yaml down -v || true
+          docker compose -f pours/deployment/compose.yaml -p signoz down -v || true
 
   security:
     name: Secret, licence and dependency scanning

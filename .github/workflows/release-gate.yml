@@ -110,8 +110,16 @@ jobs:
       - name: Apply migrations
         run: pnpm --filter @flightrules/db run migrate
 
+      # The six demo services by name, deliberately. `compose.app.yaml` also declares the
+      # application's own PostgreSQL on host port 5433, which this job already provides as a service
+      # container on the same port — starting the whole file fails with
+      # `Bind for 0.0.0.0:5433 failed: port is already allocated`, and the demo topology never
+      # starts. Locally there is no service container and `make demo-up` starts everything.
       - name: Start the demo topology
-        run: docker compose -f compose.app.yaml up -d --build --wait
+        run: |
+          docker compose -f compose.app.yaml up -d --build --wait \
+            policy-service order-service fraud-service payment-service notification-service \
+            demo-agent
 
       - name: Start the API and the worker
         run: |
@@ -139,6 +147,16 @@ jobs:
       - name: Emit known-good telemetry
         run: DEMO_RUNS=25 bash scripts/run-demo-v1.sh
 
+      # Ingestion is asynchronous: the collector batches and ClickHouse commits its parts after the
+      # agent has already answered. Every step after this one queries for runs, and a query inside
+      # that gap returns "no completed runs", which is indistinguishable from telemetry that was
+      # never emitted. This is a readiness probe on the supported retrieval path, and it fails if
+      # the release never appears — it can never turn a real absence into a pass.
+      - name: Wait until the approved release is queryable
+        run: |
+          set -a; . ./.env; set +a
+          node scripts/wait-for-demo-traces.mjs "$BASELINE_RELEASE"
+
       - name: Seed the project, baseline, contract and SigNoz artefacts
         run: bash scripts/seed-demo.sh
 
@@ -157,6 +175,14 @@ jobs:
 
       - name: Emit the unsafe canary
         run: DEMO_RUNS=8 bash scripts/run-demo-v2.sh
+
+      # The canary's evaluation window is 60 minutes and its runs are seconds old, so this is the
+      # step that most needs the probe: the first real run of this workflow evaluated the canary
+      # 1.2 seconds after emitting it and got `insufficient_data`, exit 3.
+      - name: Wait until the canary is queryable
+        run: |
+          set -a; . ./.env; set +a
+          node scripts/wait-for-demo-traces.mjs "$CANARY_RELEASE"
 
       - name: Evaluate the canary
         run: |

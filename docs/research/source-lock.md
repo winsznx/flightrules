@@ -845,3 +845,64 @@ Access date for every entry: **2026-07-25** unless stated otherwise.
 - Evidence: `docs/evidence/phase-16/alert-lifecycle.md`, which records both transitions of both
   threshold alerts — firing at 12:09:49Z and 12:09:33Z, recovering to `inactive` at 12:14:49Z and
   12:14:33Z, exactly 300 s later, matching the configured `evalWindow`.
+
+## SL-067 — Next.js 16.2.11 cannot see TypeScript 7, and hides the resulting failure entirely
+
+- Access date: 2026-07-26
+- Source: `next@16.2.11` and `typescript@7.0.2` as installed, read and executed (tier 1)
+- Verified claim, in three parts, each observed rather than reasoned:
+  1. `next/dist/lib/has-necessary-dependencies.js` resolves `typescript/package.json` and then
+     performs a **filesystem existence check** on `<packageDir>/lib/typescript.js`. TypeScript
+     7.0.2's `lib/` contains `getExePath.js`, `tsc.js`, `version.cjs` and `version.d.cts` and no
+     `typescript.js`, because the compiler is now a native binary. The probe therefore reports
+     `typescript` as **missing** while `tsc` works perfectly.
+  2. `next/dist/lib/verify-typescript-setup.js` branches on `ci-info`. Off CI it calls
+     `installDependencies`, which is why every local `next build` silently reinstalled TypeScript.
+     With `CI` set it calls `missingDepsError`, which **throws `E552` without logging anything**.
+  3. `next/dist/build/type-check.js:110` catches that rejection and calls `process.exit(1)` with the
+     comment "the error is already logged in the worker". No worker exists when
+     `typescript.ignoreBuildErrors` is set, because `shouldRunTypeCheck` is then `false` and the
+     implementation runs in-process. Nothing is ever printed.
+- Runtime confirmation: **Yes.** `node --trace-exit` on `ubuntu-latest` returned
+  `WARNING: Exited the environment with code 1 … at next/dist/build/type-check.js:110:17` — the
+  whole of the diagnostic output the failure produced. The failure then reproduced on macOS 27
+  `arm64` with `CI=true` and disappeared with `CI` unset, at the identical commit. It is **not
+  platform-specific**: `CI` is the discriminator, and the build had never run with `CI` set before
+  GitHub Actions ran for the first time in Phase 17.
+- Implementation consequence: `apps/web` pins `typescript@5.9.3`, the major Next.js 16.2.11
+  supports; the rest of the workspace stays on `7.0.2`. With TypeScript detectable, Next runs its
+  own type-check worker, so `typescript.ignoreBuildErrors` was **removed** from
+  `apps/web/next.config.ts` — the application now passes both `tsc -p tsconfig.json --noEmit` and
+  Next's own step, including the route-type validation the suppression had also been disabling.
+  `apps/web/src/web.test.ts` asserts Next's probe finds nothing missing, using Next's own function
+  and its own required-package list, because this failure mode reports nothing on its own.
+- Supersedes: SL-060, whose diagnosis ("cannot drive TypeScript 7.0.2") was correct and whose
+  workaround was not — suppressing the type check suppressed the symptom on a developer machine and
+  left the cause in place for the first runner that set `CI`.
+- Evidence: `docs/evidence/phase-17/actions.md`.
+
+## SL-068 — `host.docker.internal` exists on Docker Desktop whether or not a service maps it, and never on Linux unless it does
+
+- Access date: 2026-07-26
+- Source: Docker Engine 29.6.1 on `ubuntu-latest`, and Docker Desktop on macOS 27, both executed (tier 1)
+- Verified claim: `compose.app.yaml` declared
+  `extra_hosts: ["host.docker.internal:host-gateway"]` on five of its six demo services. On macOS
+  every container resolved the name regardless, because Docker Desktop injects it. On a Linux runner
+  only the five that declared it resolved: from `payment-service`,
+  `getent hosts host.docker.internal` returned `172.17.0.1` and an OTLP `POST /v1/traces` returned
+  **200**; from `demo-agent`, `getent` returned nothing and the identical POST failed with
+  **`TypeError: fetch failed ENOTFOUND`**.
+- Runtime confirmation: **Yes.** Both containers were probed in the same job, on the same network,
+  one line apart.
+- Why it was invisible: the agent is the only process that emits the root `refund.request` span and
+  the `agent.release.id` attribute every contract rule is keyed on. With its exporter dead, the five
+  services' server spans still arrived — as parentless roots carrying no release identifier. SigNoz
+  was healthy, ingestion returned 200, the demo returned a real trace identifier, and every query
+  for a run came back empty. Baseline mining reported `insufficient_runs` with `familyCount: 0`,
+  which reads as "the telemetry has not caught up yet" and is why the seed's retry loop exhausted
+  itself eight times without ever naming a cause.
+- Implementation consequence: `demo-agent` now declares the mapping like every other service.
+  `packages/test-fixtures/src/release-gate-workflow.test.ts` asserts the invariant over the whole
+  file — any service that points at `host.docker.internal` must map it — and was confirmed to fail
+  when the mapping is removed.
+- Evidence: `docs/evidence/phase-17/actions.md`.
