@@ -1,27 +1,27 @@
 {
   "schemaVersion": "flightrules.dev/release-gate/v1",
-  "exportedAt": "2026-07-26T01:54:21.251Z",
+  "exportedAt": "2026-07-26T02:13:37.383Z",
   "decision": "pass",
-  "decisionHash": "40677cf9019d2110d1c20f421c4ad830f7894cb6702b87c3f277acc061135e57",
+  "decisionHash": "793caf9c86f82e53d48ed15a8c0f8c211afdb4a0e60af94d1951eee7068821df",
   "release": {
-    "id": "019f9c20-164d-70e5-ad4d-3d3962e43d47",
+    "id": "019f9c31-9f49-7282-bc02-463d4d5adeaa",
     "key": "refund-agent-v1",
     "environment": "local"
   },
   "contract": {
-    "id": "019f9c20-7dbf-7066-87f1-259a71432bc3",
+    "id": "019f9c32-195f-70ee-a2fd-1e52487a3c2a",
     "key": "refund-agent-local",
     "version": "0.1.0",
-    "contentHash": "97c739d22e68edf05e938a0434c224a676fe5e3228f360ac4ebc9abccd66be57",
+    "contentHash": "f5e7b1edbdd13fc1607dbb1638595d3be05eb3805f12da1daa3dd5a0146d654a",
     "state": "active"
   },
   "evaluation": {
-    "id": "019f9c20-d1d9-72c6-8e34-e0eccc0fa851",
+    "id": "019f9c32-65e6-702b-9dad-b5f8c50da0cf",
     "status": "pass"
   },
   "counts": {
-    "evaluatedRuns": 306,
-    "passedRuns": 306,
+    "evaluatedRuns": 356,
+    "passedRuns": 356,
     "failedRuns": 0,
     "erroredRuns": 0,
     "insufficientRuns": 0,
@@ -45,25 +45,25 @@
   "rates": {
     "violation": {
       "numerator": 0,
-      "denominator": 306,
+      "denominator": 356,
       "decimal": "0.000000",
       "percent": "0.000000"
     },
     "unknownRoute": {
       "numerator": 0,
-      "denominator": 306,
+      "denominator": 356,
       "decimal": "0.000000",
       "percent": "0.000000"
     },
     "duplicateSideEffect": {
       "numerator": 0,
-      "denominator": 306,
+      "denominator": 356,
       "decimal": "0.000000",
       "percent": "0.000000"
     },
     "missingPrerequisite": {
       "numerator": 0,
-      "denominator": 306,
+      "denominator": 356,
       "decimal": "0.000000",
       "percent": "0.000000"
     }
@@ -101,7 +101,7 @@
       "metric": "run.duration_ms",
       "observed": 19,
       "limit": 23,
-      "runsReporting": 306,
+      "runsReporting": 356,
       "summary": "p95 of run.duration_ms was 19, within 23."
     }
   ],
@@ -121,11 +121,11 @@
   "evidence": {
     "representativeFailingTraceIds": [],
     "representativePassingTraceIds": [
+      "01795ddbdc2bc0e1d48ae213d57dfdbb",
       "01e19a07062b702515ecd224b324a741",
       "035f7fece571b650d6997d8750f42cc6",
       "050e8b766ccdcf0dc99f7140315f8728",
-      "069da20b07d30711c9574d9075e47d76",
-      "06bf810f9b7beace0ad76b2ed1381a81"
+      "069da20b07d30711c9574d9075e47d76"
     ],
     "zeroToleranceRuleIds": [],
     "violatedRuleIds": [],
