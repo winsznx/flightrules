@@ -498,3 +498,97 @@ apps/worker build: Done
 
 [1m== 9  the worker survives an idle period[0m
         leaving the worker idle for 90 seconds
+  ok    worker still alive after 90 idle seconds
+  ok    queue depth reports ok
+
+[1m== 10  the demo, end to end[0m
+  run   make demo-up
+docker compose -f compose.app.yaml up -d --build --wait
+ Image flightrules-policy-service Building 
+ Image flightrules-order-service Building 
+ Image flightrules-fraud-service Building 
+ Image flightrules-payment-service Building 
+ Image flightrules-notification-service Building 
+ Image flightrules-demo-agent Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 3.42kB done
+#1 DONE 0.0s
+
+#2 [policy-service internal] load build definition from Dockerfile.demo
+#2 transferring dockerfile: 1.16kB done
+#2 DONE 0.0s
+
+#3 [notification-service internal] load metadata for docker.io/library/node:24.14.1-alpine
+#3 DONE 1.7s
+
+#4 [payment-service internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [order-service build 1/8] FROM docker.io/library/node:24.14.1-alpine@sha256:8510330d3eb72c804231a834b1a8ebb55cb3796c3e4431297a24d246b8add4d5
+#5 resolve docker.io/library/node:24.14.1-alpine@sha256:8510330d3eb72c804231a834b1a8ebb55cb3796c3e4431297a24d246b8add4d5 done
+#5 DONE 0.0s
+
+#6 [order-service internal] load build context
+#6 transferring context: 22.59MB 0.4s done
+#6 transferring context: 22.59MB 0.4s done
+#6 DONE 0.4s
+
+#7 [policy-service build 2/8] WORKDIR /app
+#7 CACHED
+
+#8 [policy-service build 3/8] RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+#8 CACHED
+
+#9 [notification-service build 4/8] COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json tsconfig.build.json ./
+#9 CACHED
+
+#10 [demo-agent build 5/8] COPY packages ./packages
+#10 DONE 0.2s
+
+#11 [payment-service build 6/8] COPY apps ./apps
+#11 DONE 0.5s
+
+#12 [order-service build 7/8] RUN pnpm install --frozen-lockfile
+#12 1.580 Scope: all 24 workspace projects
+#12 1.614  WARN  There are cyclic workspace dependencies: /app/apps/api, /app/packages/baseline-miner, /app/packages/test-fixtures
+#12 1.663 Lockfile is up to date, resolution step is skipped
+#12 1.708 Progress: resolved 1, reused 0, downloaded 0, added 0
+#12 1.780 Packages: +314
+#12 1.780 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#12 2.539 
+#12 2.539    ╭───────────────────────────────────────────────╮
+#12 2.539    │                                               │
+#12 2.539    │     Update available! 10.33.0 → 11.17.0.      │
+#12 2.539    │     Changelog: https://pnpm.io/v/11.17.0      │
+#12 2.539    │   To update, run: corepack use pnpm@11.17.0   │
+#12 2.539    │                                               │
+#12 2.539    ╰───────────────────────────────────────────────╯
+#12 2.539 
+#12 2.710 Progress: resolved 314, reused 0, downloaded 9, added 9
+#12 3.711 Progress: resolved 314, reused 0, downloaded 52, added 52
+#12 4.711 Progress: resolved 314, reused 0, downloaded 64, added 64
+#12 5.711 Progress: resolved 314, reused 0, downloaded 99, added 99
+#12 6.711 Progress: resolved 314, reused 0, downloaded 140, added 140
+#12 7.711 Progress: resolved 314, reused 0, downloaded 150, added 150
+#12 8.712 Progress: resolved 314, reused 0, downloaded 170, added 170
+#12 9.469  WARN  Tarball download average speed 2 KiB/s (size 4 KiB) is below 50 KiB/s: https://registry.npmjs.org/reusify/-/reusify-1.1.0.tgz (GET)
+#12 9.712 Progress: resolved 314, reused 0, downloaded 207, added 207
+#12 10.71 Progress: resolved 314, reused 0, downloaded 245, added 245
+#12 11.71 Progress: resolved 314, reused 0, downloaded 257, added 257
+#12 12.43  WARN  Tarball download average speed 11 KiB/s (size 24 KiB) is below 50 KiB/s: https://registry.npmjs.org/editions/-/editions-6.22.0.tgz (GET)
+#12 12.71 Progress: resolved 314, reused 0, downloaded 268, added 268
+#12 13.71 Progress: resolved 314, reused 0, downloaded 284, added 284
+#12 14.57  WARN  Tarball download average speed 41 KiB/s (size 47 KiB) is below 50 KiB/s: https://registry.npmjs.org/@vitest/runner/-/runner-4.1.10.tgz (GET)
+#12 14.71 Progress: resolved 314, reused 0, downloaded 299, added 299
+#12 15.72 Progress: resolved 314, reused 0, downloaded 301, added 300
+#12 16.72 Progress: resolved 314, reused 0, downloaded 302, added 302
+#12 18.40 Progress: resolved 314, reused 0, downloaded 303, added 302
+#12 19.40 Progress: resolved 314, reused 0, downloaded 304, added 304
+#12 20.40 Progress: resolved 314, reused 0, downloaded 306, added 306
+#12 22.99 Progress: resolved 314, reused 0, downloaded 307, added 306
+#12 23.99 Progress: resolved 314, reused 0, downloaded 307, added 307
+#12 29.08 Progress: resolved 314, reused 0, downloaded 308, added 307
+#12 30.08 Progress: resolved 314, reused 0, downloaded 309, added 309
+#12 32.16 Progress: resolved 314, reused 0, downloaded 310, added 309
+#12 33.16 Progress: resolved 314, reused 0, downloaded 311, added 311
