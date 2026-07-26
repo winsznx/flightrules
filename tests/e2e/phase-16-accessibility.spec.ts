@@ -81,8 +81,7 @@ test.describe("every PRD section 8 route passes an automated accessibility sweep
 
     // Printed so the moderate and minor findings reach the evidence rather than being lost.
     if (advisory.length > 0) {
-      // eslint-disable-next-line no-console -- the audit's advisory output is the point
-      console.log(`\naxe advisory findings:\n${advisory.join("\n")}\n`);
+      process.stdout.write(`\naxe advisory findings:\n${advisory.join("\n")}\n\n`);
     }
 
     // #then nothing critical or serious remains
@@ -144,8 +143,7 @@ test.describe("every PRD section 8 route passes an automated accessibility sweep
     }
 
     if (advisory.length > 0) {
-      // eslint-disable-next-line no-console -- the audit's advisory output is the point
-      console.log(`\naxe advisory findings:\n${advisory.join("\n")}\n`);
+      process.stdout.write(`\naxe advisory findings:\n${advisory.join("\n")}\n\n`);
     }
     expect(blocking.join("\n"), "critical or serious accessibility violations").toBe("");
   });

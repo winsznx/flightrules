@@ -657,14 +657,19 @@ a {
 
 /* A clearly labelled schematic. PRD Phase 12 permits illustrative diagrams on the landing route
    only, and this one carries its own caption saying so. */
+/* The scroll lives on the labelled container, so the focusable element is the one that scrolls. */
+.fr-schematic-scroll {
+  overflow-x: auto;
+}
+
 .fr-schematic {
   border: 1px solid var(--fr-border);
   padding: var(--spacing-31);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: var(--text-caption);
   line-height: 1.5;
-  overflow-x: auto;
   white-space: pre;
+  margin: 0;
 }
 
 /* -------------------------------------------------------------------------- */
