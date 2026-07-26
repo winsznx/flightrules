@@ -59,11 +59,17 @@ async function sourceFiles(): Promise<readonly string[]> {
   return found.sort();
 }
 
-/** Modules that declare a client boundary. */
+/**
+ * Modules that declare a client boundary.
+ *
+ * Comments are stripped first. A server module may explain what a client module is forbidden to do —
+ * and quoting the directive in prose does not declare one.
+ */
 async function clientModules(): Promise<readonly string[]> {
   const found: string[] = [];
   for (const file of await sourceFiles()) {
-    if ((await readFile(file, "utf8")).includes('"use client"')) found.push(file);
+    const source = (await readFile(file, "utf8")).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
+    if (source.includes('"use client"')) found.push(file);
   }
   return found;
 }
@@ -314,10 +320,11 @@ describe("prohibitions", () => {
       // #given every `"use client"` module the application ships
       const modules = await clientModules();
 
-      // #then each is one of the three interactions PRD Phase 13 introduces, and nothing else has
-      // been quietly moved to the browser since
+      // #then each is one of the four interactions Phases 13 and 15 introduce, and nothing else
+      // has been quietly moved to the browser since
       expect(modules.map((file) => path.basename(file)).sort()).toEqual([
         "auto-refresh.tsx",
+        "copy-button.tsx",
         "submit-button.tsx",
         "yaml-editor.tsx",
       ]);
@@ -335,6 +342,7 @@ describe("prohibitions", () => {
           "WebSocket",
           "@/lib/api",
           "@/lib/load",
+          "@/lib/evidence-summary",
           "server-only",
           "@flightrules/db",
           "FLIGHTRULES_API_URL",

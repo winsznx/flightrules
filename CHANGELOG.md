@@ -782,3 +782,44 @@ All notable changes to FlightRules are recorded here, one section per phase.
 - **A running worker steals the integration suite's queued jobs.** `runner.integration.test.ts`'s
   shutdown test expects one job to remain queued; a worker sharing the database claims it first.
   Stop the worker before `make test-integration`.
+
+## Phase 15 — Violation Inspector UI (2026-07-26)
+
+### Added
+
+- `GET /api/violations/:violationId/logs` — logs correlated to a violation's trace through SigNoz
+  MCP, **fetched on request**. Correlation is by the evaluator's recorded trace identifier, never by
+  a time window or a service name, and an identifier that is not 32 lowercase hex characters is
+  never sent. Every failure mode PRD Phase 15 lists returns HTTP 200 with a typed state.
+- `GET /api/violations/:violationId/metrics` — the downstream metric evidence, with the **kind of
+  claim** as a field: `measured`, `observed side effect`, `inferred risk`, `unavailable`. PRD Phase
+  15 forbids a fabricated financial-loss figure and forbids inferring an effect telemetry does not
+  prove, so the claim type is part of the response rather than a caption.
+- `metricSeriesPayloadSchema`, `metricSeriesReader` and `metricPointsOf` in `@flightrules/signoz-mcp`,
+  and `SigNozOperations.queryMetrics`.
+- `apps/web/src/lib/evidence-summary.ts` — the deterministic, safe, copyable summary, assembled from
+  fields that carry no prompt, tool payload, credential or customer field.
+- `apps/web/src/components/copy-button.tsx` — the fourth and last client component. The summary is
+  also rendered in a read-only textarea, so the clipboard is an accelerator and never the only route
+  to the text.
+- Evidence highlighting restricted to canonical indices the deterministic evaluator named; the
+  approved comparison graph; and trace-quality warnings rendered as context rather than findings.
+
+### Fixed
+
+- **The evidence table paired labels with canonical nodes by index**, so the duplicate-refund
+  violation — one label, two nodes — silently dropped half its own evidence. Labels, canonical nodes
+  and span identifiers are now rendered as the three independent lists they are.
+- **A metric with real data reported as "no series exists"** (SL-062). The shared reader counts
+  `rows`; a metric answer has none. Fixed with a reader that counts observations.
+- **The metric filter matched nothing while the data was real**: the series carry the FlightRules
+  dimensions with empty values. The route now groups rather than filters, and states when the series
+  is deployment-wide rather than narrowed to the agent.
+- **A control character in telemetry could forge a line in the evidence summary.** Neutralised
+  before assembly, asserted by a test that attempts exactly that forgery.
+
+### Discovered
+
+- **SL-062** — `signoz_query_metrics` answers in a time-series shape with dimensions as an array of
+  `{key: {name}, value}`, not the `rows` shape every other builder query uses, and in this
+  deployment the FlightRules dimensions come back named with empty values.

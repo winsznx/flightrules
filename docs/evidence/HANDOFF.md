@@ -1,10 +1,11 @@
-# FlightRules handoff — after Phase 12
+# FlightRules handoff — after Phase 15
 
-Written: 2026-07-26. `main` is green and the working tree is clean.
+Written 2026-07-26. `main` is green and the working tree is clean.
 
 This replaces the previous handoff. Verify every claim below against the repository before relying
-on it. The previous handoff was verified in full at the start of this session; every figure it
-reported reproduced exactly, and no regression was found.
+on it. The previous handoff was verified in full at the start of this session: `make verify` exit 0,
+1,116 unit and 234 integration tests, `make demo-full` reproducing exit 0 then exit 2, and all
+twenty route responses rendering real content. Nothing it claimed was found to be false.
 
 ---
 
@@ -12,168 +13,113 @@ reported reproduced exactly, and no regression was found.
 
 | Phase | Status | Phase commit | Merge commit |
 |---|---|---|---|
-| 00 Source lock and feasibility proof | PASS | `ba600b8` | `1f87df2` |
-| 01 Repository foundation and CI | PASS | `9e093da` | `d9052ff` |
-| 02 SigNoz deployment through Foundry | PASS | `bb50031` | `3b878ab` |
-| 03 Deterministic demo system | PASS | `9a37a88` | `fa172fe` |
-| 04 OpenTelemetry instrumentation | PASS | `4d392b0` | `a4101ca` |
-| 05 SigNoz MCP client and capability layer | PASS | `074a35a` | `9eda536` |
-| 06 Trace graph and normalisation engine | PASS | `7b8e2aa` | `5949148` |
-| 07 Contract schema and deterministic evaluator | PASS | `ca4225b` | `12e133b` |
-| 08 Baseline mining and contract proposal | PASS | `7706e79` | `494fd8a` |
-| 09 Application core, API, jobs, and persistence | PASS | `222c7c0` | `f8e3215` |
-| 10 SigNoz artifact compiler | PASS | `5f4de3e` | `7a10eff` |
-| **11 Release evaluation, CLI, and GitHub gate** | **PASS** | `e40b920` | `21b6b75` |
-| **12 UI foundation and `design.md` integration** | **PASS** | `a7b3c78` | `5726d26` |
-| 13–17 | NOT STARTED | — | — |
+| 00–10 | PASS | see the Phase 12 handoff in git history | — |
+| 11 Release evaluation, CLI, and GitHub gate | PASS | `e40b920` | `21b6b75` |
+| 12 UI foundation and `design.md` integration | PASS | `a7b3c78` | `5726d26` |
+| **13 Baseline and Contract Studio UI** | **PASS** | `d1ac0c4` | `faf2d26` |
+| **14 Release Diff UI** | **PASS** | `d5d8daa` | `d14f4fb` |
+| **15 Violation Inspector UI** | **PASS** | see `docs/evidence/phase-15-commits.md` | see below |
+| 16–17 | NOT STARTED | — | — |
 
 ## Verified state
 
 ```text
-make verify              exit 0   (verify-env, format, lint, typecheck, test, build,
-                                   contract-validate, scan-design, scan-secrets, scan-licences)
-make signoz-verify       exit 0
-make test                1,116 passed, 0 failed, 0 skipped   (51 files)
-make test-integration    234 passed, 0 failed, 0 skipped     (15 files)
+make verify              exit 0
+make test                1,159 passed, 0 failed, 0 skipped   (54 files)
+make test-integration      241 passed, 0 failed, 0 skipped   (15 files)
+make test-e2e               68 passed, 0 failed, 4 skipped   (72 tests, 3 viewports)
                          ---
-                         1,350 tests passed
+                         1,468 tests passed
+make signoz-verify       exit 0
+make contract-validate   exit 0, 20 documents
 make demo-full           exit 0 — approved release exit 0, unsafe canary exit 2
+managed artefacts        10 total, 10 synced, 0 drifted, 0 failed, 0 conflict
 ```
 
-The session began by independently reproducing the Phase 10 baseline: 961 unit and 209 integration
-tests, exactly as reported, with SigNoz green and all ten managed artefacts verified.
+---
+
+## What Phases 13 to 15 added
+
+**Phase 13** made the product interactive. `packages/contract-schema/src/edit.ts` implements PRD
+section 8.9's eight graph rule controls as deterministic transformations of the stored YAML, each
+re-validated through the Phase 07 parser before it is returned — so the graph controls and the
+editor are two views of one document and cannot drift. The baseline form submits, the job reports
+persisted progress, the four review verbs write audit events, and the Contract Studio validates,
+approves, activates, syncs and exports.
+
+**Phase 14** made the regression readable. `GET /api/releases/:releaseId/diff` compares the
+release's representative run against the approved route family **the evaluator itself** judged it
+nearest to, on the server, deterministically. The page renders sentences before tables:
+*"N step(s) the approved route always performs are absent from this release … Each one is a check
+that did not run."*
+
+**Phase 15** made every failure auditable. Two on-request reads —
+`GET /api/violations/:id/logs` and `/metrics` — neither of which can fail the page, and an evidence
+summary that carries identifiers and hashes and nothing else.
+
+## Three things a later phase could undo by accident
+
+1. **The four client components are the only ones.** `auto-refresh`, `submit-button`,
+   `yaml-editor`, `copy-button`. Five assertions in `apps/web/src/web.test.ts` enforce it: no route
+   file is a client component, exactly those four exist, none fetches or imports the `server-only`
+   API client, each is under 160 lines, and the design-token rule applies inside them. A fifth
+   client component should be a deliberate decision with its name added to that list.
+2. **No comparison engine is bundled into the browser.** A test asserts no web module imports
+   `@flightrules/trace-graph`, `@flightrules/contract-engine` or `@flightrules/baseline-miner`. That
+   is how "no graph data is fabricated client-side" is guaranteed rather than reviewed.
+3. **The metric's *kind* is a field, not a caption.** `measured`, `observed side effect`,
+   `inferred risk`, `unavailable`. Collapsing them into one number would let the product imply an
+   effect the telemetry does not prove.
+
+## Operational facts that cost time to rediscover
+
+- **A demo reset alone is not a clean state.** `make signoz-purge` **then** the reset. Without the
+  purge the next sync correctly reports ten conflicts, because the SigNoz resources outlive the
+  register rows that recorded owning them.
+- **Stop the worker before `make test-integration`.** It competes with the suite for queued jobs and
+  fails the runner shutdown test for a reason unrelated to the runner.
+- **`make test-e2e` needs a seeded demo and leaves it reset.** `make demo-full` before, and again
+  after. The destructive Phase 13 workflow runs in its own Playwright project, declared last.
+- **Do not run a build while the development web server is running.** They share `.next`; the
+  running server's chunks are replaced and every page 404s until it restarts.
+- **A long-running API or worker can outlive its own `dist`.** Restart both after `make typecheck`.
+- **`make demo-urls`** resolves every demo URL from the running API and writes `.demo-state.json`.
+  Nothing in `docs/DEMO_SCRIPT.md` hard-codes an identifier.
 
 ---
 
-## What Phase 11 added
+## Unresolved limitations, for Phase 16
 
-`packages/contract-engine/src/release.ts` — the pure release aggregation of FR-011 and FR-012. No
-I/O and no clock read: `nowMs`, the window, the retrieval state and the contract's lifecycle status
-all arrive as inputs. `packages/contract-engine/src/exit-codes.ts` holds the exit-code table, so the
-API, the CLI, the workflow and the tests all derive the same number from the same decision.
-
-`GET /api/releases/:releaseId/gate` is a read — no job, no trace fetch, no row written. `apps/cli`
-implements the PRD's six commands with `--json`, stream discipline and the documented exit codes.
-`.github/workflows/release-gate.yml` runs the same commands and asserts exit `2` on the canary.
-
-**The exit gate is proven live**: 25 known-good runs emitted, a baseline mined from them, a contract
-activated, ten artefacts compiled and verified, 106 runs evaluated and the gate exiting `0`; then 8
-unsafe runs, 80 violations, 24 zero-tolerance, and the gate exiting `2` — with the same decision
-served from a restarted API.
-
-## What Phase 12 added
-
-`packages/ui` — `tokens.css` is `design.md`'s Quick Start block verbatim (69 declarations, excluded
-from the formatter so a reflowed font stack cannot break the comparison), `base.css` is the shell
-with no literal colour, size or font, and sixteen primitives including the graph table.
-
-`apps/web` — a Next.js 16.2.11 App Router application implementing **all fourteen** PRD section 8
-routes against live API data, each with its own loading, empty, error and degraded states. Every
-page is a Server Component; `lib/api.ts` and `lib/load.ts` are `server-only`.
-
-`scripts/check-design-assets.mjs` re-reads `design.md` on every `make verify` and fails if a token
-drifted or a literal colour entered the shell.
-
----
-
-## Defects found and fixed this session
-
-| # | Defect | Consequence had it shipped |
-|---|---|---|
-| 1 | **The domain redactor destroyed FlightRules' own token measurements.** `/token/i` matched `maxTokenRegressionPercent` and `tokens`, so the live gate returned `"maxTokenRegressionPercent": "[redacted]"`. | A security control silently corrupting part of a release decision. Fixed with an exact-name allowlist; credential-shaped keys still redact, asserted by tests. |
-| 2 | **The documented purge-then-sync recovery could not work.** The `signoz_sync` job is idempotent on the contract's content, so a sync after a purge returned the previous job's cached conflict result. | A deployment whose database was rebuilt could never re-sync. `make signoz-purge` now also clears the register rows and completed sync jobs. |
-| 3 | **The licence gate crashed instead of checking.** `/\bOR\b/i` matched the "or" inside `LGPL-3.0-or-later` (a hyphen is a word boundary), the split made no progress, and the function recursed until the stack overflowed. | A security gate that has not actually run since Phase 01. Fixed; a malformed expression now fails the check rather than the process. |
-| 4 | **An LGPL dependency entered the tree.** Behind that crash: Next.js pulls in `sharp`, whose `@img/sharp-libvips-*` is `LGPL-3.0-or-later`, which this repository's policy denies. | A licence violation in a distributed artefact. Removed via `pnpm.ignoredOptionalDependencies` — not suppressed, not allow-listed. This product uses no `next/image`. |
-
-## Important discoveries
-
-New source-lock entry: **SL-060** — Next.js 16.2.11's built-in TypeScript step cannot drive
-TypeScript 7.0.2. It fails to detect it, reinstalls it on every build and crashes the build worker.
-`tsc -p apps/web/tsconfig.json` over the same sources exits 0 under the full strict configuration
-and does catch real errors. `apps/web`'s build script runs the typecheck first; only the broken
-integration is bypassed.
-
-## Judgement calls to preserve
-
-ADR-0010 and ADR-0011 hold the full set. The ones a later phase could undo by accident:
-
-1. **Decision precedence is `error > fail > insufficient_data > pass`.** A proven zero-tolerance
-   violation in three runs outranks the absence of a twentieth run. The live canary shows both
-   `MIN_RUNS_NOT_MET` and `ZERO_TOLERANCE_VIOLATION`, and decides `fail`.
-2. **A check whose evidence is structurally absent is disclosed, never passed.** `not_measured` plus
-   a disclosure when *no* run reports the metric; `insufficient_evidence` when *some* do.
-3. **The violation rate is over failing runs, not violations.**
-4. **`release evaluate` exits `0` for an evaluation that completed, whatever it found.** Deciding is
-   `gate check`'s job.
-5. **The exit-code table lives in the engine.** The CLI refuses to report a decision when the
-   server's `exitCode` disagrees with its own mapping.
-6. **Status is a word, never a hue.** There is no green and no red anywhere in this product.
-7. **Clay appears once per page.** `design.md` permits one `#bc7155` element per viewport.
-8. **The graph table is the canonical rendering**, not a fallback.
-9. **`tokens.css` is excluded from the formatter** because it is a verbatim copy.
-10. Everything Phase 10 established still holds: pure compilation, register-based ownership,
-    `signoz_update_view` never called, material-field read-back.
-
----
-
-## Unresolved limitations
-
-1. **`GET /api/releases/:id/diff` is not registered** — Phase 14.
-2. **The GitHub workflow has not run on GitHub.** Its shape is asserted by 14 tests and every
-   command in it is one `make demo-full` runs locally, which reproduced `0` then `2`.
-3. **The interactive UI workflows are Phase 13, 14 and 15 work**, and the pages say so rather than
-   offering inert buttons. The baseline form renders and validates but does not submit; the Contract
-   Studio shows the YAML read-only.
-4. **No automated accessibility scan and no Playwright suite** — Phase 16, PRD section 22.4.
-5. **Alert recovery is not yet evidenced** — Phase 16.
-6. **Logs are structured but not exported over OTLP** — Phase 16.
+1. **Logs are not exported over OTLP.** FlightRules writes structured logs to stdout, so SigNoz holds
+   none and the Violation Inspector's log panel is always `empty`. It says exactly that. This is the
+   single largest honest gap in the evidence chain.
+2. **The `flight_rules.*` metrics carry the project and agent dimensions with empty values**
+   (SL-062), so a metric cannot be narrowed to one agent. The API discloses it in its own response.
+3. **No automated accessibility audit.** Focus, labelling, landmarks, reading order and the absence
+   of colour-only status are each asserted, but no axe-style sweep runs. PRD section 22.4.
+4. **Alert recovery is not evidenced.** Firing is (Phase 10); recovery is not.
+5. **The GitHub workflow has never run on GitHub.** Fourteen tests assert its shape and every command
+   in it is one `make demo-full` runs locally. Phase 17 must run it for real.
+6. **The Phase 13 workflow is validated at one viewport.** Presentation is validated at three.
 7. **Token and retry regression are disclosed rather than measured** for the demo agent, which makes
-   no model call and whose approved family carries no retries.
+   no model call.
 8. **No authentication.** PRD section 6.1 scopes P0 to local mode.
-9. Everything else Phase 10 listed still stands.
+9. **`Open in SigNoz` opens the trace view, not a release-filtered view.** SigNoz's release-scoped
+   URL shape was not verified and SL-012 makes an HTTP probe worthless as verification, so no link
+   was invented.
 
----
+## Next phase: 16 — Hardening, performance, and adversarial validation
 
-## Next phase: 13 — Baseline and Contract Studio UI
+PRD line 3431. Entry criteria are satisfied: Phases 13, 14 and 15 are merged, `main` is green, and
+the full demo reproduces exit 0 then exit 2.
 
-PRD section: line 3331.
+The four highest-value items, in the order they repay effort:
 
-### Entry criteria — all SATISFIED
-
-| Criterion | Evidence |
-|---|---|
-| Phase 12 merged and green | `5726d26`; `make verify` exit 0 on `main` |
-| Every PRD section 8 route exists with its data, states and copy | `docs/evidence/phase-12/route-smoke.txt`, 20 live responses |
-| Baseline, route-family, contract, job and sync APIs reachable | Phases 09, 10 and 12; `GET /api/openapi.json` |
-| The design system is locked and enforced | `make scan-design`, inside `make verify` |
-
-### Scope
-
-Branch `phase/13-contract-studio`. PRD Phase 13 lists eleven tasks: baseline selection form, job
-progress UI, rejected-trace summary, route-family list, canonical route graph, approve and exclude
-actions, proposed-rule review, YAML editor with schema errors, graph-based rule controls, the
-validate/approve/activate/export/sync flows, and preventing activation of invalid or unsaved
-changes.
-
-The exit gate: **a new user can move from v1 traces to an active contract entirely through the UI.**
-
-### Facts that will matter
-
-- Phase 12 deliberately left the forms non-submitting. The markup, the labels, the error association
-  and the progress vocabulary are already in place and tested; Phase 13 adds the Server Actions.
-- A Server Action must not import `lib/api.ts` from a client component — it is `server-only`. Put
-  the action in the route's own module, or a `"use server"` file, and keep the fetch server-side.
-- The first client component in this application will be the YAML editor. `web.test.ts` currently
-  asserts that **no** route file contains `"use client"`; that assertion will need to become
-  "no route file fetches from the browser" instead, which is the rule that actually matters.
-- Contract activation must trigger artifact sync (PRD Phase 13 test 7). The API route already exists
-  (`POST /api/contracts/:id/sync-signoz`) and returns a job; the UI needs the job-progress component.
-- `make demo-seed` is the reference implementation of the whole flow, in `scripts/seed-demo.mjs`.
-  Phase 13 is that sequence, in a browser.
-- The route-family review actions write audit events. PRD Phase 13 test 3 asserts the exclusion path
-  specifically.
-- Integration tests drop the schema. Re-run `make demo-full` before recording anything.
-- Start order: `make up`, `make db-migrate`, `make api`, `make worker`, `make web`.
+1. **Export logs over OTLP**, closing limitation 1 and making the Violation Inspector's log panel
+   show something. The panel, its correlation and its degraded states already exist.
+2. **Attach the project and agent dimensions to the emitted metrics**, closing limitation 2.
+3. **Add the accessibility sweep** to the browser suite that already runs at three viewports.
+4. **Evidence alert recovery**, closing limitation 4.
 
 ---
 

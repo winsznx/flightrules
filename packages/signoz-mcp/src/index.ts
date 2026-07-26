@@ -48,6 +48,7 @@ export {
   identifierOf,
   itemsOf,
   listReader,
+  metricPointsOf,
   rowsOf,
   singleResourceReader,
 } from "./readers.js";
@@ -60,6 +61,7 @@ export type {
   FieldValuesPayload,
   ListPayload,
   McpErrorEnvelope,
+  MetricSeriesPayload,
   SpanRow,
 } from "./schemas.js";
 export {

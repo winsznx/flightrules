@@ -267,3 +267,163 @@ docker compose -f pours/deployment/compose.yaml -p signoz down -v
 
 **A release pipeline can fail because of trajectory evidence from SigNoz** — deterministically, with
 the trace identifiers that prove it, and no model anywhere in the decision.
+
+---
+
+# The browser walkthrough (Phases 13 to 15)
+
+Everything the CLI does above, the product now does in a browser. This is the sequence to record.
+
+## Identifiers
+
+Every identifier in FlightRules is a UUIDv7 and changes on every reset, so **nothing below is
+hard-coded**. One command resolves them all from the running API and writes a state file both the
+presenter and this script read:
+
+```bash
+make demo-urls          # prints every URL, writes .demo-state.json
+```
+
+It exits non-zero and names what is missing if the demo is not seeded. Open URLs from its output, or
+from `.demo-state.json`.
+
+## 0. Start, in this order
+
+| # | Command | What it is |
+|---|---|---|
+| 1 | `make up && make db-migrate` | PostgreSQL, schema `0001`…`0004` |
+| 2 | `make demo-up` | the six demo services |
+| 3 | `make api` | the FlightRules API on `:4000` |
+| 4 | `make worker` | the job worker |
+| 5 | `WEB_PORT=3100 pnpm --filter @flightrules/web run start` | the built web application on `:3100` |
+
+`make web` runs the development server instead; use it for development and the built server for
+recording. The two share a `.next` directory, so **do not run a build while the development server
+is running** — the running server's chunks are replaced and every page 404s until it restarts.
+
+## 1. Reset to a genuinely clean state
+
+A database reset alone is **not** a clean state. `POST /api/demo/reset` deliberately leaves SigNoz
+untouched (FR-020), so the ten managed dashboards, views and alerts outlive the register rows that
+recorded owning them, and the next sync correctly refuses to adopt ten resources it can no longer
+prove it created — reporting ten conflicts.
+
+```bash
+make signoz-purge       # deletes the managed SigNoz resources by name prefix
+make demo-reset         # clears the payment ledger and sent notifications
+```
+
+**Expected markers**: `10 managed artefact(s) deleted for demo-commerce`, then
+`cleared N register row(s)`.
+
+## 2. Emit known-good telemetry
+
+```bash
+DEMO_RUNS=25 make demo-v1
+```
+
+**Expected marker**: `"completedRuns": 25`.
+
+## 3. Capture a baseline, in the browser
+
+Open `baselineCapture` from `make demo-urls`.
+
+1. `Release ID` → `refund-agent-v1`; `Environment` → `local`; `Time range` → `Last 6 hours`;
+   `Minimum completed runs` → `20`.
+2. Press **Analyse baseline**.
+3. The address gains `?job=<uuid>`. The five progress states — *Discovering traces*, *Fetching
+   complete span trees*, *Normalising routes*, *Grouping route families*, *Proposing contract rules*
+   — carry the stage the job is actually on. **Reload the page here on camera**: the progress is read
+   from the job row, so it survives.
+4. When the job reads `SUCCEEDED`, the rejected-trace summary appears. Point at the reconciliation
+   line: `Reconciled: N eligible + 0 excluded + 0 duplicate = N retrieved.`
+
+## 4. Review the route family
+
+Click the family in **Route families**, or open `routeFamily`.
+
+The canonical graph is the ordered node table — the same list the fingerprint is taken over, not a
+drawing. Press **Approve**. The status becomes `APPROVED`. **Reload**: it is still `APPROVED`,
+because it was written and re-read, not remembered.
+
+## 5. Propose, edit, validate, approve, activate
+
+Follow **Back to the baseline**, then **Propose contract**. When the job succeeds, follow **Open the
+Contract Studio** (or open `contractStudio`).
+
+1. **Graph node rule controls** → `Step` = `payment.refund`, `Constraint` = `Maximum calls`,
+   `Maximum calls` = `1` → **Apply constraint**. The YAML below gains a `type: cardinality` rule.
+2. Edit the YAML by hand. The status line becomes *This contract has unvalidated changes. Validate
+   it before approval.* → **Save document**. The rules table gains the rule you typed.
+3. **Validate contract** → **Approve version** → **Activate version**. The status becomes `ACTIVE`.
+4. **Sync to SigNoz**. When the job succeeds, **SigNoz artifacts** reads
+   `Managed artifacts 10`, `Read-back verified 10`.
+
+Worth saying out loud: approval is refused on the **server** while the stored document has
+unvalidated changes. It is not a disabled button.
+
+## 6. The passing release
+
+```bash
+make cli ARGS="release evaluate --project demo-commerce --agent refund-agent --release refund-agent-v1 --lookback 360"
+```
+
+Open `releaseV1`. The banner reads
+*PASS: This release stayed within the approved trajectory contract.*
+
+## 7. The unsafe canary
+
+```bash
+DEMO_RUNS=8 make demo-v2
+make cli ARGS="release evaluate --project demo-commerce --agent refund-agent --release refund-agent-v2 --lookback 60"
+```
+
+Open `releaseV2`. This is the reveal.
+
+- The banner reads *FAIL: This release exceeded one or more trajectory thresholds.*
+- **What changed** says it in sentences: *N step(s) the approved route always performs are absent
+  from this release: fraud.check, policy.retrieve, … Each one is a check that did not run.* and
+  *payment.refund 2 times against 1. A repeated write is a repeated side effect.*
+- **Behaviour change** shows the approved route beside the observed one. `REMOVED`, `REPEATED`.
+- **Typed changes** shows the engine's own classifications: `REMOVED STEP`,
+  `DUPLICATE SIDE EFFECT`, `CARDINALITY CHANGED`, `ROUTE NOT APPROVED`.
+- **Download evidence** produces the JSON bundle. **Open in SigNoz** opens the real trace.
+
+## 8. The three violations
+
+Open `violationMissingPolicy`, `violationMissingFraud` and `violationDuplicateRefund`.
+
+Each page carries the exact failed rule, `CRITICAL`, zero tolerance, expected versus observed, the
+trace and its span identifiers, the evidence the evaluator named, the approved comparison, the
+release and contract context, and the evaluation metadata.
+
+On the duplicate-refund page: press **Open correlated logs** and **Fetch downstream metrics**. Both
+are fetched on request, and both say what happened. The metric is labelled
+`OBSERVED SIDE EFFECT` — a count of repetitions, not a cost. FlightRules does not invent a
+financial-loss figure.
+
+Press **Copy evidence summary**.
+
+## 9. The gate
+
+```bash
+make gate                                     # refund-agent-v1 → exit 0
+RELEASE=refund-agent-v2 make gate; echo $?    # refund-agent-v2 → exit 2
+```
+
+## 10. Reset
+
+```bash
+make signoz-purge && make demo-reset          # back to step 1
+make demo-full                                # or rebuild everything in one command
+```
+
+## Running the browser suite on camera
+
+```bash
+make demo-full          # seed
+make test-e2e           # 72 tests: 68 pass, 4 viewport-scoped skips
+make demo-full          # restore — the `workflow` project resets the demo by design
+```
+
+Stop the worker before `make test-integration`: it competes with the suite for queued jobs.

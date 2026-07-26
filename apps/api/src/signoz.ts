@@ -2,6 +2,7 @@ import { FlightRulesError } from "@flightrules/domain";
 import {
   buildTraceQuery,
   type CapabilitySnapshot,
+  metricPointsOf,
   type OperationContext,
   rowsOf,
   SigNozMcpClient,
@@ -28,6 +29,22 @@ export interface FieldDescriptor {
   readonly fieldDataType: string;
 }
 
+/** One correlated log line, already reduced to the fields PRD section 8.12 shows. */
+export interface CorrelatedLogRow {
+  readonly timestamp: string | null;
+  readonly severity: string | null;
+  readonly service: string | null;
+  readonly body: string;
+}
+
+/** One metric observation, with the series it came from. */
+export interface MetricPoint {
+  readonly metric: string;
+  readonly value: number | null;
+  readonly timestamp: string | null;
+  readonly labels: Readonly<Record<string, string>>;
+}
+
 export interface TracePreviewRow {
   readonly traceId: string;
   readonly name: string;
@@ -46,6 +63,20 @@ export interface SignozGateway {
     readonly endMs: number;
     readonly limit: number;
   }): Promise<readonly TracePreviewRow[]>;
+  /** PRD Phase 15 task 5: correlated logs, fetched on request, by verified trace identifier. */
+  searchLogs(input: {
+    readonly traceId: string;
+    readonly startMs: number;
+    readonly endMs: number;
+    readonly limit: number;
+  }): Promise<readonly CorrelatedLogRow[]>;
+  /** PRD Phase 15 task 6: the downstream metric series a violation is associated with. */
+  queryMetrics(input: {
+    readonly metricName: string;
+    readonly startMs: number;
+    readonly endMs: number;
+    readonly groupBy: readonly string[];
+  }): Promise<readonly MetricPoint[]>;
   close(): Promise<void>;
 }
 
@@ -137,6 +168,60 @@ export function liveSignozGateway(config: ApiConfig): SignozGateway {
           timestamp: asString("timestamp"),
         };
       });
+    },
+
+    async searchLogs(input) {
+      // Correlated strictly by the trace identifier the evaluator recorded. Never by a time window
+      // alone, and never by a service name, either of which would attach another run's logs to this
+      // violation. The identifier is validated by the route before it reaches here.
+      const result = await operations.searchLogs(
+        {
+          filter: `trace_id = '${input.traceId}'`,
+          start: input.startMs,
+          end: input.endMs,
+          limit: input.limit,
+        },
+        CONTEXT,
+      );
+      if (result.outcome === "SUCCESS_EMPTY") return [];
+      if (result.outcome !== "SUCCESS_WITH_ROWS") throw failureToError(result.outcome);
+
+      return rowsOf(result.value).map((row) => {
+        const data = row.data as Record<string, unknown>;
+        const asString = (key: string): string | null =>
+          typeof data[key] === "string" ? (data[key] as string) : null;
+        return {
+          timestamp: asString("timestamp"),
+          severity: asString("severity_text"),
+          service: asString("service.name"),
+          // Bounded here rather than at the page: a log body is the one field in this response whose
+          // length is not under FlightRules' control.
+          body: (asString("body") ?? "").slice(0, 2_000),
+        };
+      });
+    },
+
+    async queryMetrics(input) {
+      const result = await operations.queryMetrics(
+        {
+          metricName: input.metricName,
+          start: input.startMs,
+          end: input.endMs,
+          ...(input.groupBy.length === 0 ? {} : { groupBy: input.groupBy.join(",") }),
+        },
+        CONTEXT,
+      );
+      // The metric reader counts observations rather than rows (SL-062), so a populated time series
+      // arrives as `SUCCESS_WITH_ROWS` and a genuinely absent series as `SUCCESS_EMPTY`.
+      if (result.outcome === "SUCCESS_EMPTY") return [];
+      if (result.outcome !== "SUCCESS_WITH_ROWS") throw failureToError(result.outcome);
+
+      return metricPointsOf(result.value).map((point) => ({
+        metric: input.metricName,
+        value: point.value,
+        timestamp: point.timestamp === null ? null : new Date(point.timestamp).toISOString(),
+        labels: point.labels,
+      }));
     },
 
     async close() {
