@@ -26,7 +26,9 @@ const { parseContract, formatValidationErrors } = await import(
 );
 const { buildTraceGraph, canonicaliseGraph, fingerprintGraph, serialiseCanonicalGraph } =
   await import(path.join(REPO_ROOT, "packages/trace-graph/dist/index.js"));
-const { evaluateRun } = await import(path.join(REPO_ROOT, "packages/contract-engine/dist/index.js"));
+const { evaluateRun } = await import(
+  path.join(REPO_ROOT, "packages/contract-engine/dist/index.js")
+);
 
 const args = process.argv.slice(2);
 const asJson = args.includes("--json");
@@ -88,7 +90,8 @@ function rows(count) {
 
 function stats(samples) {
   const sorted = [...samples].sort((a, b) => a - b);
-  const at = (fraction) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * fraction))];
+  const at = (fraction) =>
+    sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * fraction))];
   return {
     runs: sorted.length,
     medianMs: Number(at(0.5).toFixed(2)),
