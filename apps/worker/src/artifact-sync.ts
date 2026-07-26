@@ -433,6 +433,12 @@ async function applyOne(entry: PlannedArtifact, context: ApplyContext): Promise<
   // no longer matches and is restored; or reading it fails at all — which means the identifier the
   // register holds is stale, and the artefact is created afresh below rather than reported failed.
   let staleIdentifier = false;
+  // The register's hash still matches, so nothing FlightRules asked for has changed — but the
+  // resource itself no longer matches, because somebody edited it. That is drift, and it must be
+  // *replaced*, not created: the resource is still there under the managed name, so creating one
+  // would leave two of them. This is distinct from `staleIdentifier`, where the identifier no
+  // longer resolves at all.
+  let drifted = false;
   if (entry.operation === "unchanged" && entry.existingResourceId !== null) {
     try {
       const resource = await context.dependencies.synchroniser.readBack(
@@ -452,6 +458,7 @@ async function applyOne(entry: PlannedArtifact, context: ApplyContext): Promise<
           verification,
         };
       }
+      drifted = true;
     } catch {
       staleIdentifier = true;
     }
@@ -464,7 +471,7 @@ async function applyOne(entry: PlannedArtifact, context: ApplyContext): Promise<
     const adopted = staleIdentifier ? (context.remoteIdOf(desired) ?? null) : null;
     let resourceId = staleIdentifier ? adopted : entry.existingResourceId;
     let operation: ArtifactOperation;
-    if ((entry.operation === "update" || staleIdentifier) && resourceId !== null) {
+    if ((entry.operation === "update" || staleIdentifier || drifted) && resourceId !== null) {
       // A view replacement returns a new identifier; a dashboard and an alert keep theirs.
       resourceId = (await context.dependencies.synchroniser.update(desired, resourceId)).id;
       operation = "updated";
