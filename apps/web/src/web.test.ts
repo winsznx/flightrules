@@ -417,14 +417,58 @@ describe("design.md fidelity", () => {
     }
   });
 
-  it("declares only the seven colours design.md defines", async () => {
+  /**
+   * design.md's seven colours, plus exactly one derived value.
+   *
+   * `#707077` is Cool Ash darkened for the white canvas. It exists because PRD section 20.3
+   * requires WCAG AA after design.md is applied, and design.md's own Cool Ash measures 3.25:1 on
+   * white where AA needs 4.5:1. The palette token is unchanged and still serves the dark surfaces
+   * it was drawn for; only the semantic muted-text role points at the derivation. An eighth colour
+   * that is not this one is a design value the system does not define, and this test says so.
+   */
+  it("declares design.md's seven colours plus only the documented AA derivation", async () => {
     const tokens = await readFile(path.join(REPO_ROOT, "packages/ui/src/tokens.css"), "utf8");
     const colours = new Set(
       [...tokens.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((match) => match[0].toLowerCase()),
     );
     expect(colours).toEqual(
-      new Set(["#000d10", "#ffffff", "#8e8e95", "#d5d3d4", "#0f0f1c", "#151623", "#bc7155"]),
+      new Set([
+        "#000d10",
+        "#ffffff",
+        "#8e8e95",
+        "#d5d3d4",
+        "#0f0f1c",
+        "#151623",
+        "#bc7155",
+        "#707077",
+      ]),
     );
+  });
+
+  it("keeps the AA derivation above 4.5:1 on white, which is why it exists", () => {
+    // Recomputed here rather than trusted, so a future tweak toward the original hue fails.
+    const luminance = (hex: string): number => {
+      const channels = [1, 3, 5]
+        .map((index) => Number.parseInt(hex.slice(index, index + 2), 16) / 255)
+        .map((value) => (value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4));
+      return (
+        0.2126 * (channels[0] as number) +
+        0.7152 * (channels[1] as number) +
+        0.0722 * (channels[2] as number)
+      );
+    };
+    const contrast = (a: string, b: string): number => {
+      const [high, low] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return ((high as number) + 0.05) / ((low as number) + 0.05);
+    };
+
+    expect(contrast("#707077", "#ffffff")).toBeGreaterThanOrEqual(4.5);
+    // And design.md's own value still clears AA on the surfaces it was drawn for.
+    expect(contrast("#8e8e95", "#000d10")).toBeGreaterThanOrEqual(4.5);
+    expect(contrast("#8e8e95", "#151623")).toBeGreaterThanOrEqual(4.5);
+    // Deep Ink on Clay Ember, which is why the featured card stopped using white.
+    expect(contrast("#000d10", "#bc7155")).toBeGreaterThanOrEqual(4.5);
+    expect(contrast("#ffffff", "#bc7155")).toBeLessThan(4.5);
   });
 
   it("uses no drop shadow, which design.md forbids", async () => {
