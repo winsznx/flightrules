@@ -190,10 +190,26 @@ export function liveSignozGateway(config: ApiConfig): SignozGateway {
         const data = row.data as Record<string, unknown>;
         const asString = (key: string): string | null =>
           typeof data[key] === "string" ? (data[key] as string) : null;
+        /**
+         * A log row is not shaped like a span row, and reading it as one produced a panel that
+         * showed every body with no time and no service.
+         *
+         * `data.timestamp` on a log row is **nanoseconds as a number**, not the ISO string the row
+         * itself carries alongside `data`. And `service.name` is a *resource* attribute, so it sits
+         * under `resources_string` — the flat lookup that works for a span row finds nothing here.
+         */
+        const nested = (bag: string, key: string): string | null => {
+          const container = data[bag];
+          if (container === null || typeof container !== "object") return null;
+          const value = (container as Record<string, unknown>)[key];
+          return typeof value === "string" && value.length > 0 ? value : null;
+        };
         return {
-          timestamp: asString("timestamp"),
+          timestamp: row.timestamp ?? asString("timestamp") ?? null,
           severity: asString("severity_text"),
-          service: asString("service.name"),
+          service:
+            nested("resources_string", "service.name") ??
+            nested("attributes_string", "service.name"),
           // Bounded here rather than at the page: a log body is the one field in this response whose
           // length is not under FlightRules' control.
           body: (asString("body") ?? "").slice(0, 2_000),
