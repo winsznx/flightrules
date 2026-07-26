@@ -109,7 +109,26 @@ describe("release-gate workflow", () => {
     // #then the workflow needs no repository secret; the SigNoz key is minted per run
     const source = await workflow();
     expect(source).not.toContain("secrets.");
-    expect(source).toMatch(/SIGNOZ_ADMIN_PASSWORD: \$\{\{ format\('ci-/);
+    expect(source).toMatch(/SIGNOZ_ADMIN_PASSWORD: \$\{\{ format\(/);
+  });
+
+  it("supplies a bootstrap password SigNoz's own policy accepts", async () => {
+    // #given SigNoz v0.134.0 requires at least 12 characters with an uppercase letter, a lowercase
+    // letter, a digit and a symbol, and states the policy only in its rejection body
+    const source = await workflow();
+    const declared = /SIGNOZ_ADMIN_PASSWORD: \$\{\{ format\('([^']+)'/.exec(source)?.[1];
+    expect(declared, "the workflow declares no bootstrap password").toBeDefined();
+
+    // #when the format template is rendered with plausible run identifiers
+    const rendered = (declared as string).replace(/\{\d\}/g, "1234567890");
+
+    // #then it satisfies every clause. `ci-<run_id>` satisfied none of the last two, so the job
+    // could never have registered a first user and this workflow had never passed on GitHub.
+    expect(rendered.length).toBeGreaterThanOrEqual(12);
+    expect(rendered).toMatch(/[A-Z]/);
+    expect(rendered).toMatch(/[a-z]/);
+    expect(rendered).toMatch(/[0-9]/);
+    expect(rendered).toMatch(/[~!@#$%^&*()_+`\-={}|[\]\\:"<>?,./]/);
   });
 
   it("requests only read permission", async () => {
