@@ -110,6 +110,22 @@ async function describeWindow() {
   ].join("\n");
 }
 
+/**
+ * Whether SigNoz's service catalogue lists the agent yet.
+ *
+ * `signoz_list_services` is not the raw span table: it lags it on a freshly cast deployment, so a
+ * trace can be queryable minutes before the service that produced it appears in the catalogue. The
+ * integration suite asserts both, and on the first runner that reached it the catalogue was still
+ * empty while every trace query already returned rows.
+ */
+async function agentIsCatalogued() {
+  const listed = await operations.listServices({ timeRange: "6h" }, { searchContext: CONTEXT });
+  return (
+    listed.outcome === "SUCCESS_WITH_ROWS" &&
+    JSON.stringify(listed.value).includes("flightrules-demo-agent")
+  );
+}
+
 let failed = false;
 for (const releaseId of releases) {
   let queryable = false;
@@ -128,6 +144,28 @@ for (const releaseId of releases) {
     console.error(`${releaseId} never became queryable after ${ATTEMPTS} attempts.`);
     console.error(
       await describeWindow().catch((error) => `the window query also failed: ${error}`),
+    );
+    failed = true;
+  }
+}
+
+if (!failed) {
+  let catalogued = false;
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
+    catalogued = await agentIsCatalogued();
+    if (catalogued) {
+      process.stdout.write(`the service catalogue lists the agent (attempt ${attempt})\n`);
+      break;
+    }
+    if (attempt < ATTEMPTS) {
+      process.stdout.write(`the service catalogue is still empty; waiting ${INTERVAL_MS} ms\n`);
+      await sleep(INTERVAL_MS);
+    }
+  }
+  if (!catalogued) {
+    console.error(
+      `SigNoz never listed flightrules-demo-agent after ${ATTEMPTS} attempts, ` +
+        "although its traces are queryable.",
     );
     failed = true;
   }
