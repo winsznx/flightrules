@@ -51,9 +51,31 @@ https://github.com/winsznx/flightrules
 
 ## Deployment URL
 
-_To be filled once the hosted deployment is verified. The local path is fully reproducible today:
-`make demo-full` produces exit 0 for the approved release and exit 2 for the canary, from a clean
-clone, and `scripts/verify-fresh-machine.sh` proves that end to end._
+**https://flightrules-web-production.up.railway.app**
+
+| Surface | URL |
+|---|---|
+| Web application | https://flightrules-web-production.up.railway.app |
+| API | https://flightrules-api-production.up.railway.app |
+| SigNoz | https://signoz-signoz-production-f19a.up.railway.app |
+| SigNoz MCP Server | https://flightrules-signoz-mcp-production.up.railway.app/mcp |
+| OTLP ingestion | https://signoz-ingester-production-a417.up.railway.app |
+| Demo agent | https://flightrules-demo-agent-production.up.railway.app |
+
+Sixteen Railway services: the web application, the API, the worker, PostgreSQL, the pinned SigNoz
+MCP Server `v0.9.0`, the SigNoz core, and the six-service demo topology. Nothing runs on a developer
+machine.
+
+The canonical demo was executed against it end to end — 25 known-good runs, a baseline mined from 26
+live runs, a contract validated, approved and activated, **ten SigNoz artefacts read back as
+`synced: 10, drifted: 0, failed: 0, conflict: 0`**, the approved release gate exiting **`0`** and the
+unsafe canary gate exiting **`2`** with 80 violations, 24 zero-tolerance and 8 duplicate refund
+writes. Step by step, with output:
+[docs/evidence/phase-17/railway.md](evidence/phase-17/railway.md).
+
+The local path remains the reproducible one and is what the SigNoz deployment is pinned for:
+`make demo-full` produces exit 0 for the approved release and exit 2 for the canary from a clean
+clone, and `scripts/verify-fresh-machine.sh` proves that end to end.
 
 ## YouTube URL
 

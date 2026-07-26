@@ -7,6 +7,33 @@ Total runtime from a cold machine: about twelve minutes, most of it SigNoz start
 
 ---
 
+## The hosted alternative, if you are not recording
+
+Everything below is the local path, which is the pinned and reproducible one. A deployed instance
+already holds the same seeded demo, so a reviewer who only wants to *see* it can skip to it:
+
+| Surface | URL |
+|---|---|
+| Web application | https://flightrules-web-production.up.railway.app |
+| API | https://flightrules-api-production.up.railway.app |
+| SigNoz | https://signoz-signoz-production-f19a.up.railway.app |
+| Demo agent | https://flightrules-demo-agent-production.up.railway.app |
+
+```bash
+export FLIGHTRULES_API_URL=https://flightrules-api-production.up.railway.app
+node apps/cli/dist/index.js gate check \
+  --project demo-commerce --agent refund-agent --release refund-agent-v1     # exit 0
+node apps/cli/dist/index.js gate check \
+  --project demo-commerce --agent refund-agent --release refund-agent-v2     # exit 2
+```
+
+The hosted run, step by step with its output, is in
+[docs/evidence/phase-17/railway.md](evidence/phase-17/railway.md). The hosted SigNoz core is not
+version-pinned by this repository; the local Foundry deployment is, which is why the recording uses
+it.
+
+---
+
 ## 0. Terminals
 
 Four, in this order. Leave the first three running.

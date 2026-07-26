@@ -78,6 +78,38 @@ Remove SigNoz and there is no product.
 
 ---
 
+## Try it without installing anything
+
+The product is deployed, with a publicly reachable SigNoz behind it. Nothing in it runs on a
+developer machine.
+
+| Surface | URL |
+|---|---|
+| **Web application** | https://flightrules-web-production.up.railway.app |
+| API | https://flightrules-api-production.up.railway.app |
+| SigNoz | https://signoz-signoz-production-f19a.up.railway.app |
+| SigNoz MCP Server | https://flightrules-signoz-mcp-production.up.railway.app/mcp |
+| OTLP ingestion | https://signoz-ingester-production-a417.up.railway.app |
+| Demo agent | https://flightrules-demo-agent-production.up.railway.app |
+
+The hosted deployment holds a real seeded demo: a baseline mined from 26 live runs, an active
+contract, ten SigNoz artefacts read back as `synced: 10, conflict: 0`, an approved release that
+passes and a canary that fails with 80 violations and 8 duplicate refunds. The gate against it:
+
+```bash
+FLIGHTRULES_API_URL=https://flightrules-api-production.up.railway.app \
+  node apps/cli/dist/index.js gate check \
+    --project demo-commerce --agent refund-agent --release refund-agent-v1   # exit 0
+
+FLIGHTRULES_API_URL=https://flightrules-api-production.up.railway.app \
+  node apps/cli/dist/index.js gate check \
+    --project demo-commerce --agent refund-agent --release refund-agent-v2   # exit 2
+```
+
+Every step of that sequence, with its output, is in
+[docs/evidence/phase-17/railway.md](docs/evidence/phase-17/railway.md). The local path below remains
+the reproducible one, and is what the SigNoz deployment is pinned for.
+
 ## Prerequisites
 
 Verified on macOS 27.0 (`arm64`). `make verify-env` checks all of them.
@@ -258,6 +290,19 @@ Stated plainly, because a limitation that is disclosed is a limitation a reviewe
    listens on, and SigNoz's own test-notification failure is recorded honestly in the register.
 9. **An alert created moments before a metric spike does not fire on that spike.** Scheduling, not a
    defect; recorded in `docs/evidence/phase-16/alert-lifecycle.md`.
+10. **The hosted SigNoz core is not version-pinned by this repository.** Railway has no bind mounts,
+    no shared volumes and no init containers, and the Foundry casting needs all three, so the hosted
+    core comes from SigNoz's own Railway template while the **MCP server is deployed at the pinned
+    `v0.9.0`**. The pinned, reproducible deployment is the local Foundry one — `make signoz-up`,
+    proven by `make signoz-reproducibility`. Reasoning in
+    [docs/evidence/phase-17/railway.md](docs/evidence/phase-17/railway.md).
+11. **The hosted SigNoz user interface needs credentials, which are not published.** No credential
+    belongs in a public repository. Everything SigNoz-derived that the product itself shows — the
+    graph diff, the violations, the correlated logs, the artefact register — is visible in the hosted
+    web application without signing in to SigNoz.
+12. **The hosted demo services are publicly reachable and unauthenticated,** like the hosted API
+    itself (limitation 1). They hold no data but the demo's own ledger, which `POST /payments/reset`
+    clears.
 
 ## Repository structure
 
