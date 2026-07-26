@@ -6,6 +6,8 @@ name: Diagnose web build
 
 on:
   workflow_dispatch:
+  push:
+    branches: ["diagnose/**"]
 
 permissions:
   contents: read
