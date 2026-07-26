@@ -1,4 +1,10 @@
-import { AGENT, activeServiceSpan, registerServiceSpans } from "@flightrules/telemetry";
+import {
+  AGENT,
+  activeServiceSpan,
+  createStructuredLogger,
+  registerServiceSpans,
+  type StructuredLogger,
+} from "@flightrules/telemetry";
 import Fastify, { type FastifyInstance } from "fastify";
 import { z } from "zod";
 import { type LedgerEntry, RefundLedger } from "./ledger.js";
@@ -24,6 +30,8 @@ export interface PaymentServiceOptions {
   /** How long the injected fault holds the response. Must exceed the caller's timeout. */
   readonly slowResponseMs?: number;
   readonly logger?: boolean;
+  /** Overridable so a test can read the ledger lines without an exporter. */
+  readonly log?: StructuredLogger;
 }
 
 export interface PaymentServiceApp {
@@ -45,7 +53,17 @@ const publicEntry = (entry: LedgerEntry) => ({
 export function buildPaymentService(options: PaymentServiceOptions): PaymentServiceApp {
   const ledger = new RefundLedger(options.idempotencyHashSalt);
   const slowResponseMs = options.slowResponseMs ?? 2_500;
+  const quiet = !(options.logger ?? false);
   const server = Fastify({ logger: options.logger ?? false });
+  // `logger: false` means "print nothing", which a test relies on. The OTLP record is still
+  // emitted — against a no-op provider in a test, and against the real one in the demo — so the
+  // two paths do not diverge in what they record, only in what they print.
+  const log =
+    options.log ??
+    createStructuredLogger({
+      serviceName: "flightrules-payment-service",
+      ...(quiet ? { write: () => {} } : {}),
+    });
 
   registerServiceSpans(server, {
     serviceName: "flightrules-payment-service",
@@ -91,6 +109,34 @@ export function buildPaymentService(options: PaymentServiceOptions): PaymentServ
         span.setAttribute(AGENT.idempotencyKeyHash, outcome.entry.idempotencyKeyHash);
       }
     }
+
+    /**
+     * The ledger line the demo reveal turns to after the graph diff (PRD section 24.5).
+     *
+     * It is written **after** the commit and **before** any injected delay, so on the timed-out
+     * first attempt the log records a refund that really was written even though the caller never
+     * saw a response. Two of these in one trace is the duplicate side effect, stated in the
+     * service's own words rather than inferred from span shape.
+     *
+     * Only the salted hash of the idempotency key, never the key. The raw value does not leave
+     * this service, and a log is the easiest place to lose that discipline.
+     */
+    log.info(
+      {
+        refund_id: outcome.refundId,
+        order_id: body.orderId,
+        run_id: body.runId,
+        amount_cents: body.amountCents,
+        attempt: body.attempt,
+        deduplicated: outcome.deduplicated,
+        idempotency_key_present: body.idempotencyKey !== undefined,
+        idempotency_key_hash: outcome.entry.idempotencyKeyHash,
+        refunds_for_run: ledger.entriesForRun(body.runId).length,
+      },
+      outcome.deduplicated
+        ? "refund request deduplicated against an existing ledger entry"
+        : "refund committed to the payment ledger",
+    );
 
     if (body.fault === "slow_first_attempt" && body.attempt === 1) {
       await new Promise((resolve) => setTimeout(resolve, slowResponseMs));

@@ -14,9 +14,12 @@ import {
   isHighCardinality,
   METRIC_NAMES,
   METRIC_SPECS,
+  metricDimensionDisagreement,
+  QUERYABLE_IDENTITY_DIMENSIONS,
   SPAN_NAMES,
   STABLE,
 } from "./index.js";
+import { FlightRulesMetrics } from "./instruments.js";
 
 describe("attribute names come from the installed conventions", () => {
   it("uses the stable names for service identity and error type", () => {
@@ -205,5 +208,74 @@ describe("forbidden attribute redaction", () => {
   it("does not register a global tracer as a side effect of construction", () => {
     const before = trace.getTracer("probe");
     expect(before).toBeDefined();
+  });
+});
+
+describe("the dimensions a metric may be narrowed by", () => {
+  /**
+   * SL-062 recorded that `flight_rules.project.id` and `flight_rules.agent.id` came back from
+   * SigNoz carrying empty values, and read that as a SigNoz behaviour. It was not. The instruments
+   * emitted `project.slug` and `agent.key`; `GET /api/violations/:id/metrics` grouped by the
+   * `flight_rules.*` names. SigNoz answered exactly as asked — with labels nothing had ever set.
+   *
+   * A single query cannot catch that, because grouping by an absent label is not an error. Only a
+   * cross-reference between the emitting declaration and the querying declaration can, and this is
+   * it.
+   */
+  it("is carried by every instrument that a caller may narrow", () => {
+    expect(metricDimensionDisagreement()).toEqual([]);
+  });
+
+  it("names the identifiers, not only the human-readable keys", () => {
+    expect([...QUERYABLE_IDENTITY_DIMENSIONS]).toEqual([
+      "flight_rules.project.id",
+      "flight_rules.agent.id",
+    ]);
+  });
+
+  it("carries both the identifier and the key on a recorded evaluation", () => {
+    // #given a metrics recorder over a meter that captures what an instrument was given
+    const recorded: { name: string; attributes: Record<string, unknown> }[] = [];
+    const instrument = (name: string) => ({
+      add: (_value: number, attributes: Record<string, unknown>) => {
+        recorded.push({ name, attributes });
+      },
+      record: (_value: number, attributes: Record<string, unknown>) => {
+        recorded.push({ name, attributes });
+      },
+    });
+    const meter = {
+      createCounter: (name: string) => instrument(name),
+      createHistogram: (name: string) => instrument(name),
+      createGauge: (name: string) => instrument(name),
+      createUpDownCounter: (name: string) => instrument(name),
+      createObservableCounter: () => undefined,
+      createObservableGauge: () => undefined,
+      createObservableUpDownCounter: () => undefined,
+      addBatchObservableCallback: () => undefined,
+      removeBatchObservableCallback: () => undefined,
+    } as unknown as Parameters<typeof FlightRulesMetrics.prototype.constructor>[0];
+
+    // #when a violation is recorded
+    new FlightRulesMetrics(meter).recordViolation(
+      {
+        projectId: "019f9cca-5034-70ea-86a5-df5be0a3d2b0",
+        agentId: "019f9cca-5045-72eb-a342-5a2854ced4a1",
+        projectSlug: "demo-commerce",
+        agentKey: "refund-agent",
+        releaseId: "019f9ccb-48a6-72a1-8c41-60a799264216",
+        releaseKey: "refund-agent-v2",
+        scope: "release",
+      },
+      "required_span",
+      "critical",
+    );
+
+    // #then the label the API groups by is present and populated
+    const attributes = recorded[0]?.attributes ?? {};
+    expect(attributes["flight_rules.project.id"]).toBe("019f9cca-5034-70ea-86a5-df5be0a3d2b0");
+    expect(attributes["flight_rules.agent.id"]).toBe("019f9cca-5045-72eb-a342-5a2854ced4a1");
+    expect(attributes["project.slug"]).toBe("demo-commerce");
+    expect(attributes["agent.key"]).toBe("refund-agent");
   });
 });

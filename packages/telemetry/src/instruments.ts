@@ -33,11 +33,48 @@ export function filterDimensions(metricName: string, attributes: Attributes): At
   return result;
 }
 
-export interface EvaluationDimensions {
+/**
+ * Who a measurement is about.
+ *
+ * Both the identifier and the human-readable key, deliberately. Until Phase 16 the instruments
+ * emitted `project.slug` and `agent.key` while `GET /api/violations/:id/metrics` grouped by
+ * `flight_rules.project.id` and `flight_rules.agent.id` — names nothing ever emitted. SigNoz duly
+ * returned a series labelled with those two names and **empty values**, which SL-062 recorded as a
+ * SigNoz behaviour. It was not: the two halves of the product had never agreed on a name.
+ *
+ * Emitting both is not redundancy. The identifier is what the API and the saved views select on and
+ * what a span already carries, so a metric and a span can be joined; the key is what a human reads
+ * on a dashboard legend. They are one-to-one, so carrying both costs no extra series.
+ * `metricDimensionAgreement` in `metrics.ts` now fails if either side drifts again.
+ */
+export interface AgentIdentity {
+  readonly projectId: string;
+  readonly agentId: string;
   readonly projectSlug: string;
   readonly agentKey: string;
+}
+
+export interface EvaluationDimensions extends AgentIdentity {
+  readonly releaseId: string;
   readonly releaseKey: string;
   readonly scope: "run" | "release";
+}
+
+function identityAttributes(identity: AgentIdentity): Attributes {
+  return {
+    "flight_rules.project.id": identity.projectId,
+    "flight_rules.agent.id": identity.agentId,
+    "project.slug": identity.projectSlug,
+    "agent.key": identity.agentKey,
+  };
+}
+
+function evaluationAttributes(dimensions: EvaluationDimensions): Attributes {
+  return {
+    ...identityAttributes(dimensions),
+    "flight_rules.release.id": dimensions.releaseId,
+    "release.key": dimensions.releaseKey,
+  };
 }
 
 /**
@@ -88,12 +125,7 @@ export class FlightRulesMetrics {
   }
 
   recordEvaluation(dimensions: EvaluationDimensions, status: string, durationMs: number): void {
-    const base = {
-      "project.slug": dimensions.projectSlug,
-      "agent.key": dimensions.agentKey,
-      "release.key": dimensions.releaseKey,
-      scope: dimensions.scope,
-    };
+    const base = { ...evaluationAttributes(dimensions), scope: dimensions.scope };
     this.#evaluations.add(1, filterDimensions(METRIC_NAMES.evaluations, { ...base, status }));
     this.#evaluationDuration.record(
       durationMs,
@@ -110,9 +142,7 @@ export class FlightRulesMetrics {
     this.#violations.add(
       count,
       filterDimensions(METRIC_NAMES.violations, {
-        "project.slug": dimensions.projectSlug,
-        "agent.key": dimensions.agentKey,
-        "release.key": dimensions.releaseKey,
+        ...evaluationAttributes(dimensions),
         "rule.type": ruleType,
         severity,
       }),
@@ -122,11 +152,7 @@ export class FlightRulesMetrics {
   recordUnknownRoute(dimensions: EvaluationDimensions): void {
     this.#unknownRoutes.add(
       1,
-      filterDimensions(METRIC_NAMES.unknownRoutes, {
-        "project.slug": dimensions.projectSlug,
-        "agent.key": dimensions.agentKey,
-        "release.key": dimensions.releaseKey,
-      }),
+      filterDimensions(METRIC_NAMES.unknownRoutes, evaluationAttributes(dimensions)),
     );
   }
 
@@ -134,22 +160,14 @@ export class FlightRulesMetrics {
     if (count <= 0) return;
     this.#duplicateSideEffects.add(
       count,
-      filterDimensions(METRIC_NAMES.duplicateSideEffects, {
-        "project.slug": dimensions.projectSlug,
-        "agent.key": dimensions.agentKey,
-        "release.key": dimensions.releaseKey,
-      }),
+      filterDimensions(METRIC_NAMES.duplicateSideEffects, evaluationAttributes(dimensions)),
     );
   }
 
   recordRouteSimilarity(dimensions: EvaluationDimensions, similarity: number): void {
     this.#routeSimilarity.record(
       similarity,
-      filterDimensions(METRIC_NAMES.routeSimilarity, {
-        "project.slug": dimensions.projectSlug,
-        "agent.key": dimensions.agentKey,
-        "release.key": dimensions.releaseKey,
-      }),
+      filterDimensions(METRIC_NAMES.routeSimilarity, evaluationAttributes(dimensions)),
     );
   }
 
@@ -157,36 +175,27 @@ export class FlightRulesMetrics {
     this.#gateDecisions.add(
       1,
       filterDimensions(METRIC_NAMES.releaseGateDecisions, {
-        "project.slug": dimensions.projectSlug,
-        "agent.key": dimensions.agentKey,
-        "release.key": dimensions.releaseKey,
+        ...evaluationAttributes(dimensions),
         decision,
       }),
     );
   }
 
-  recordTraceFetchFailure(projectSlug: string, agentKey: string, errorType: string): void {
+  recordTraceFetchFailure(identity: AgentIdentity, errorType: string): void {
     this.#traceFetchFailures.add(
       1,
       filterDimensions(METRIC_NAMES.traceFetchFailures, {
-        "project.slug": projectSlug,
-        "agent.key": agentKey,
+        ...identityAttributes(identity),
         "error.type": errorType,
       }),
     );
   }
 
-  recordArtifactSync(
-    projectSlug: string,
-    agentKey: string,
-    artifactType: string,
-    status: string,
-  ): void {
+  recordArtifactSync(identity: AgentIdentity, artifactType: string, status: string): void {
     this.#artifactSync.add(
       1,
       filterDimensions(METRIC_NAMES.signozArtifactSync, {
-        "project.slug": projectSlug,
-        "agent.key": agentKey,
+        ...identityAttributes(identity),
         "artifact.type": artifactType,
         status,
       }),

@@ -7,7 +7,7 @@ const telemetry = bootstrapFromEnv(process.env["OTEL_SERVICE_NAME"] ?? "flightru
 
 import process from "node:process";
 import { assertSchemaCompatible, connect, MIGRATIONS_DIR } from "@flightrules/db";
-import { FlightRulesMetrics, protectSecret } from "@flightrules/telemetry";
+import { createStructuredLogger, FlightRulesMetrics, protectSecret } from "@flightrules/telemetry";
 import { loadWorkerConfig } from "./config.js";
 import { createHandlers } from "./handlers.js";
 import { JobRunner } from "./runner.js";
@@ -30,28 +30,15 @@ const sql = connect(config.databaseUrl, {
   applicationName: config.serviceName,
 });
 
-const log = {
-  write(level: string, fields: Record<string, unknown>, message: string): void {
-    const line = JSON.stringify({
-      timestamp: new Date().toISOString(),
-      level,
-      "service.name": config.serviceName,
-      message,
-      ...fields,
-    });
-    if (level === "error") process.stderr.write(`${line}\n`);
-    else process.stdout.write(`${line}\n`);
-  },
-  info(fields: Record<string, unknown>, message: string): void {
-    this.write("info", fields, message);
-  },
-  warn(fields: Record<string, unknown>, message: string): void {
-    this.write("warn", fields, message);
-  },
-  error(fields: Record<string, unknown>, message: string): void {
-    this.write("error", fields, message);
-  },
-};
+/**
+ * One JSON line to stdout **and** one correlated OTLP log record (PRD section 17.5).
+ *
+ * The worker is where a violation is actually produced, so its lines are the ones the Violation
+ * Inspector's correlated-log panel most needs. `createStructuredLogger` reads the active span
+ * context, so a line written while evaluating a run carries that run's trace ID without this file
+ * knowing anything about tracing.
+ */
+const log = createStructuredLogger({ serviceName: config.serviceName });
 
 const runner = new JobRunner({
   sql,
