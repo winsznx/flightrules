@@ -63,6 +63,14 @@ export async function apiPost<T>(
   return request("POST", path, body, schema);
 }
 
+export async function apiPut<T>(
+  path: string,
+  body: unknown,
+  schema: ZodType<T>,
+): Promise<ApiResult<T>> {
+  return request("PUT", path, body, schema);
+}
+
 async function request<T>(
   method: string,
   path: string,

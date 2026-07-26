@@ -1,0 +1,24 @@
+
+Running 18 tests using 1 worker
+
+  ✓   1 [desktop] › tests/e2e/phase-13-workflow.spec.ts:42:3 › baseline to active contract, through the browser › a new user reaches an active contract without leaving the UI (41.9s)
+  ✓   2 [desktop] › tests/e2e/phase-13-workflow.spec.ts:208:3 › guards that must hold on the server › an invalid document cannot be saved, and so cannot be approved (406ms)
+  ✓   3 [desktop] › tests/e2e/phase-13-workflow.spec.ts:242:3 › guards that must hold on the server › a control that would contradict an existing rule is refused (344ms)
+  ✓   4 [desktop] › tests/e2e/phase-13-workflow.spec.ts:261:3 › presentation, at every width › the baseline page is usable by keyboard and never scrolls sideways (210ms)
+  ✓   5 [desktop] › tests/e2e/phase-13-workflow.spec.ts:294:3 › presentation, at every width › the Contract Studio is readable and colourless at every width (211ms)
+  ✓   6 [desktop] › tests/e2e/phase-13-workflow.spec.ts:307:3 › presentation, at every width › an unknown identifier shows the product's not-found state, not a crash (143ms)
+  -   7 [narrow] › tests/e2e/phase-13-workflow.spec.ts:42:3 › baseline to active contract, through the browser › a new user reaches an active contract without leaving the UI
+  -   8 [narrow] › tests/e2e/phase-13-workflow.spec.ts:208:3 › guards that must hold on the server › an invalid document cannot be saved, and so cannot be approved
+  -   9 [narrow] › tests/e2e/phase-13-workflow.spec.ts:242:3 › guards that must hold on the server › a control that would contradict an existing rule is refused
+  ✓  10 [narrow] › tests/e2e/phase-13-workflow.spec.ts:261:3 › presentation, at every width › the baseline page is usable by keyboard and never scrolls sideways (232ms)
+  ✓  11 [narrow] › tests/e2e/phase-13-workflow.spec.ts:294:3 › presentation, at every width › the Contract Studio is readable and colourless at every width (212ms)
+  ✓  12 [narrow] › tests/e2e/phase-13-workflow.spec.ts:307:3 › presentation, at every width › an unknown identifier shows the product's not-found state, not a crash (157ms)
+  -  13 [mobile] › tests/e2e/phase-13-workflow.spec.ts:42:3 › baseline to active contract, through the browser › a new user reaches an active contract without leaving the UI
+  -  14 [mobile] › tests/e2e/phase-13-workflow.spec.ts:208:3 › guards that must hold on the server › an invalid document cannot be saved, and so cannot be approved
+  -  15 [mobile] › tests/e2e/phase-13-workflow.spec.ts:242:3 › guards that must hold on the server › a control that would contradict an existing rule is refused
+  ✓  16 [mobile] › tests/e2e/phase-13-workflow.spec.ts:261:3 › presentation, at every width › the baseline page is usable by keyboard and never scrolls sideways (312ms)
+  ✓  17 [mobile] › tests/e2e/phase-13-workflow.spec.ts:294:3 › presentation, at every width › the Contract Studio is readable and colourless at every width (261ms)
+  ✓  18 [mobile] › tests/e2e/phase-13-workflow.spec.ts:307:3 › presentation, at every width › an unknown identifier shows the product's not-found state, not a crash (190ms)
+
+  6 skipped
+  12 passed (46.7s)

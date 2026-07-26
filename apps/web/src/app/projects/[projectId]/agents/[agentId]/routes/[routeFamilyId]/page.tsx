@@ -1,8 +1,12 @@
 import { GraphTable, KeyValues, PageHeader, Section, Status, Table } from "@flightrules/ui";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { z } from "zod";
+import { OutcomeBanner } from "@/components/outcome-banner";
+import { ReviewActions } from "@/components/review-actions";
 import { apiGet, CanonicalGraphSchema, isFailure } from "@/lib/api";
 import { ROUTE_FAMILY } from "@/lib/copy";
+import { readOutcome } from "@/lib/outcome";
 import { failureState, instant, percent, shortHash } from "@/lib/view";
 
 /**
@@ -57,6 +61,7 @@ const FamilySchema = z.object({
   statistics: z.unknown(),
   canonicalGraph: z.unknown(),
   decidedAt: z.string().nullable(),
+  baselineVersionId: z.string(),
 });
 
 function millis(value: number | undefined): string {
@@ -80,8 +85,10 @@ function distribution(
 
 export default async function RouteFamilyPage(props: {
   params: Promise<{ projectId: string; agentId: string; routeFamilyId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<ReactNode> {
-  const { routeFamilyId } = await props.params;
+  const { projectId, agentId, routeFamilyId } = await props.params;
+  const outcome = readOutcome(await props.searchParams);
   const family = await apiGet(`/api/route-families/${routeFamilyId}`, FamilySchema);
 
   if (isFailure(family)) {
@@ -96,6 +103,8 @@ export default async function RouteFamilyPage(props: {
   const statistics = StatisticsSchema.safeParse(family.data.statistics);
   const stats = statistics.success ? statistics.data : {};
   const graph = CanonicalGraphSchema.safeParse(family.data.canonicalGraph);
+  const base = `/projects/${projectId}/agents/${agentId}`;
+  const here = `${base}/routes/${routeFamilyId}`;
 
   return (
     <div className="fr-shell" data-testid="route-route-family">
@@ -109,6 +118,8 @@ export default async function RouteFamilyPage(props: {
           </>
         }
       />
+
+      <OutcomeBanner outcome={outcome} />
 
       <Section title="Observation" testId="family-observation">
         <KeyValues
@@ -192,16 +203,18 @@ export default async function RouteFamilyPage(props: {
         />
       </Section>
 
-      <Section title="Review actions" testId="family-actions">
-        <div className="fr-row">
-          {ROUTE_FAMILY.actions.map((action) => (
-            <span className="fr-button fr-button--ghost" key={action} aria-disabled="true">
-              {action}
-            </span>
-          ))}
-        </div>
+      <Section title="Review actions" testId="family-review">
+        <ReviewActions
+          baselineId={family.data.baselineVersionId}
+          familyId={family.data.id}
+          returnTo={here}
+        />
         <p className="fr-muted" style={{ marginTop: "var(--spacing-15)" }}>
-          Review actions become live in the baseline workflow. Each one writes an audit record.
+          Each decision is written by the server and re-read before this page renders again. Every
+          one of them writes an audit record.{" "}
+          <Link href={`${base}/baselines/new?baseline=${family.data.baselineVersionId}`}>
+            Back to the baseline
+          </Link>
         </p>
       </Section>
     </div>

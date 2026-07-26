@@ -35,16 +35,16 @@ test: ## Run unit and property tests (no external services required)
 	pnpm run test
 
 test-integration: ## Run all integration tests (requires make up and a running SigNoz stack)
-	pnpm run test:integration
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm run test:integration
 
 test-integration-db: ## Run database integration tests (requires make up)
-	pnpm run test:integration:db
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm run test:integration:db
 
 test-integration-signoz: ## Run SigNoz integration tests (requires a deployed, bootstrapped stack)
-	pnpm run test:integration:signoz
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm run test:integration:signoz
 
-test-e2e: ## Run end-to-end browser tests
-	pnpm run test:e2e
+test-e2e: ## Run end-to-end browser tests against the running product
+	@set -a; [ -f .env ] && . ./.env; set +a; pnpm run test:e2e
 
 build: ## Build every package and application
 	pnpm run build
