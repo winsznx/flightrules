@@ -18,7 +18,7 @@ twenty route responses rendering real content. Nothing it claimed was found to b
 | 12 UI foundation and `design.md` integration | PASS | `a7b3c78` | `5726d26` |
 | **13 Baseline and Contract Studio UI** | **PASS** | `d1ac0c4` | `faf2d26` |
 | **14 Release Diff UI** | **PASS** | `d5d8daa` | `d14f4fb` |
-| **15 Violation Inspector UI** | **PASS** | see `docs/evidence/phase-15-commits.md` | see below |
+| **15 Violation Inspector UI** | **PASS** | `676ffed` | `42ff820` |
 | 16–17 | NOT STARTED | — | — |
 
 ## Verified state
